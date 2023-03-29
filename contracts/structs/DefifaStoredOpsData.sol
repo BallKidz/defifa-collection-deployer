@@ -5,11 +5,11 @@ import '@jbx-protocol/juice-contracts-v3/contracts/interfaces/IJBPaymentTerminal
 
 /**
   @member terminal The payment terminal where funds are being accepted through.
+  @member token The token the game is played with.
   @member distributionLimit The amount that is permitted to be distributed from the terminal.
-  @member holdFees A flag indicating if fees should be held from distribution.
 */
 struct DefifaStoredOpsData {
   IJBPaymentTerminal terminal;
+  address token;
   uint88 distributionLimit;
-  bool holdFees;
 }

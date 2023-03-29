@@ -88,6 +88,16 @@ contract DefifaDelegate is IDefifaDelegate, JB721TieredGovernance {
 
   /** 
     @notice
+    The name of the NFT.
+
+    @return The name of the NFT.
+  */
+  function name() public view override(ERC721, IDefifaDelegate) returns (string memory) {
+    return super.name();
+  }
+
+  /** 
+    @notice
     The redemption weight for each tier.
 
     @return The array of weights, indexed by tier.
@@ -106,7 +116,9 @@ contract DefifaDelegate is IDefifaDelegate, JB721TieredGovernance {
     @return memo The memo that should be forwarded to the event.
     @return delegateAllocations The amount to send to delegates instead of adding to the beneficiary.
   */
-  function redeemParams(JBRedeemParamsData calldata _data)
+  function redeemParams(
+    JBRedeemParamsData calldata _data
+  )
     public
     view
     override
@@ -174,37 +186,22 @@ contract DefifaDelegate is IDefifaDelegate, JB721TieredGovernance {
 
     @return cumulativeWeight The weight.
   */
-  function redemptionWeightOf(uint256[] memory _tokenIds, JBRedeemParamsData calldata)
-    public
-    view
-    virtual
-    override
-    returns (uint256 cumulativeWeight)
-  {
+  function redemptionWeightOf(
+    uint256[] memory _tokenIds,
+    JBRedeemParamsData calldata
+  ) public view virtual override returns (uint256 cumulativeWeight) {
     // If the game is over, set the weight based on the scorecard results.
     // Keep a reference to the number of tokens being redeemed.
     uint256 _tokenCount = _tokenIds.length;
 
     for (uint256 _i; _i < _tokenCount; ) {
-      // Keep a reference to the token's tier ID.
-      uint256 _tierId = store.tierIdOfToken(_tokenIds[_i]);
-
-      // Keep a reference to the tier.
-      JB721Tier memory _tier = store.tier(address(this), _tierId);
-
       // Calculate what percentage of the tier redemption amount a single token counts for.
-      cumulativeWeight +=
-        // Tier's are 1 indexed and are stored 0 indexed.
-        _tierRedemptionWeights[_tierId - 1] /
-        (_tier.initialQuantity - _tier.remainingQuantity + _redeemedFromTier[_tierId]);
+      cumulativeWeight += redemptionWeightOf(_tokenIds[_i]);
 
       unchecked {
         ++_i;
       }
     }
-
-    // If there's nothing to claim, revert to prevent burning for nothing.
-    if (cumulativeWeight == 0) revert NOTHING_TO_CLAIM();
   }
 
   /** 
@@ -213,15 +210,37 @@ contract DefifaDelegate is IDefifaDelegate, JB721TieredGovernance {
 
     @return The total weight.
   */
-  function totalRedemptionWeight(JBRedeemParamsData calldata)
-    public
-    view
-    virtual
-    override
-    returns (uint256)
-  {
+  function totalRedemptionWeight(
+    JBRedeemParamsData calldata
+  ) public view virtual override returns (uint256) {
     // Set the total weight as the total scorecard weight.
     return TOTAL_REDEMPTION_WEIGHT;
+  }
+
+  //*********************************************************************//
+  // -------------------------- public views --------------------------- //
+  //*********************************************************************//
+
+  /** 
+    @notice
+    The weight the given token ID have in redemptions. 
+
+    @param _tokenId The ID of the token to get the redemption weight of.
+
+    @return The weight.
+  */
+  function redemptionWeightOf(uint256 _tokenId) public view override returns (uint256) {
+    // Keep a reference to the token's tier ID.
+    uint256 _tierId = store.tierIdOfToken(_tokenId);
+
+    // Keep a reference to the tier.
+    JB721Tier memory _tier = store.tier(address(this), _tierId);
+
+    // Calculate what percentage of the tier redemption amount a single token counts for.
+    return
+      // Tier's are 1 indexed and are stored 0 indexed.
+      _tierRedemptionWeights[_tierId - 1] /
+      (_tier.initialQuantity - _tier.remainingQuantity + _redeemedFromTier[_tierId]);
   }
 
   //*********************************************************************//
@@ -237,11 +256,9 @@ contract DefifaDelegate is IDefifaDelegate, JB721TieredGovernance {
 
     @param _tierWeights The tier weights to set.
   */
-  function setTierRedemptionWeights(DefifaTierRedemptionWeight[] memory _tierWeights)
-    external
-    override
-    onlyOwner
-  {
+  function setTierRedemptionWeights(
+    DefifaTierRedemptionWeight[] memory _tierWeights
+  ) external override onlyOwner {
     // Make sure the game has ended.
     if (fundingCycleStore.currentOf(projectId).number < _END_GAME_PHASE)
       revert GAME_ISNT_OVER_YET();
@@ -293,6 +310,9 @@ contract DefifaDelegate is IDefifaDelegate, JB721TieredGovernance {
       !directory.isTerminalOf(projectId, IJBPaymentTerminal(msg.sender)) ||
       _data.projectId != projectId
     ) revert INVALID_REDEMPTION_EVENT();
+
+    // If there's nothing being claimed, revert to prevent burning for nothing.
+    if (_data.reclaimedAmount.value == 0) revert NOTHING_TO_CLAIM();
 
     // Check the 4 bytes interfaceId and handle the case where the metadata was not intended for this contract
     // Skip 32 bytes reserved for generic extension parameters.

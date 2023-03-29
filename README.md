@@ -1,15 +1,15 @@
-# Defifa American Football Playoffs 2023
+# Defifa Collection Deployer
 
 ## Motivation
 
-Iterating on Defifa game.
+Deploy Defifa collections
 
 # Install
 
 Quick all-in-one command:
 
 ```bash
-rm -Rf juice-defifa || true && git clone -n https://github.com/jbx-protocol/juice-defifa && cd juice-defifa && git pull origin main && git checkout FETCH_HEAD && foundryup && git submodule update --init --recursive --force && yarn install && forge test
+rm -Rf defifa-collection-deployer || true && git clone -n https://github.com/ballkidz/defifa-collection-deployer && cd defifa-collection-deployer && git pull origin main && git checkout FETCH_HEAD && foundryup && git submodule update --init --recursive --force && yarn install && forge test
 ```
 
 To get set up:
