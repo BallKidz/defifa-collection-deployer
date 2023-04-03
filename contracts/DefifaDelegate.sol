@@ -30,6 +30,8 @@ contract DefifaDelegate is IDefifaDelegate, JB721TieredGovernance {
   error INVALID_TIER_ID();
   error INVALID_REDEMPTION_WEIGHTS();
   error NOTHING_TO_CLAIM();
+  error NOTHING_TO_MINT();
+  error WRONG_CURRENCY();
 
   //*********************************************************************//
   // -------------------- private constant properties ------------------ //
@@ -367,6 +369,78 @@ contract DefifaDelegate is IDefifaDelegate, JB721TieredGovernance {
   // ------------------------ internal functions ----------------------- //
   //*********************************************************************//
 
+  function _processPayment(JBDidPayData calldata _data) internal override {
+    // Make sure the game is being played in the correct currency.
+    if (_data.amount.currency != pricingCurrency) revert WRONG_CURRENCY();
+
+    // Keep a reference to the address that should be given attestation votes from this mint.
+    bytes32 _votingDelegateSegment;
+
+    // Skip the first 32 bytes which are used by the JB protocol to pass the paying project's ID when paying from a JBSplit.
+    // The address of the voting delegate for the mint is included in the next 32 bytes reserved for generic extension parameters.
+    // Check the 4 bytes interfaceId to verify the metadata is intended for this contract.
+    if (
+      _data.metadata.length > 68 &&
+      bytes4(_data.metadata[64:68]) == type(IDefifaDelegate).interfaceId
+    ) {
+      // Keep a reference to the the specific tier IDs to mint.
+      uint16[] memory _tierIdsToMint;
+
+      // Decode the metadata.
+      (, , , _votingDelegateSegment, _tierIdsToMint) = abi.decode(
+        _data.metadata,
+        (bytes32, bytes32, bytes4, bytes32, uint16[])
+      );
+
+      // Make sure something is being minted.
+      if (_tierIdsToMint.length == 0) revert NOTHING_TO_MINT();
+
+      // Mint tiers if they were specified.
+      uint256 _leftoverAmount = _mintAll(_data.amount.value, _tierIdsToMint, _data.beneficiary);
+
+      // Make sure the buyer isn't overspending.
+      if (_leftoverAmount != 0) revert OVERSPENDING();
+
+      if (_votingDelegateSegment != bytes32('')) {
+        address _votingDelegate = address(uint160(uint256(_votingDelegateSegment)));
+
+        // Keep a reference to the current tier ID.
+        uint256 _currentTierId = _tierIdsToMint[0];
+
+        // Keep a reference to the number of voting units currently accumulated for the given tier.
+        uint256 _votingUnitsForCurrentTier;
+
+        // The price of each unit is the total amount paid divided by the quantity bought.
+        uint256 _price = _data.amount.value / _tierIdsToMint.length;
+
+        // Keep a reference to the number of tiers.
+        uint256 _numberOfTiers = _tierIdsToMint.length;
+
+        for (uint256 _i; _i < _numberOfTiers; ) {
+          if (_currentTierId != _tierIdsToMint[_i]) _currentTierId = _tierIdsToMint[_i];
+          if (_i < _numberOfTiers - 1 && _tierIdsToMint[_i + 1] == _currentTierId) {
+            _votingUnitsForCurrentTier += _price;
+          } else {
+            _tierDelegation[_data.payer][_currentTierId] = _votingDelegate;
+            // Transfer the voting units.
+            _transferTierVotingUnits(
+              address(0),
+              _votingDelegate,
+              _currentTierId,
+              _votingUnitsForCurrentTier + _price
+            );
+            _votingUnitsForCurrentTier = 0;
+            emit DelegateChanged(_data.payer, address(0), _votingDelegate);
+          }
+
+          unchecked {
+            ++_i;
+          }
+        }
+      }
+    }
+  }
+
   /**
    @notice
    handles the tier voting accounting
@@ -383,15 +457,10 @@ contract DefifaDelegate is IDefifaDelegate, JB721TieredGovernance {
     JB721Tier memory _tier
   ) internal virtual override {
     _tokenId; // Prevents unused var compiler and natspec complaints.
-    if (_tier.votingUnits != 0) {
-      // Delegate the tier to the recipient user themselves if they are not delegating yet
-      if (_tierDelegation[_to][_tier.id] == address(0)) {
-        _tierDelegation[_to][_tier.id] = _to;
-        emit DelegateChanged(_to, address(0), _to);
-      }
 
-      // Transfer the voting units.
-      _transferTierVotingUnits(_from, _to, _tier.id, _tier.votingUnits);
-    }
+    // Dont transfer on mint since the delegation will be transferred more efficiently in _processPayment.
+    if (_from == address(0)) return;
+
+    super._afterTokenTransferAccounting(_from, _to, _tokenId, _tier);
   }
 }

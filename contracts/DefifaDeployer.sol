@@ -71,6 +71,12 @@ contract DefifaDeployer is IDefifaDeployer, IERC721Receiver {
     Includes the payment terminal being used, the distribution limit, and wether or not fees should be held.
   */
   mapping(uint256 => DefifaStoredOpsData) internal _opsFor;
+  
+  /** 
+    @notice 
+    This contract current nonce, used for the registry
+  */
+  uint256 internal _nonce;
 
   //*********************************************************************//
   // ------------------------ public constants ------------------------- //
@@ -127,6 +133,12 @@ contract DefifaDeployer is IDefifaDeployer, IERC721Receiver {
     The address that should be forwarded JBX accumulated in this contract from game fund distributions.
   */
   address public override immutable protocolFeeProjectTokenAccount;
+
+  /** 
+    @notice 
+    The delegates registry. 
+  */
+  IJBDelegatesRegistry public immutable delegatesRegistry;
 
   //*********************************************************************//
   // ------------------------- external views -------------------------- //
@@ -207,19 +219,22 @@ contract DefifaDeployer is IDefifaDeployer, IERC721Receiver {
     @param _tokenUriResolverCodeOrigin The token URI resolver with which new projects should be deployed. 
     @param _controller The controller to use to launch the game from.
     @param _protocolFeeProjectTokenAccount The address that should be forwarded JBX accumulated in this contract from game fund distributions. 
+    @param _delegatesRegistry The contract storing references to the deployer of each delegate.
   */
   constructor(
     address _delegateCodeOrigin,
     address _governorCodeOrigin,
     address _tokenUriResolverCodeOrigin,
     IJBController3_1 _controller,
-    address _protocolFeeProjectTokenAccount
+    address _protocolFeeProjectTokenAccount,
+    IJBDelegatesRegistry _delegatesRegistry
   ) {
     delegateCodeOrigin = _delegateCodeOrigin;
     governorCodeOrigin = _governorCodeOrigin;
     tokenUriResolverCodeOrigin = _tokenUriResolverCodeOrigin;
     controller = _controller;
     protocolFeeProjectTokenAccount = _protocolFeeProjectTokenAccount;
+    delegatesRegistry = _delegatesRegistry;
   }
 
   //*********************************************************************//
@@ -357,6 +372,9 @@ contract DefifaDeployer is IDefifaDeployer, IERC721Receiver {
     );
     _uriResolver.initialize(_delegate, _tierNames);
 
+    // Add the delegate to the registry, contract nonce starts at 1
+    delegatesRegistry.addDelegate(address(this), _nonce);
+    
     // Make sure the provided terminal accepts the same currency as this game is being played in.
     if (!_launchProjectData.terminal.acceptsToken(_launchProjectData.token, gameId)) revert UNEXPECTED_TERMINAL_CURRENCY();
 
@@ -369,6 +387,10 @@ contract DefifaDeployer is IDefifaDeployer, IERC721Receiver {
 
     // Transfer ownership to the specified owner.
     _delegate.transferOwnership(address(governor));
+
+    // Add three to the nonce because 3 contracts were deployed during this launch process.
+    _nonce = _nonce + 3;
+
   }
 
   /**

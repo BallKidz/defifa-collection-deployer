@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.16;
 
+import '@jbx-protocol/juice-delegates-registry/src/interfaces/IJBDelegatesRegistry.sol';
 import '@jbx-protocol/juice-contracts-v3/contracts/libraries/JBTokens.sol';
 import '@jbx-protocol/juice-721-delegate/contracts/interfaces/IJBTiered721DelegateStore.sol';
 import '../DefifaDeployer.sol';
@@ -13,6 +14,8 @@ contract DeployMainnet is Script {
   IJBController3_1 controller = IJBController3_1(0x97a5b9D9F0F7cD676B69f584F29048D0Ef4BB59b);
 
   address _defifaBallkidz = 0x11834239698c7336EF232C00a2A9926d3375DF9D;
+  IJBDelegatesRegistry _delegateRegistry =
+    IJBDelegatesRegistry(0x7A53cAA1dC4d752CAD283d039501c0Ee45719FaC);
 
   function run() external {
     vm.startBroadcast();
@@ -32,7 +35,8 @@ contract DeployMainnet is Script {
       address(_defifaGovernorCodeOrigin),
       address(_defifaTokenUriResolverCodeOrigin),
       controller,
-      _defifaBallkidz
+      _defifaBallkidz,
+      _delegateRegistry
     );
 
     console.log(address(_defifaDeployer));
@@ -44,6 +48,8 @@ contract DeployGoerli is Script {
   IJBController3_1 controller = IJBController3_1(0x1d260DE91233e650F136Bf35f8A4ea1F2b68aDB6);
 
   address _defifaBallkidz = 0x11834239698c7336EF232C00a2A9926d3375DF9D;
+  IJBDelegatesRegistry _delegateRegistry =
+    IJBDelegatesRegistry(0xCe3Ebe8A7339D1f7703bAF363d26cD2b15D23C23);
 
   function run() external {
     vm.startBroadcast();
@@ -63,7 +69,8 @@ contract DeployGoerli is Script {
       address(_defifaGovernorCodeOrigin),
       address(_defifaTokenUriResolverCodeOrigin),
       controller,
-      _defifaBallkidz
+      _defifaBallkidz,
+      _delegateRegistry
     );
 
     console.log(address(_defifaDeployer));
