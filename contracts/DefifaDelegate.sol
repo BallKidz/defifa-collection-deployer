@@ -238,11 +238,20 @@ contract DefifaDelegate is IDefifaDelegate, JB721TieredGovernance {
     // Keep a reference to the tier.
     JB721Tier memory _tier = store.tier(address(this), _tierId);
 
+    // Get the tier Id.
+    uint256 _weight = _tierRedemptionWeights[_tierId - 1];
+
+    // If there's no weight there's nothing to redeem.
+    if (_weight == 0) return 0;
+
+    // If no tiers were minted, nothing to redeem.
+    if (_tier.initialQuantity - _tier.remainingQuantity == 0) return 0;
+    // TODO allow anyone to move leftover funds from unminted winning tiers to ballkids.
+
     // Calculate what percentage of the tier redemption amount a single token counts for.
     return
       // Tier's are 1 indexed and are stored 0 indexed.
-      _tierRedemptionWeights[_tierId - 1] /
-      (_tier.initialQuantity - _tier.remainingQuantity + _redeemedFromTier[_tierId]);
+      _weight / (_tier.initialQuantity - _tier.remainingQuantity + _redeemedFromTier[_tierId]);
   }
 
   //*********************************************************************//
