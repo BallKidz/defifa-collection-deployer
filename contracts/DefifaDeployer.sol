@@ -372,9 +372,6 @@ contract DefifaDeployer is IDefifaDeployer, IERC721Receiver {
     );
     _uriResolver.initialize(_delegate, _tierNames);
 
-    // Add the delegate to the registry, contract nonce starts at 1
-    delegatesRegistry.addDelegate(address(this), _nonce);
-    
     // Make sure the provided terminal accepts the same currency as this game is being played in.
     if (!_launchProjectData.terminal.acceptsToken(_launchProjectData.token, gameId)) revert UNEXPECTED_TERMINAL_CURRENCY();
 
@@ -388,9 +385,11 @@ contract DefifaDeployer is IDefifaDeployer, IERC721Receiver {
     // Transfer ownership to the specified owner.
     _delegate.transferOwnership(address(governor));
 
+    // Add the delegate to the registry, contract nonce starts at 1
+    delegatesRegistry.addDelegate(address(this), _nonce);
+    
     // Add three to the nonce because 3 contracts were deployed during this launch process.
     _nonce = _nonce + 3;
-
   }
 
   /**
