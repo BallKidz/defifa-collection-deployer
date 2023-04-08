@@ -333,7 +333,6 @@ var open = require_open();
 var dataURI = process.argv[process.argv.length - 1];
 var data = dataURI.split(",")[1];
 var byteString = Buffer.from(data, "base64");
-fs.writeFileSync("./src/buf.sh", byteString);
 var json = JSON.parse(byteString.toString("utf8"));
 var image = json.image;
 var imageData = image.split(",")[1];
