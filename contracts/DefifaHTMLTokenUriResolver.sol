@@ -173,7 +173,7 @@ contract DefifaHTMLTokenUriResolver is IDefifaTokenUriResolver, IJBTokenUriResol
     string memory _fontSize;
     if (bytes(_team).length < 3) _fontSize = '240';
     else if (bytes(_team).length < 5) _fontSize = '200';
-    else if (bytes(_team).length < 8) _fontSize = '140';
+    else if (bytes(_team).length < 7) _fontSize = '140';
     else if (bytes(_team).length < 10) _fontSize = '90';
     else if (bytes(_team).length < 12) _fontSize = '80';
     else if (bytes(_team).length < 16) _fontSize = '60';
