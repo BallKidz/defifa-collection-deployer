@@ -158,10 +158,9 @@ contract DefifaTokenUriResolver is IDefifaTokenUriResolver, IJBTokenUriResolver 
         _title,
         '","description":"Team: ',
         _team,
-        ', ID: ',
-        _tier.id,
-        '",',
-        '"image":"data:image/svg+xml;base64,'
+        ', ID: 1',
+        // _tier.id,
+        '","image":"data:image/svg+xml;base64,'
       )
     );
     string memory _titleFontSize;
@@ -179,7 +178,6 @@ contract DefifaTokenUriResolver is IDefifaTokenUriResolver, IJBTokenUriResolver 
     else if (bytes(_team).length < 30) _fontSize = '30';
     else if (bytes(_team).length < 35) _fontSize = '20';
     else _fontSize = '16';
-
     parts[2] = Base64.encode(
       abi.encodePacked(
         '<svg width="500" height="500" viewBox="0 0 100% 100%" xmlns="http://www.w3.org/2000/svg">',
@@ -196,19 +194,19 @@ contract DefifaTokenUriResolver is IDefifaTokenUriResolver, IJBTokenUriResolver 
         'px; font-family: Capsules-300; font-weight:300;">',
         _title,
         '</text>',
-        '<text x="10" y="60" style="font-size:16px; font-family: Capsules-300; font-weight:300; fill: #393059;">GAME ID: ',
-        _delegate.projectId(),
-        '</text>',
-        '<text x="10" y="440" style="font-size:16px; font-family: Capsules-300; font-weight:300; fill: #393059;">TOKEN ID:',
-        _tokenId,
-        '</text>',
-        '<text x="10" y="460" style="font-size:16px; font-family: Capsules-300; font-weight:300; fill: #393059;">VALUE: ~',
-        DefifaPercentFormatter.getFormattedPercentageOfRedemptionWeight(
-          _delegate.redemptionWeightOf(_tokenId),
-          _delegate.TOTAL_REDEMPTION_WEIGHT(),
-          _IMG_DECIMAL_FIDELITY
-        ),
-        ' of pot</text>',
+        // '<text x="10" y="60" style="font-size:16px; font-family: Capsules-300; font-weight:300; fill: #393059;">GAME ID: ',
+        // _delegate.projectId(),
+        // '</text>',
+        // '<text x="10" y="440" style="font-size:16px; font-family: Capsules-300; font-weight:300; fill: #393059;">TOKEN ID: ',
+        // _tokenId,
+        // '</text>',
+        // '<text x="10" y="460" style="font-size:16px; font-family: Capsules-300; font-weight:300; fill: #393059;">VALUE: ~',
+        // DefifaPercentFormatter.getFormattedPercentageOfRedemptionWeight(
+        //   _delegate.redemptionWeightOf(_tokenId),
+        //   _delegate.TOTAL_REDEMPTION_WEIGHT(),
+        //   _IMG_DECIMAL_FIDELITY
+        // ),
+        // ' of pot</text>',
         '<text x="10" y="480" style="font-size:16px; font-family: Capsules-300; font-weight:300; fill: #393059;">RARITY: 1/',
         _tier.initialQuantity - _tier.remainingQuantity,
         '</text>',
