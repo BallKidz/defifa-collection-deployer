@@ -207,9 +207,9 @@ contract DefifaTokenUriResolver is IDefifaTokenUriResolver, IJBTokenUriResolver 
         //   _IMG_DECIMAL_FIDELITY
         // ),
         // ' of pot</text>',
-        '<text x="10" y="480" style="font-size:16px; font-family: Capsules-300; font-weight:300; fill: #393059;">RARITY: 1/',
-        _tier.initialQuantity - _tier.remainingQuantity,
-        '</text>',
+        // '<text x="10" y="480" style="font-size:16px; font-family: Capsules-300; font-weight:300; fill: #393059;">RARITY: 1/',
+        // _tier.initialQuantity - _tier.remainingQuantity,
+        // '</text>',
         '<text textLength="500" lengthAdjust="spacing" x="50%" y="50%" style="font-size:',
         _fontSize,
         'px; font-family: Capsules-700; font-weight:700; text-anchor:middle; dominant-baseline:middle; ">',
