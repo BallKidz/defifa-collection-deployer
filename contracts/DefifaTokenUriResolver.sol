@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.16;
 
+import '@openzeppelin/contracts/utils/Strings.sol';
 import '@jbx-protocol/juice-contracts-v3/contracts/interfaces/IJBTokenUriResolver.sol';
 import '@jbx-protocol/juice-721-delegate/contracts/libraries/JBIpfsDecoder.sol';
 import 'lib/base64/base64.sol';
@@ -22,6 +23,8 @@ import './libraries/DefifaPercentFormatter.sol';
   IJBTokenUriResolver: Interface to ensure compatibility with 721Delegates.
 */
 contract DefifaTokenUriResolver is IDefifaTokenUriResolver, IJBTokenUriResolver {
+  using Strings for uint256;
+
   //*********************************************************************//
   // -------------------- private constant properties ------------------ //
   //*********************************************************************//
@@ -158,8 +161,8 @@ contract DefifaTokenUriResolver is IDefifaTokenUriResolver, IJBTokenUriResolver 
         _title,
         '","description":"Team: ',
         _team,
-        ', ID: 1',
-        // _tier.id,
+        ', ID: ',
+        _tier.id.toString(),
         '","image":"data:image/svg+xml;base64,'
       )
     );
@@ -178,6 +181,40 @@ contract DefifaTokenUriResolver is IDefifaTokenUriResolver, IJBTokenUriResolver 
     else if (bytes(_team).length < 30) _fontSize = '30';
     else if (bytes(_team).length < 35) _fontSize = '20';
     else _fontSize = '16';
+
+    // Get the current game phase.
+    uint256 _gamePhase = 1; //_delegate.fundingCycleStore().currentOf(delegate.projectId()).number;
+
+    string memory _gamePhaseText;
+
+    {
+      string memory _percentOfPot = DefifaPercentFormatter.getFormattedPercentageOfRedemptionWeight(
+        _delegate.redemptionWeightOf(_tokenId),
+        _delegate.TOTAL_REDEMPTION_WEIGHT(),
+        _IMG_DECIMAL_FIDELITY
+      );
+
+      if (_gamePhase == 0) _gamePhaseText = 'Minting starts soon.';
+      else if (_gamePhase == 1) _gamePhaseText = 'Game starts soon, minting and refunds are open.';
+      else if (_gamePhase == 2)
+        _gamePhaseText = 'Game starting, minting is closed. last chance for refunds.';
+      else if (_gamePhase == 3) _gamePhaseText = 'Game in progress.';
+      else if (_gamePhase == 4 && _delegate.tierRedemptionWeights().length == 0)
+        _gamePhaseText = 'Scorecard awaiting approval.';
+      else
+        _gamePhaseText = string(
+          abi.encodePacked('Scorecard ratified. Redeem this for ', _percentOfPot, ' of the pot.')
+        );
+    }
+
+    string memory _rarityText;
+    {
+      uint256 _totalMinted = _tier.initialQuantity - _tier.remainingQuantity;
+      if (_gamePhase == 1)
+        _rarityText = string(abi.encodePacked(_totalMinted.toString(), ' minted so far'));
+      else _rarityText = string(abi.encodePacked(_totalMinted.toString(), ' in existence'));
+    }
+
     parts[2] = Base64.encode(
       abi.encodePacked(
         '<svg width="500" height="500" viewBox="0 0 100% 100%" xmlns="http://www.w3.org/2000/svg">',
@@ -187,32 +224,32 @@ contract DefifaTokenUriResolver is IDefifaTokenUriResolver, IJBTokenUriResolver 
         '@font-face{font-family:"Capsules-700";src:url(data:font/truetype;charset=utf-8;base64,',
         DefifaFontImporter.getBeefyFontSource(),
         ');format("opentype");}',
-        'text{fill:#c0b3f1;white-space:pre-wrap; width:100%; }</style>',
+        'text{white-space:pre-wrap; width:100%; }</style>',
         '<rect width="100vw" height="100vh" fill="#181424"/>',
         '<text x="10" y="40" style="font-size:',
         _titleFontSize,
-        'px; font-family: Capsules-300; font-weight:300;">',
+        'px; font-family: Capsules-300; font-weight:300; fill: #fea282;">',
         _title,
         '</text>',
-        // '<text x="10" y="60" style="font-size:16px; font-family: Capsules-300; font-weight:300; fill: #393059;">GAME ID: ',
-        // _delegate.projectId(),
-        // '</text>',
-        // '<text x="10" y="440" style="font-size:16px; font-family: Capsules-300; font-weight:300; fill: #393059;">TOKEN ID: ',
-        // _tokenId,
-        // '</text>',
-        // '<text x="10" y="460" style="font-size:16px; font-family: Capsules-300; font-weight:300; fill: #393059;">VALUE: ~',
-        // DefifaPercentFormatter.getFormattedPercentageOfRedemptionWeight(
-        //   _delegate.redemptionWeightOf(_tokenId),
-        //   _delegate.TOTAL_REDEMPTION_WEIGHT(),
-        //   _IMG_DECIMAL_FIDELITY
-        // ),
-        // ' of pot</text>',
-        // '<text x="10" y="480" style="font-size:16px; font-family: Capsules-300; font-weight:300; fill: #393059;">RARITY: 1/',
-        // _tier.initialQuantity - _tier.remainingQuantity,
-        // '</text>',
+        '<text x="10" y="60" style="font-size:16px; font-family: Capsules-300; font-weight:300; fill: #c0b3f1;">GAME PROGRESS: Phase ',
+        _gamePhase.toString(),
+        ' of 4',
+        '</text>',
+        '<text x="10" y="80" style="font-size:16px; font-family: Capsules-300; font-weight:300; fill: #ed017c;">',
+        _gamePhaseText,
+        '</text>',
+        '<text x="10" y="440" style="font-size:16px; font-family: Capsules-300; font-weight:300; fill: #c0b3f1;">DEFIFA GAME ID: ',
+        _delegate.projectId().toString(),
+        '</text>',
+        '<text x="10" y="460" style="font-size:16px; font-family: Capsules-300; font-weight:300; fill: #c0b3f1;">TOKEN ID: ',
+        _tokenId.toString(),
+        '</text>',
+        '<text x="10" y="480" style="font-size:16px; font-family: Capsules-300; font-weight:300; fill: #c0b3f1;">RARITY: ',
+        _rarityText,
+        '</text>',
         '<text textLength="500" lengthAdjust="spacing" x="50%" y="50%" style="font-size:',
         _fontSize,
-        'px; font-family: Capsules-700; font-weight:700; text-anchor:middle; dominant-baseline:middle; ">',
+        'px; font-family: Capsules-700; font-weight:700; fill:#fea282; text-anchor:middle; dominant-baseline:middle; ">',
         _team,
         '</text>',
         '</svg>'

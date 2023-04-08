@@ -355,7 +355,7 @@ contract DefifaDeployer is IDefifaDeployer, IERC721Receiver {
     _delegate.initialize(
       gameId,
       controller.directory(),
-      string.concat('DEFIFA: ', _launchProjectData.name),
+      _launchProjectData.name,
       string.concat('DEFIFA ', gameId.toString()),
       controller.fundingCycleStore(),
       _launchProjectData.baseUri,
