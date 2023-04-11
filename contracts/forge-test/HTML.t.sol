@@ -6,6 +6,7 @@ import 'forge-std/Test.sol';
 import '@openzeppelin/contracts/proxy/Clones.sol';
 import '@jbx-protocol/juice-contracts-v3/contracts/libraries/JBTokens.sol';
 import '@jbx-protocol/juice-contracts-v3/contracts/interfaces/IJBDirectory.sol';
+import '@jbx-protocol/juice-contracts-v3/contracts/interfaces/IJBController.sol';
 import '@jbx-protocol/juice-contracts-v3/contracts/interfaces/IJBFundingCycleStore.sol';
 import '@jbx-protocol/juice-721-delegate/contracts/interfaces/IJBTiered721DelegateStore.sol';
 import '../DefifaDelegate.sol';
@@ -23,13 +24,13 @@ contract EmptyTest is Test {
 
   address defifaBallkidz = address(0);
   address delegateRegistry = address(0);
-      
+
   function testOutput() public {
     DefifaDelegate _delegate = DefifaDelegate(Clones.clone(address(new DefifaDelegate())));
     DefifaHTMLTokenUriResolver _resolver = DefifaHTMLTokenUriResolver(
       Clones.clone(address(new DefifaHTMLTokenUriResolver()))
     );
-    
+
     JB721TierParams[] memory _tiers = new JB721TierParams[](1);
     _tiers[0] = JB721TierParams({
       contributionFloor: 1E18,

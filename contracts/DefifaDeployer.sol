@@ -327,7 +327,7 @@ contract DefifaDeployer is IDefifaDeployer, IERC721Receiver {
         royaltyRate: _defifaTier.royaltyRate,
         royaltyBeneficiary: _defifaTier.royaltyBeneficiary,
         encodedIPFSUri: _defifaTier.encodedIPFSUri,
-        category: 0,
+        category: 1,
         allowManualMint: false,
         shouldUseReservedTokenBeneficiaryAsDefault: _defifaTier.shouldUseReservedTokenBeneficiaryAsDefault, 
         shouldUseRoyaltyBeneficiaryAsDefault: false,
