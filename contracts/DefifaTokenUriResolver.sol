@@ -196,13 +196,14 @@ contract DefifaTokenUriResolver is IDefifaTokenUriResolver, IJBTokenUriResolver 
 
       if (_gamePhase == 0) _gamePhaseText = 'Minting starts soon.';
       else if (_gamePhase == 1) _gamePhaseText = 'Game starts soon, minting and refunds are open.';
-      else if (_gamePhase == 2) _gamePhaseText = 'Game starting. Last chance for refunds.';
+      else if (_gamePhase == 2)
+        _gamePhaseText = 'Game starting, minting is closed. last chance for refunds.';
       else if (_gamePhase == 3) _gamePhaseText = 'Game in progress.';
       else if (_gamePhase == 4 && _delegate.tierRedemptionWeights().length == 0)
         _gamePhaseText = 'Scorecard awaiting approval.';
       else
         _gamePhaseText = string(
-          abi.encodePacked('Game over. This token worth ', _percentOfPot, ' of pot.')
+          abi.encodePacked('Scorecard ratified. Redeem this for ', _percentOfPot, ' of the pot.')
         );
     }
 

@@ -23,13 +23,13 @@ contract EmptyTest is Test {
 
   address defifaBallkidz = address(0);
   address delegateRegistry = address(0);
-
+      
   function testOutput() public {
     DefifaDelegate _delegate = DefifaDelegate(Clones.clone(address(new DefifaDelegate())));
     DefifaHTMLTokenUriResolver _resolver = DefifaHTMLTokenUriResolver(
       Clones.clone(address(new DefifaHTMLTokenUriResolver()))
     );
-
+    
     JB721TierParams[] memory _tiers = new JB721TierParams[](1);
     _tiers[0] = JB721TierParams({
       contributionFloor: 1E18,
@@ -40,7 +40,9 @@ contract EmptyTest is Test {
       reservedTokenBeneficiary: address(0),
       royaltyRate: 0,
       royaltyBeneficiary: address(0),
-      encodedIPFSUri: bytes32(''),
+      // encodedIPFSUri: encodeIPFS('QmSX1ktBWiTX1BJs8hDEVN93vRVJq6iNrpR36ByjRXfLra'),
+      encodedIPFSUri: bytes32(0xc425bad3a9a07b60af6037e9ee61a7a67f07f8781611cef220923264ca75d609),
+      // returns QmNLei78zWmzUdbeRB3CiUfAizWUrbeeZh5K1rhAQKCh51 but should be QmZJUHkLG2dqc4yKBAxk3YwUyiCAP3s4phphoT7wtppe6V
       category: 1,
       allowManualMint: false,
       shouldUseReservedTokenBeneficiaryAsDefault: false,
@@ -53,7 +55,7 @@ contract EmptyTest is Test {
       _name: 'Example collection',
       _symbol: 'EX',
       _fundingCycleStore: _fundingCycleStore,
-      _baseUri: '',
+      _baseUri: 'ipfs://',
       _tokenUriResolver: _resolver,
       _contractUri: '',
       _pricing: JB721PricingParams({
@@ -72,13 +74,13 @@ contract EmptyTest is Test {
     });
 
     string[] memory _tierNames = new string[](1);
-    _tierNames[0] = 'Arsenal';
+    _tierNames[0] = 'Cleveland';
 
     _resolver.initialize(_delegate, _tierNames);
 
     string[] memory inputs = new string[](3);
     inputs[0] = 'node';
-    inputs[1] = './open.js';
+    inputs[1] = './openHTML.js';
     inputs[2] = _resolver.getUri(1000000001);
     bytes memory res = vm.ffi(inputs);
     res;
