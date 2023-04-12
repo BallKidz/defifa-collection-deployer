@@ -256,7 +256,7 @@ contract DefifaHTMLTokenUriResolver is IDefifaTokenUriResolver, IJBTokenUriResol
            '";',
            'let txt_1 ="',
             _title,
-           '";let txt_1Size =',
+           '".toUpperCase();let txt_1Size =',
             _titleFontSize,
            ';let txt_1Color = "#17e4f1";let txt_1_x = 40;let txt_1_y = 80;',
            'let txt_2 ="GAME PHASE ',
