@@ -74,9 +74,9 @@ contract DefifaDeployer is IDefifaDeployer, IERC721Receiver {
   
   /** 
     @notice 
-    This contract current nonce, used for the registry
+    This contract current nonce, used for the registry initialized at 1 since the first contract deployed is the delegate
   */
-  uint256 internal _nonce;
+  uint256 internal _nonce = 1;
 
   //*********************************************************************//
   // ------------------------ public constants ------------------------- //
@@ -319,7 +319,7 @@ contract DefifaDeployer is IDefifaDeployer, IERC721Receiver {
       // Set the tier.
       _delegateTiers[_i] = JB721TierParams({
         contributionFloor: _defifaTier.price,
-        initialQuantity: type(uint40).max,
+        initialQuantity: 1_000_000_000, // The max allowed value.
         votingUnits: 1,
         lockedUntil: 0,
         reservedRate: _defifaTier.reservedRate,
@@ -387,7 +387,7 @@ contract DefifaDeployer is IDefifaDeployer, IERC721Receiver {
 
     // Add the delegate to the registry, contract nonce starts at 1
     delegatesRegistry.addDelegate(address(this), _nonce);
-    
+
     // Add three to the nonce because 3 contracts were deployed during this launch process.
     _nonce = _nonce + 3;
   }
