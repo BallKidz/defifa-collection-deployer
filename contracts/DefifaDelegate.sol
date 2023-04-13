@@ -724,6 +724,7 @@ contract DefifaDelegate is IDefifaDelegate, JB721Delegate, Ownable, IERC2981 {
       }
     }
 
+    // Delegate voting to the beneficiary.
     _tierDelegation[_reservedTokenBeneficiary][_tierId] = _reservedTokenBeneficiary;
 
     // Keep a reference to the tier.
