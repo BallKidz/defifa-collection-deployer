@@ -319,7 +319,7 @@ contract DefifaDeployer is IDefifaDeployer, IERC721Receiver {
       // Set the tier.
       _delegateTiers[_i] = JB721TierParams({
         contributionFloor: _defifaTier.price,
-        initialQuantity: 1_000_000_000, // The max allowed value.
+        initialQuantity: 999_999_999, // The max allowed value.
         votingUnits: 1,
         lockedUntil: 0,
         reservedRate: _defifaTier.reservedRate,
