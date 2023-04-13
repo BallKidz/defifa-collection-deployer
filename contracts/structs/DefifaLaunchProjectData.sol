@@ -3,6 +3,7 @@ pragma solidity ^0.8.0;
 
 import '@jbx-protocol/juice-721-delegate/contracts/interfaces/IJBTiered721DelegateStore.sol';
 import '@jbx-protocol/juice-contracts-v3/contracts/interfaces/IJBPaymentTerminal.sol';
+import '@jbx-protocol/juice-contracts-v3/contracts/interfaces/IJBTokenUriResolver.sol';
 import '@jbx-protocol/juice-contracts-v3/contracts/structs/JBProjectMetadata.sol';
 import '@jbx-protocol/juice-contracts-v3/contracts/structs/JBSplit.sol';
 import './DefifaTierParams.sol';
@@ -19,6 +20,7 @@ import './DefifaTimeData.sol';
   @member distributionLimit The amount of funds to distribute from the pot during the game's second phase.
   @member ballkidzFeeProjectTokenAccount The address that should be sent Defifa Ballkidz tokens that are minted from paying the fee.
   @member votingPeriod The time the vote will be active for once it has started, measured in blocks.
+  @member defaultTokenUriResolver The contract used to resolve token URIs if not provided by a tier specifically.
   @member terminal A payment terminal to add for the project.
   @member store A contract to store standard 721 data in.
 */
@@ -37,6 +39,7 @@ struct DefifaLaunchProjectData {
   uint88 distributionLimit;
   address payable ballkidzFeeProjectTokenAccount;
   uint256 votingPeriod;
+  IJBTokenUriResolver defaultTokenUriResolver;
   IJBPaymentTerminal terminal;
   IJBTiered721DelegateStore store;
 }

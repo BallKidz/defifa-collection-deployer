@@ -351,7 +351,10 @@ contract DefifaDeployer is IDefifaDeployer, IERC721Receiver {
 
     // Clone and initialize the new delegate with a new token uri resolver.
     DefifaDelegate _delegate = DefifaDelegate(Clones.clone(delegateCodeOrigin));
-    DefifaTokenUriResolver _uriResolver = DefifaTokenUriResolver(Clones.clone(tokenUriResolverCodeOrigin));
+
+    // Use the default uri resolver if provided, else use the hardcoded generic default.
+    IJBTokenUriResolver _uriResolver = _launchProjectData.defaultTokenUriResolver != IJBTokenUriResolver(address(0)) ? _launchProjectData.defaultTokenUriResolver : DefifaTokenUriResolver(Clones.clone(tokenUriResolverCodeOrigin));
+    
     _delegate.initialize(
       gameId,
       controller.directory(),
@@ -370,7 +373,12 @@ contract DefifaDeployer is IDefifaDeployer, IERC721Receiver {
           lockManualMintingChanges: false
       })
     );
-    _uriResolver.initialize(_delegate, _tierNames);
+
+    // Initialize the fallback defauly uri resolver if needed.
+    if (_launchProjectData.defaultTokenUriResolver == IJBTokenUriResolver(address(0))) {
+
+    DefifaTokenUriResolver(address(_uriResolver)).initialize(_delegate, _tierNames);
+    }
 
     // Make sure the provided terminal accepts the same currency as this game is being played in.
     if (!_launchProjectData.terminal.acceptsToken(_launchProjectData.token, gameId)) revert UNEXPECTED_TERMINAL_CURRENCY();

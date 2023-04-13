@@ -17,8 +17,9 @@ import '@jbx-protocol/juice-721-delegate/contracts/JBTiered721DelegateStore.sol'
 contract DefifaGovernorTest is TestBaseWorkflow {
   using JBFundingCycleMetadataResolver for JBFundingCycle;
   DefifaDeployer deployer;
-  
+
   address projectOwner = address(bytes20(keccak256('projectOwner')));
+
   function setUp() public virtual override {
     super.setUp();
     DefifaDelegate _delegate = new DefifaDelegate();
@@ -35,6 +36,7 @@ contract DefifaGovernorTest is TestBaseWorkflow {
       IJBDelegatesRegistry(address(_registry))
     );
   }
+
   function testReceiveVotingPower(uint8 nTiers, uint8 tier) public {
     vm.assume(nTiers < 100);
     vm.assume(nTiers >= tier);
@@ -90,15 +92,13 @@ contract DefifaGovernorTest is TestBaseWorkflow {
     assertEq(_nft.store().tier(address(_nft), tier).votingUnits, 100);
     assertEq(_governor.MAX_VOTING_POWER_TIER(), _governor.getVotes(_user, block.number - 1));
   }
+
   function testRefund_fails_afterMintPhase() external {
     uint8 nTiers = 10;
     address[] memory _users = new address[](nTiers);
     DefifaLaunchProjectData memory defifaData = getBasicDefifaLaunchData();
-    (uint256 _projectId, DefifaDelegate _nft, ) = createDefifaProject(
-      uint256(nTiers),
-      defifaData
-    );
-      // Phase 1: Mint
+    (uint256 _projectId, DefifaDelegate _nft, ) = createDefifaProject(uint256(nTiers), defifaData);
+    // Phase 1: Mint
     vm.warp(defifaData.start - defifaData.mintDuration - defifaData.refundPeriodDuration);
     deployer.queueNextPhaseOf(_projectId);
     for (uint256 i = 0; i < nTiers; i++) {
@@ -138,7 +138,7 @@ contract DefifaGovernorTest is TestBaseWorkflow {
       vm.prank(_users[i]);
       _nft.setTierDelegates(tiered721SetDelegatesData);
     }
-     // Phase 2: Redeem
+    // Phase 2: Redeem
     vm.warp(block.timestamp + defifaData.mintDuration);
     deployer.queueNextPhaseOf(_projectId);
     // Phase 3: Start
@@ -199,14 +199,12 @@ contract DefifaGovernorTest is TestBaseWorkflow {
       });
     }
   }
+
   function testMint_fails_afterMintPhase() external {
     uint8 nTiers = 10;
     address[] memory _users = new address[](nTiers);
     DefifaLaunchProjectData memory defifaData = getBasicDefifaLaunchData();
-    (uint256 _projectId,,) = createDefifaProject(
-      uint256(nTiers),
-      defifaData
-    );
+    (uint256 _projectId, , ) = createDefifaProject(uint256(nTiers), defifaData);
     // Phase 1: minting
     vm.warp(defifaData.start - defifaData.mintDuration - defifaData.refundPeriodDuration);
     deployer.queueNextPhaseOf(_projectId);
@@ -314,6 +312,7 @@ contract DefifaGovernorTest is TestBaseWorkflow {
       );
     }
   }
+
   // Transfers are no longer disabled
   // function testTransfer_fails_afterTradeDeadline() external {
   //   uint8 nTiers = 10;
@@ -458,6 +457,7 @@ contract DefifaGovernorTest is TestBaseWorkflow {
     vm.expectRevert('Governor: proposal not successful');
     _governor.ratifyScorecard(scorecards);
   }
+
   function testSetRedemptionRates_fails_declined() external {
     uint8 nTiers = 10;
     address[] memory _users = new address[](nTiers);
@@ -536,7 +536,7 @@ contract DefifaGovernorTest is TestBaseWorkflow {
       vm.prank(_users[i]);
       _governor.castVote(_proposalId, 0);
     }
-   // Phase 4: End
+    // Phase 4: End
     vm.warp(deployer.endOf(_projectId));
     vm.roll(deployer.endOf(_projectId));
     vm.warp(block.timestamp + 1 weeks);
@@ -544,6 +544,7 @@ contract DefifaGovernorTest is TestBaseWorkflow {
     vm.expectRevert('Governor: proposal not successful');
     _governor.ratifyScorecard(scorecards);
   }
+
   function testSetRedemptionRatesAndRedeem_multipleTiers(
     uint8 nTiers,
     uint8[] calldata distribution
@@ -599,7 +600,7 @@ contract DefifaGovernorTest is TestBaseWorkflow {
     }
     // Have a user mint and refund the tier
     mintAndRefund(_nft, _projectId, 1);
-     // Phase 2: Redeem
+    // Phase 2: Redeem
     vm.warp(block.timestamp + defifaData.mintDuration);
     deployer.queueNextPhaseOf(_projectId);
     // Phase 3: Start
@@ -671,12 +672,13 @@ contract DefifaGovernorTest is TestBaseWorkflow {
       _expectedTierRedemption = (_expectedTierRedemption * distribution[i]) / _sumDistribution;
       // Assert that our expected tier redemption is ~equal to the actual amount
       // Allowing for some rounding errors, max allowed error is 0.000001 ether
-      assertLt(_expectedTierRedemption - _user.balance, 10**12);
+      assertLt(_expectedTierRedemption - _user.balance, 10 ** 12);
     }
     // All NFTs should have been redeemed, only some dust should be left
     // Max allowed dust is 0.0001
-    assertLt(address(_terminals[0]).balance, 10**14);
+    assertLt(address(_terminals[0]).balance, 10 ** 14);
   }
+
   function testSetRedemptionRatesAndRedeem_singleTier(
     uint8 nUsersWithWinningTier,
     uint8 winningTierExtraWeight,
@@ -687,7 +689,7 @@ contract DefifaGovernorTest is TestBaseWorkflow {
     uint256 totalWeight = baseRedemptionWeight * (nOfOtherTiers + 1) + winningTierExtraWeight;
     vm.assume(totalWeight > 1);
     address[] memory _users = new address[](nOfOtherTiers + nUsersWithWinningTier);
-     DefifaLaunchProjectData memory defifaData = getBasicDefifaLaunchData();
+    DefifaLaunchProjectData memory defifaData = getBasicDefifaLaunchData();
     (uint256 _projectId, DefifaDelegate _nft, DefifaGovernor _governor) = createDefifaProject(
       uint256(nOfOtherTiers + 1), // All users will buying the same tier
       defifaData
@@ -828,26 +830,25 @@ contract DefifaGovernorTest is TestBaseWorkflow {
       }
       uint256 _expectedTierRedemption;
       {
-      // Calculate how much weight his tier has
-      uint256 _tierWeight = _tier == nOfOtherTiers + 1
-        ? uint256(baseRedemptionWeight) + uint256(winningTierExtraWeight)
-        : baseRedemptionWeight;
-      // If the redemption is 0 this will revert
-      if (_tierWeight == 0) vm.expectRevert(abi.encodeWithSignature('NOTHING_TO_CLAIM()'));
-      vm.prank(_user);
-      JBETHPaymentTerminal(address(_terminals[0])).redeemTokensOf({
-        _holder: _user,
-        _projectId: _projectId,
-        _tokenCount: 0,
-        _token: address(0),
-        _minReturnedTokens: 0,
-        _beneficiary: payable(_user),
-        _memo: 'imma out of here',
-        _metadata: redemptionMetadata
-      });
-      // We calculate the expected output based on the given distribution and how much is in the pot
-      _expectedTierRedemption = (uint256(_users.length) * 1 ether * _tierWeight) /
-        totalWeight;
+        // Calculate how much weight his tier has
+        uint256 _tierWeight = _tier == nOfOtherTiers + 1
+          ? uint256(baseRedemptionWeight) + uint256(winningTierExtraWeight)
+          : baseRedemptionWeight;
+        // If the redemption is 0 this will revert
+        if (_tierWeight == 0) vm.expectRevert(abi.encodeWithSignature('NOTHING_TO_CLAIM()'));
+        vm.prank(_user);
+        JBETHPaymentTerminal(address(_terminals[0])).redeemTokensOf({
+          _holder: _user,
+          _projectId: _projectId,
+          _tokenCount: 0,
+          _token: address(0),
+          _minReturnedTokens: 0,
+          _beneficiary: payable(_user),
+          _memo: 'imma out of here',
+          _metadata: redemptionMetadata
+        });
+        // We calculate the expected output based on the given distribution and how much is in the pot
+        _expectedTierRedemption = (uint256(_users.length) * 1 ether * _tierWeight) / totalWeight;
       }
       {
         // If this is the winning tier then the amount is divided among the nUsersWithWinningTier
@@ -856,12 +857,13 @@ contract DefifaGovernorTest is TestBaseWorkflow {
       }
       // Assert that our expected tier redemption is ~equal to the actual amount
       // Allowing for some rounding errors, max allowed error is 0.000001 ether
-      assertLt(_expectedTierRedemption - _user.balance, 10**12);
+      assertLt(_expectedTierRedemption - _user.balance, 10 ** 12);
     }
     // All NFTs should have been redeemed, only some dust should be left
     // Max allowed dust is 0.0001
-    assertLt(address(_terminals[0]).balance, 10**14);
+    assertLt(address(_terminals[0]).balance, 10 ** 14);
   }
+
   function testPhaseTimes(
     uint16 _durationUntilProjectLaunch,
     uint16 _mintDuration,
@@ -880,23 +882,22 @@ contract DefifaGovernorTest is TestBaseWorkflow {
       uint48(_mintDuration) +
       uint48(_inBetweenMintAndFifa) +
       uint48(_fifaDuration);
-    
 
     DefifaTierParams[] memory tierParams = new DefifaTierParams[](1);
     tierParams[0] = DefifaTierParams({
-        price: 1 ether,
-        reservedRate: 1001,
-        reservedTokenBeneficiary: address(0),
-        royaltyRate: 0,
-        royaltyBeneficiary: address(0),
-        encodedIPFSUri: bytes32(0), // this way we dont need more tokenUris
-        shouldUseReservedTokenBeneficiaryAsDefault: false,
-        name: "DEFIFA"
+      price: 1 ether,
+      reservedRate: 1001,
+      reservedTokenBeneficiary: address(0),
+      royaltyRate: 0,
+      royaltyBeneficiary: address(0),
+      encodedIPFSUri: bytes32(0), // this way we dont need more tokenUris
+      shouldUseReservedTokenBeneficiaryAsDefault: false,
+      name: 'DEFIFA'
     });
     DefifaLaunchProjectData memory _launchData = DefifaLaunchProjectData({
-      name: "DEFIFA",
-      contractUri: "",
-      baseUri: "",
+      name: 'DEFIFA',
+      contractUri: '',
+      baseUri: '',
       projectMetadata: JBProjectMetadata({content: '', domain: 0}),
       token: JBTokens.ETH,
       mintDuration: 1 days,
@@ -909,6 +910,7 @@ contract DefifaGovernorTest is TestBaseWorkflow {
       votingPeriod: 100381,
       tiers: tierParams,
       ballkidzFeeProjectTokenAccount: payable(0x1000000000000000000000000000000000000000),
+      defaultTokenUriResolver: IJBTokenUriResolver(address(0)),
       terminal: _jbETHPaymentTerminal
     });
     (uint256 _projectId, DefifaDelegate _nft, ) = createDefifaProject(uint256(10), _launchData);
@@ -943,6 +945,7 @@ contract DefifaGovernorTest is TestBaseWorkflow {
     vm.warp(_launchProjectAt + _mintDuration + _inBetweenMintAndFifa + _fifaDuration);
     assertEq(_jbFundingCycleStore.currentOf(_projectId).number, 4);
   }
+
   function testWhenPhaseIsAlreadyQueued() public {
     uint8 nTiers = 10;
     address[] memory _users = new address[](nTiers);
@@ -997,11 +1000,12 @@ contract DefifaGovernorTest is TestBaseWorkflow {
     // Phase 2: Redeem
     vm.warp(block.timestamp + defifaData.mintDuration);
     deployer.queueNextPhaseOf(_projectId);
-     // Right at the end of Phase 2
+    // Right at the end of Phase 2
     vm.warp(defifaData.start - 1);
     vm.expectRevert(abi.encodeWithSignature('PHASE_ALREADY_QUEUED()'));
     deployer.queueNextPhaseOf(_projectId);
   }
+
   function testSettingTierRedemptionWeightBeforeEndPhase() public {
     uint8 nTiers = 10;
     address[] memory _users = new address[](nTiers);
@@ -1085,6 +1089,7 @@ contract DefifaGovernorTest is TestBaseWorkflow {
     vm.expectRevert('Governor: proposal not successful'); // phhase 4 not reached yet
     _governor.ratifyScorecard(scorecards);
   }
+
   function testWhenRedemptionWeightisMoreThanMaxRedemptionWeight() public {
     uint8 nTiers = 10;
     address[] memory _users = new address[](nTiers);
@@ -1174,25 +1179,25 @@ contract DefifaGovernorTest is TestBaseWorkflow {
     vm.expectRevert(abi.encodeWithSignature('INVALID_REDEMPTION_WEIGHTS()'));
     _governor.ratifyScorecard(scorecards);
   }
-  function getBasicDefifaLaunchData() internal returns (DefifaLaunchProjectData memory) {
 
+  function getBasicDefifaLaunchData() internal returns (DefifaLaunchProjectData memory) {
     DefifaTierParams[] memory tierParams = new DefifaTierParams[](1);
     tierParams[0] = DefifaTierParams({
-        price: 1 ether,
-        reservedRate: 1001,
-        reservedTokenBeneficiary: address(0),
-        royaltyRate: 0,
-        royaltyBeneficiary: address(0),
-        encodedIPFSUri: bytes32(0), // this way we dont need more tokenUris
-        shouldUseReservedTokenBeneficiaryAsDefault: false,
-        name: "DEFIFA"
+      price: 1 ether,
+      reservedRate: 1001,
+      reservedTokenBeneficiary: address(0),
+      royaltyRate: 0,
+      royaltyBeneficiary: address(0),
+      encodedIPFSUri: bytes32(0), // this way we dont need more tokenUris
+      shouldUseReservedTokenBeneficiaryAsDefault: false,
+      name: 'DEFIFA'
     });
 
     return
       DefifaLaunchProjectData({
-        name: "DEFIFA",
-        contractUri: "",
-        baseUri: "",
+        name: 'DEFIFA',
+        contractUri: '',
+        baseUri: '',
         projectMetadata: JBProjectMetadata({content: '', domain: 0}),
         token: JBTokens.ETH,
         mintDuration: 1 days,
@@ -1204,25 +1209,21 @@ contract DefifaGovernorTest is TestBaseWorkflow {
         distributionLimit: 0,
         votingPeriod: 100381,
         tiers: tierParams,
+        defaultTokenUriResolver: IJBTokenUriResolver(address(0)),
         ballkidzFeeProjectTokenAccount: payable(0x1000000000000000000000000000000000000000),
-       terminal: _jbETHPaymentTerminal
-       });
+        terminal: _jbETHPaymentTerminal
+      });
   }
+
   // ----- internal helpers ------
-  function createDefifaProject(uint256 nTiers, DefifaLaunchProjectData memory defifaLaunchData)
-    internal
-    returns (
-      uint256 projectId,
-      DefifaDelegate nft,
-      DefifaGovernor governor
-    )
-  {
+  function createDefifaProject(
+    uint256 nTiers,
+    DefifaLaunchProjectData memory defifaLaunchData
+  ) internal returns (uint256 projectId, DefifaDelegate nft, DefifaGovernor governor) {
     (JBDeployTiered721DelegateData memory NFTRewardDeployerData, ) = createData(nTiers);
     string[] memory _names = new string[](0);
     IDefifaGovernor _governor;
-    (projectId, _governor) = deployer.launchGameWith(
-      defifaLaunchData
-    );
+    (projectId, _governor) = deployer.launchGameWith(defifaLaunchData);
     governor = DefifaGovernor(payable(address(_governor)));
     // Get a reference to the latest configured funding cycle's data source, which should be the delegate that was deployed and attached to the project.
     JBFundingCycle memory _fc = _jbFundingCycleStore.currentOf(projectId);
@@ -1231,11 +1232,8 @@ contract DefifaGovernorTest is TestBaseWorkflow {
     }
     nft = DefifaDelegate(_fc.dataSource());
   }
-  function mintAndRefund(
-    DefifaDelegate _delegate,
-    uint256 _projectId,
-    uint256 _tierId
-  ) internal {
+
+  function mintAndRefund(DefifaDelegate _delegate, uint256 _projectId, uint256 _tierId) internal {
     JB721Tier memory _tier = _delegate.store().tier(address(_delegate), _tierId);
     uint256 _cost = _tier.contributionFloor;
     address _refundUser = address(bytes20(keccak256('refund_user')));
@@ -1295,6 +1293,7 @@ contract DefifaGovernorTest is TestBaseWorkflow {
     // User should no longer have the NFT
     assertEq(_delegate.balanceOf(_refundUser), 0);
   }
+
   // Create launchProjectFor(..) payload
   string name = 'NAME';
   string symbol = 'SYM';
@@ -1314,7 +1313,10 @@ contract DefifaGovernorTest is TestBaseWorkflow {
     bytes32(0x7D5A99F603F231D53A4F39D1521F98D2E8BB279CF29BEBFD0687DC98458E7F89),
     bytes32(0x7D5A99F603F231D53A4F39D1521F98D2E8BB279CF29BEBFD0687DC98458E7F89)
   ];
-  function createData(uint256 n_tiers)
+
+  function createData(
+    uint256 n_tiers
+  )
     internal
     returns (
       JBDeployTiered721DelegateData memory NFTRewardDeployerData,
@@ -1375,6 +1377,7 @@ contract DefifaGovernorTest is TestBaseWorkflow {
       memo: ''
     });
   }
+
   function _generateTokenId(uint256 _tierId, uint256 _tokenNumber) internal pure returns (uint256) {
     return (_tierId * 1_000_000_000) + _tokenNumber;
   }

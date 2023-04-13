@@ -701,11 +701,20 @@ contract DefifaDelegate is IDefifaDelegate, JB721Delegate, Ownable, IERC2981 {
       )
     ) revert RESERVED_TOKEN_MINTING_PAUSED();
 
-    // Record the minted reserves for the tier.
-    uint256[] memory _tokenIds = store.recordMintReservesFor(_tierId, _count);
-
     // Keep a reference to the reserved token beneficiary.
     address _reservedTokenBeneficiary = store.reservedTokenBeneficiaryOf(address(this), _tierId);
+
+    // Get a reference to the old delegate.
+    address _oldDelegate = _tierDelegation[_reservedTokenBeneficiary][_tierId];
+
+    // Set the delegate as the beneficiary if the beneficiary hasn't already set a delegate.
+    if (_oldDelegate == address(0)) {
+      _tierDelegation[_reservedTokenBeneficiary][_tierId] = _reservedTokenBeneficiary;
+      emit DelegateChanged(_reservedTokenBeneficiary, address(0), _reservedTokenBeneficiary);
+    }
+
+    // Record the minted reserves for the tier.
+    uint256[] memory _tokenIds = store.recordMintReservesFor(_tierId, _count);
 
     // Keep a reference to the token ID being iterated on.
     uint256 _tokenId;
@@ -724,20 +733,17 @@ contract DefifaDelegate is IDefifaDelegate, JB721Delegate, Ownable, IERC2981 {
       }
     }
 
-    // Delegate voting to the beneficiary.
-    _tierDelegation[_reservedTokenBeneficiary][_tierId] = _reservedTokenBeneficiary;
-
     // Keep a reference to the tier.
     JB721Tier memory _tier = store.tier(address(this), _tierId);
 
-    // Transfer the voting units.
+    // Transfer the voting units to the delegate.
     _transferTierVotingUnits(
       address(0),
-      _reservedTokenBeneficiary,
+      // Use the old delegate if there is one.
+      _oldDelegate != address(0) ? _oldDelegate : _reservedTokenBeneficiary,
       _tierId,
-      _tier.contributionFloor
+      _tier.contributionFloor * _tokenIds.length
     );
-    emit DelegateChanged(_reservedTokenBeneficiary, address(0), _reservedTokenBeneficiary);
   }
 
   /**
@@ -794,57 +800,69 @@ contract DefifaDelegate is IDefifaDelegate, JB721Delegate, Ownable, IERC2981 {
       // Make sure something is being minted.
       if (_tierIdsToMint.length == 0) revert NOTHING_TO_MINT();
 
+      // Delegate to the specified address, or to the payer.
+      address _votingDelegate = _votingDelegateSegment != bytes32('')
+        ? address(uint160(uint256(_votingDelegateSegment)))
+        : address(0);
+
+      // Keep a reference to the current tier ID.
+      uint256 _currentTierId = _tierIdsToMint[0];
+
+      // Keep a reference to the number of voting units currently accumulated for the given tier.
+      uint256 _votingUnitsForCurrentTier;
+
+      // The price of the tier being iterated on.
+      uint256 _price;
+
+      // Keep a reference to the number of tiers.
+      uint256 _numberOfTiers = _tierIdsToMint.length;
+
+      // Transfer voting power for each tier.
+      for (uint256 _i; _i < _numberOfTiers; ) {
+        // Keep track of the current tier being iterated on and its price.
+        if (_currentTierId != _tierIdsToMint[_i]) {
+          _currentTierId = _tierIdsToMint[_i];
+          _price = store.tier(address(this), _tierIdsToMint[_i]).contributionFloor;
+        }
+
+        // Get a reference to the old delegate.
+        address _oldDelegate = _tierDelegation[_data.payer][_currentTierId];
+
+        // If there's either a new delegate or old delegate, increase the delegate weight.
+        if (_votingDelegate != address(0) || _oldDelegate != address(0)) {
+          // Increment the total voting units for the tier based on price.
+          if (_i < _numberOfTiers - 1 && _tierIdsToMint[_i + 1] == _currentTierId) {
+            _votingUnitsForCurrentTier += _price;
+            // Set the tier's total voting power.
+          } else {
+            // Switch delegates if needed.
+            if (_votingDelegate != address(0) && _votingDelegate != _oldDelegate)
+              _delegateTier(_data.payer, _votingDelegate, _currentTierId);
+
+            // Transfer the new voting units.
+            _transferTierVotingUnits(
+              address(0),
+              // Delegate to current delegate if a new one isn't specified.
+              _votingDelegate != address(0) ? _votingDelegate : _oldDelegate,
+              _currentTierId,
+              _votingUnitsForCurrentTier + _price
+            );
+
+            // Reset the counter
+            _votingUnitsForCurrentTier = 0;
+          }
+        }
+
+        unchecked {
+          ++_i;
+        }
+      }
+
       // Mint tiers if they were specified.
       uint256 _leftoverAmount = _mintAll(_data.amount.value, _tierIdsToMint, _data.beneficiary);
 
       // Make sure the buyer isn't overspending.
       if (_leftoverAmount != 0) revert OVERSPENDING();
-
-      if (_votingDelegateSegment != bytes32('')) {
-        address _votingDelegate = address(uint160(uint256(_votingDelegateSegment)));
-
-        // Keep a reference to the current tier ID.
-        uint256 _currentTierId = _tierIdsToMint[0];
-
-        // Keep a reference to the number of voting units currently accumulated for the given tier.
-        uint256 _votingUnitsForCurrentTier;
-
-        // The price of the tier being iterated on.
-        uint256 _price;
-
-        // Keep a reference to the number of tiers.
-        uint256 _numberOfTiers = _tierIdsToMint.length;
-
-        // Transfer voting power for each tier.
-        for (uint256 _i; _i < _numberOfTiers; ) {
-          // Keep track of the current tier being iterated on and its price.
-          if (_currentTierId != _tierIdsToMint[_i]) {
-            _currentTierId = _tierIdsToMint[_i];
-            _price = store.tier(address(this), _tierIdsToMint[_i]).contributionFloor;
-          }
-
-          // Increment the price.
-          if (_i < _numberOfTiers - 1 && _tierIdsToMint[_i + 1] == _currentTierId) {
-            _votingUnitsForCurrentTier += _price;
-            // Set the tier's total voting power.
-          } else {
-            _tierDelegation[_data.payer][_currentTierId] = _votingDelegate;
-            // Transfer the voting units.
-            _transferTierVotingUnits(
-              address(0),
-              _votingDelegate,
-              _currentTierId,
-              _votingUnitsForCurrentTier + _price
-            );
-            _votingUnitsForCurrentTier = 0;
-            emit DelegateChanged(_data.payer, address(0), _votingDelegate);
-          }
-
-          unchecked {
-            ++_i;
-          }
-        }
-      }
     }
   }
 
