@@ -229,9 +229,9 @@ contract DefifaHTMLTokenUriResolver is IDefifaTokenUriResolver, IJBTokenUriResol
     );
     string memory artWorkIPFSLong = _encodedTierIPFSUri.length != 0
       ? JBIpfsDecoder.decode(_delegate.store().baseUriOf(address(_delegate)), _encodedTierIPFSUri)
-      : 'ipfs://QmQ5BFLt74A56hza8C9xcX1RGsxcYTAG7FaDDUQ3DmuFoA'; //todo 404 ipfs img.
+      : 'ipfs://QmP5eWnXTsRCWBeDrHboLtFeuhjVLNEHb6np7DiYN7uZyx'; //todo 404 ipfs img.
     // TODO remove these next two lines after done testing 
-    // string memory artWorkIPFSLong = 'ipfs://QmQ5BFLt74A56hza8C9xcX1RGsxcYTAG7FaDDUQ3DmuFoA'; // 404 ipfs img.
+    // string memory artWorkIPFSLong = 'ipfs://QmP5eWnXTsRCWBeDrHboLtFeuhjVLNEHb6np7DiYN7uZyx'; // 404 ipfs img.
     //string memory artWorkIPFS = 'ipfs://QmQ5BFLt74A56hza8C9xcX1RGsxcYTAG7FaDDUQ3DmuFoA'; // 404 ipfs img.
     string memory artWorkIPFS = this.trim(artWorkIPFSLong,7,53);
     // TODO @dev can we remove this and put into create flow?
