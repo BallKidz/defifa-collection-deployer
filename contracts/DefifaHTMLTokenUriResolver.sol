@@ -48,6 +48,7 @@ contract DefifaHTMLTokenUriResolver is IDefifaTokenUriResolver, IJBTokenUriResol
   address private constant _SCRIPTY_BUILDER_ADDRESS = 0x16b727a2Fc9322C724F4Bc562910c99a5edA5084;
   address private constant _ETHFS_FILESTORAGE_ADDRESS = 0xFc7453dA7bF4d0c739C1c53da57b3636dAb0e11e;
   uint256 public constant BUFFER_SIZE = 1000000;
+
   //*********************************************************************//
   // --------------------- private stored properties ------------------- //
   //*********************************************************************//
@@ -92,6 +93,15 @@ contract DefifaHTMLTokenUriResolver is IDefifaTokenUriResolver, IJBTokenUriResol
     return _tierNameOf[_tierId];
   }
 
+  /** 
+    @notice
+    Trims a string.
+
+    @dev TODO Why does this need to be external?? 
+  */
+  function trim(string calldata str, uint256 start, uint256 end) external view returns(string memory) {
+    return str[start:end];
+  }
   //*********************************************************************//
   // -------------------------- constructor ---------------------------- //
   //*********************************************************************//
@@ -136,19 +146,6 @@ contract DefifaHTMLTokenUriResolver is IDefifaTokenUriResolver, IJBTokenUriResol
     }
   }
 
-  /* 
-  function _getBalanceRow(
-        IJBPaymentTerminal primaryEthPaymentTerminal,
-        uint256 _projectId
-    ) internal view returns (string memory balanceRow) {
-        // Balance
-        uint256 balance = singleTokenPaymentTerminalStore.balanceOf(
-            IJBSingleTokenPaymentTerminal(address(primaryEthPaymentTerminal)),
-            _projectId
-        ) / 10**18; // Project's ETH balance //TODO Try/catch
-        return string.concat(balance, string.concat(unicode"Ξ", balance.toString()));
-    } */
-
   /**
     @notice
     The metadata URI of the provided token ID.
@@ -167,15 +164,7 @@ contract DefifaHTMLTokenUriResolver is IDefifaTokenUriResolver, IJBTokenUriResol
     // Get a reference to the tier.
     JB721Tier memory _tier = _delegate.store().tierOfTokenId(address(_delegate), _tokenId);
 
-    // Check to see if the tier has a URI. Return it if it does.
-    /*  if (_tier.encodedIPFSUri != bytes32(0)) {
-      return
-        JBIpfsDecoder.decode(
-          _delegate.store().baseUriOf(address(this)),
-          _delegate.store().encodedTierIPFSUriOf(address(this), _tokenId)
-        );
-    }  */
-    // KMac scripty builder
+    // Scripty builder
     WrappedScriptRequest[] memory requests = new WrappedScriptRequest[](3);
 
     requests[0].name = 'p5-v1.5.0.min.js.gz';
@@ -238,10 +227,14 @@ contract DefifaHTMLTokenUriResolver is IDefifaTokenUriResolver, IJBTokenUriResol
       address(_delegate),
       _tokenId
     );
-    string memory artWorkIPFS = _encodedTierIPFSUri.length != 0
+    string memory artWorkIPFSLong = _encodedTierIPFSUri.length != 0
       ? JBIpfsDecoder.decode(_delegate.store().baseUriOf(address(_delegate)), _encodedTierIPFSUri)
-      : ''; //todo 404 ipfs img.
-
+      : 'ipfs://QmQ5BFLt74A56hza8C9xcX1RGsxcYTAG7FaDDUQ3DmuFoA'; //todo 404 ipfs img.
+    // TODO remove these next two lines after done testing 
+    // string memory artWorkIPFSLong = 'ipfs://QmQ5BFLt74A56hza8C9xcX1RGsxcYTAG7FaDDUQ3DmuFoA'; // 404 ipfs img.
+    //string memory artWorkIPFS = 'ipfs://QmQ5BFLt74A56hza8C9xcX1RGsxcYTAG7FaDDUQ3DmuFoA'; // 404 ipfs img.
+    string memory artWorkIPFS = this.trim(artWorkIPFSLong,7,53);
+    // TODO @dev can we remove this and put into create flow?
     string memory scoreCardIPFS = 'QmeB47KfbHetHPpQrPgmD9CxCDb9e2U9j9fxLr1FM3vzMo';
     string memory buttonImageIPFS = 'QmdpL1xN4cAHQw4P1FZzw9P3oQofA8h45PfuTTbpV4BbJV';
 
@@ -283,7 +276,7 @@ contract DefifaHTMLTokenUriResolver is IDefifaTokenUriResolver, IJBTokenUriResol
       '";',
       // the p5js js code here
       // TODO remove constant, put on ethfs.xyz, calc buffer size
-      'let page,camLoc,buttL,buttR,timer,buttonImg,pages=[],numOfPages=2,movingRight=!1,movingLeft=!1,isPaused=!1,artWorkPanel="https://tan-hidden-whippet-249.mypinata.cloud/ipfs/"+artWorkIPFS,scoreCardPanel="https://tan-hidden-whippet-249.mypinata.cloud/ipfs/"+scoreCardIPFS,buttonImage="https://tan-hidden-whippet-249.mypinata.cloud/ipfs/"+buttonImageIPFS,defifaBlue=[19,228,240],txt1=[[txt_1,txt_1Color,txt_1Size]],txt2=[[txt_2,txt_2Color,txt_2Size]],txt3=[[txt_3,txt_3Color,txt_3Size]],txt4=[[txt_4,txt_4Color,txt_4Size]],txt5=[[txt_5,txt_5Color,txt_5Size]],txt6=[[txt_6,txt_6Color,txt_6Size]],pageImg=[];function preload(){pageImg[0]=loadImage(artWorkPanel),pageImg[1]=loadImage(scoreCardPanel),buttonImg=loadImage(buttonImage)}function setup(){myFont=loadFont(font),createCanvas(500,500),camLoc=createVector(0,0);for(let a=0;a<numOfPages;a++)pages[a]=new Page(canvas.width/2*a,0,a,pageImg[a]);timer=canvas.width/2,buttL=new Button(canvas.width/2-90,5,75,75,buttonImg),buttR=new Button(canvas.width/2-90,5,75,75,buttonImg)}function draw(){background(220),slide(),push(),translate(camLoc.x,camLoc.y);for(let a=0;a<numOfPages;a++)pages[a].run();pop(),buttL.run(),buttR.run()}function goRight(){movingLeft||isPaused||(movingRight=!0)}function goLeft(){movingRight||isPaused||(movingLeft=!0)}function slide(){movingRight&&!movingLeft&&0<=timer&&(camLoc.x-=20,timer-=20),movingLeft&&!movingRight&&0<=timer&&(camLoc.x+=20,timer-=20),0==timer&&(movingRight=!1,movingLeft=!1,timer=canvas.width/2),0>=-camLoc.x?(camLoc.x=0,buttL.loc.x=-100):buttL.loc.x=canvas.height/2-75,-camLoc.x>=pages[pages.length-1].loc.x?(timer=canvas.width/2,movingRight=!1,movingLeft=!1,camLoc.x=-pages[pages.length-1].loc.x,buttR.loc.x=-100):buttR.loc.x=canvas.height/2-75}function drawtext(a,b,d){for(var e=a,f=0;f<d.length;++f){var g=d[f],h=g[0],j=g[1],c=g[2],k=textWidth(h);fill(j),textSize(c),text(h,e,b),e+=k}}function mousePressed(){mouseX>buttL.loc.x&&mouseX<buttL.loc.x+buttL.w&&mouseY>buttL.loc.y&&mouseY<buttL.loc.y+buttL.h&&goLeft(),mouseX>buttR.loc.x&&mouseX<buttR.loc.x+buttR.w&&mouseY>buttR.loc.y&&mouseY<buttR.loc.y+buttR.h&&goRight()}class Page{constructor(a,b,c,d){this.loc=createVector(a,b),this.w=canvas.width/2,this.h=canvas.height/2,this.pageNum=c+1,this.img=d}run(){image(this.img,this.loc.x,this.loc.y,500,500),textAlign(LEFT),textFont(myFont),2==this.pageNum&&(drawtext(this.loc.x+txt_1_x,this.loc.y+txt_1_y,txt1),drawtext(this.loc.x+txt_2_x,this.loc.y+txt_2_y,txt2),drawtext(this.loc.x+txt_3_x,this.loc.y+txt_3_y,txt3),drawtext(this.loc.x+txt_4_x,this.loc.y+txt_4_y,txt4),drawtext(this.loc.x+txt_5_x,this.loc.y+txt_5_y,txt5),drawtext(this.loc.x+txt_6_x,this.loc.y+txt_6_y,txt6));3==this.pageNum,line(this.loc.x,this.loc.y,this.loc.x+this.w,this.loc.y),line(this.loc.x,this.loc.y,this.loc.x,this.loc.y+this.h),line(this.loc.x,this.loc.y+this.h,this.loc.x+this.w,this.loc.y+this.h),line(this.loc.x+this.w,this.loc.y,this.loc.x+this.w,this.h)}}class Button{constructor(a,b,c,d,e){this.loc=new createVector(a,b),this.w=c,this.h=d,this.clr="white",this.img=e}run(){this.render(),this.checkMouse()}render(){fill(this.clr),stroke(20),strokeWeight(0),fill("black"),noStroke(),textSize(15),image(this.img,this.loc.x,this.loc.y,this.w,this.h)}checkMouse(){this.clr=mouseX>this.loc.x&&mouseX<this.loc.x+this.w&&mouseY>this.loc.y&&mouseY<this.loc.y+this.h?"gray":"white"}}'
+      'let page,camLoc,buttL,buttR,timer,buttonImg,pages=[],numOfPages=2,movingRight=!1,movingLeft=!1,isPaused=!1,artWorkPanel="https://jbm.infura-ipfs.io/ipfs/"+artWorkIPFS,scoreCardPanel="https://jbm.infura-ipfs.io/ipfs/"+scoreCardIPFS,buttonImage="https://jbm.infura-ipfs.io/ipfs/"+buttonImageIPFS,defifaBlue=[19,228,240],txt1=[[txt_1,txt_1Color,txt_1Size]],txt2=[[txt_2,txt_2Color,txt_2Size]],txt3=[[txt_3,txt_3Color,txt_3Size]],txt4=[[txt_4,txt_4Color,txt_4Size]],txt5=[[txt_5,txt_5Color,txt_5Size]],txt6=[[txt_6,txt_6Color,txt_6Size]],pageImg=[];function preload(){pageImg[0]=loadImage(artWorkPanel),pageImg[1]=loadImage(scoreCardPanel),buttonImg=loadImage(buttonImage)}function setup(){myFont=loadFont(font),createCanvas(500,500),camLoc=createVector(0,0);for(let a=0;a<numOfPages;a++)pages[a]=new Page(canvas.width/2*a,0,a,pageImg[a]);timer=canvas.width/2,buttL=new Button(canvas.width/2-90,5,75,75,buttonImg),buttR=new Button(canvas.width/2-90,5,75,75,buttonImg)}function draw(){background(220),slide(),push(),translate(camLoc.x,camLoc.y);for(let a=0;a<numOfPages;a++)pages[a].run();pop(),buttL.run(),buttR.run()}function goRight(){movingLeft||isPaused||(movingRight=!0)}function goLeft(){movingRight||isPaused||(movingLeft=!0)}function slide(){movingRight&&!movingLeft&&0<=timer&&(camLoc.x-=20,timer-=20),movingLeft&&!movingRight&&0<=timer&&(camLoc.x+=20,timer-=20),0==timer&&(movingRight=!1,movingLeft=!1,timer=canvas.width/2),0>=-camLoc.x?(camLoc.x=0,buttL.loc.x=-100):buttL.loc.x=canvas.height/2-75,-camLoc.x>=pages[pages.length-1].loc.x?(timer=canvas.width/2,movingRight=!1,movingLeft=!1,camLoc.x=-pages[pages.length-1].loc.x,buttR.loc.x=-100):buttR.loc.x=canvas.height/2-75}function drawtext(a,b,d){for(var e=a,f=0;f<d.length;++f){var g=d[f],h=g[0],j=g[1],c=g[2],k=textWidth(h);fill(j),textSize(c),text(h,e,b),e+=k}}function mousePressed(){mouseX>buttL.loc.x&&mouseX<buttL.loc.x+buttL.w&&mouseY>buttL.loc.y&&mouseY<buttL.loc.y+buttL.h&&goLeft(),mouseX>buttR.loc.x&&mouseX<buttR.loc.x+buttR.w&&mouseY>buttR.loc.y&&mouseY<buttR.loc.y+buttR.h&&goRight()}class Page{constructor(a,b,c,d){this.loc=createVector(a,b),this.w=canvas.width/2,this.h=canvas.height/2,this.pageNum=c+1,this.img=d}run(){image(this.img,this.loc.x,this.loc.y,500,500),textAlign(LEFT),textFont(myFont),2==this.pageNum&&(drawtext(this.loc.x+txt_1_x,this.loc.y+txt_1_y,txt1),drawtext(this.loc.x+txt_2_x,this.loc.y+txt_2_y,txt2),drawtext(this.loc.x+txt_3_x,this.loc.y+txt_3_y,txt3),drawtext(this.loc.x+txt_4_x,this.loc.y+txt_4_y,txt4),drawtext(this.loc.x+txt_5_x,this.loc.y+txt_5_y,txt5),drawtext(this.loc.x+txt_6_x,this.loc.y+txt_6_y,txt6));3==this.pageNum,line(this.loc.x,this.loc.y,this.loc.x+this.w,this.loc.y),line(this.loc.x,this.loc.y,this.loc.x,this.loc.y+this.h),line(this.loc.x,this.loc.y+this.h,this.loc.x+this.w,this.loc.y+this.h),line(this.loc.x+this.w,this.loc.y,this.loc.x+this.w,this.h)}}class Button{constructor(a,b,c,d,e){this.loc=new createVector(a,b),this.w=c,this.h=d,this.clr="white",this.img=e}run(){this.render(),this.checkMouse()}render(){fill(this.clr),stroke(20),strokeWeight(0),fill("black"),noStroke(),textSize(15),image(this.img,this.loc.x,this.loc.y,this.w,this.h)}checkMouse(){this.clr=mouseX>this.loc.x&&mouseX<this.loc.x+this.w&&mouseY>this.loc.y&&mouseY<this.loc.y+this.h?"gray":"white"}}'
     );
 
     requests[2].scriptContent = controllerScript;

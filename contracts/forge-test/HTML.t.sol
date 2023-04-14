@@ -41,9 +41,7 @@ contract EmptyTest is Test {
       reservedTokenBeneficiary: address(0),
       royaltyRate: 0,
       royaltyBeneficiary: address(0),
-      // encodedIPFSUri: encodeIPFS('QmSX1ktBWiTX1BJs8hDEVN93vRVJq6iNrpR36ByjRXfLra'),
-      encodedIPFSUri: bytes32(0xc425bad3a9a07b60af6037e9ee61a7a67f07f8781611cef220923264ca75d609),
-      // returns QmNLei78zWmzUdbeRB3CiUfAizWUrbeeZh5K1rhAQKCh51 but should be QmZJUHkLG2dqc4yKBAxk3YwUyiCAP3s4phphoT7wtppe6V
+      encodedIPFSUri: bytes32(''),
       category: 1,
       allowManualMint: false,
       shouldUseReservedTokenBeneficiaryAsDefault: false,
@@ -56,7 +54,7 @@ contract EmptyTest is Test {
       _name: 'Example collection',
       _symbol: 'EX',
       _fundingCycleStore: _fundingCycleStore,
-      _baseUri: 'ipfs://',
+      _baseUri: '',
       _tokenUriResolver: _resolver,
       _contractUri: '',
       _pricing: JB721PricingParams({
