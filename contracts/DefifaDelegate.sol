@@ -386,6 +386,18 @@ contract DefifaDelegate is IDefifaDelegate, JB721Delegate, Ownable, IERC2981 {
     return store.royaltyInfo(address(this), _tokenId, _salePrice);
   }
 
+  /** 
+    @notice 
+    The total number of tokens owned by the given owner across all tiers. 
+
+    @param _owner The address to check the balance of.
+
+    @return balance The number of tokens owners by the owner across all tiers.
+  */
+  function balanceOf(address _owner) public view override returns (uint256 balance) {
+    return store.balanceOf(address(this), _owner);
+  }
+
   //*********************************************************************//
   // -------------------------- public views --------------------------- //
   //*********************************************************************//
