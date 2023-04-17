@@ -165,6 +165,18 @@ contract DefifaDelegate is IDefifaDelegate, JB721Delegate, Ownable, IERC2981 {
   }
 
   /** 
+    @notice 
+    The total number of tokens owned by the given owner across all tiers. 
+
+    @param _owner The address to check the balance of.
+
+    @return balance The number of tokens owners by the owner across all tiers.
+  */
+  function balanceOf(address _owner) public view override returns (uint256 balance) {
+    return store.balanceOf(address(this), _owner);
+  }
+
+  /** 
     @notice
     The redemption weight for each tier.
 
@@ -384,18 +396,6 @@ contract DefifaDelegate is IDefifaDelegate, JB721Delegate, Ownable, IERC2981 {
     uint256 _salePrice
   ) external view override returns (address, uint256) {
     return store.royaltyInfo(address(this), _tokenId, _salePrice);
-  }
-
-  /** 
-    @notice 
-    The total number of tokens owned by the given owner across all tiers. 
-
-    @param _owner The address to check the balance of.
-
-    @return balance The number of tokens owners by the owner across all tiers.
-  */
-  function balanceOf(address _owner) public view override returns (uint256 balance) {
-    return store.balanceOf(address(this), _owner);
   }
 
   //*********************************************************************//
