@@ -165,18 +165,6 @@ contract DefifaDelegate is IDefifaDelegate, JB721Delegate, Ownable, IERC2981 {
   }
 
   /** 
-    @notice 
-    The total number of tokens owned by the given owner across all tiers. 
-
-    @param _owner The address to check the balance of.
-
-    @return balance The number of tokens owners by the owner across all tiers.
-  */
-  function balanceOf(address _owner) public view override returns (uint256 balance) {
-    return store.balanceOf(address(this), _owner);
-  }
-
-  /** 
     @notice
     The redemption weight for each tier.
 
@@ -184,117 +172,6 @@ contract DefifaDelegate is IDefifaDelegate, JB721Delegate, Ownable, IERC2981 {
   */
   function tierRedemptionWeights() external view override returns (uint256[128] memory) {
     return _tierRedemptionWeights;
-  }
-
-  /**
-    @notice 
-    Part of IJBFundingCycleDataSource, this function gets called when a project's token holders redeem.
-
-    @param _data The Juicebox standard project redemption data.
-
-    @return reclaimAmount The amount that should be reclaimed from the treasury.
-    @return memo The memo that should be forwarded to the event.
-    @return delegateAllocations The amount to send to delegates instead of adding to the beneficiary.
-  */
-  function redeemParams(
-    JBRedeemParamsData calldata _data
-  )
-    public
-    view
-    override
-    returns (
-      uint256 reclaimAmount,
-      string memory memo,
-      JBRedemptionDelegateAllocation[] memory delegateAllocations
-    )
-  {
-    // Make sure fungible project tokens aren't being redeemed too.
-    if (_data.tokenCount > 0) revert UNEXPECTED_TOKEN_REDEEMED();
-
-    // Check the 4 bytes interfaceId and handle the case where the metadata was not intended for this contract
-    // Skip 32 bytes reserved for generic extension parameters.
-    if (
-      _data.metadata.length < 36 ||
-      bytes4(_data.metadata[32:36]) != type(IJB721Delegate).interfaceId
-    ) revert INVALID_REDEMPTION_METADATA();
-
-    // Set the only delegate allocation to be a callback to this contract.
-    delegateAllocations = new JBRedemptionDelegateAllocation[](1);
-    delegateAllocations[0] = JBRedemptionDelegateAllocation(this, 0);
-
-    // Decode the metadata
-    (, , uint256[] memory _decodedTokenIds) = abi.decode(
-      _data.metadata,
-      (bytes32, bytes4, uint256[])
-    );
-
-    // If the game is in its minting phase, reclaim Amount is the same as it cost to mint.
-    if (fundingCycleStore.currentOf(_data.projectId).number == _MINT_GAME_PHASE) {
-      // Keep a reference to the number of tokens.
-      uint256 _numberOfTokenIds = _decodedTokenIds.length;
-
-      for (uint256 _i; _i < _numberOfTokenIds; ) {
-        unchecked {
-          reclaimAmount += store
-            .tierOfTokenId(address(this), _decodedTokenIds[_i])
-            .contributionFloor;
-
-          _i++;
-        }
-      }
-
-      return (reclaimAmount, _data.memo, delegateAllocations);
-    }
-
-    // Return the weighted overflow, and this contract as the delegate so that tokens can be deleted.
-    return (
-      PRBMath.mulDiv(
-        _data.overflow + _amountRedeemed,
-        redemptionWeightOf(_decodedTokenIds, _data),
-        totalRedemptionWeight(_data)
-      ),
-      _data.memo,
-      delegateAllocations
-    );
-  }
-
-  /** 
-    @notice
-    The cumulative weight the given token IDs have in redemptions compared to the `_totalRedemptionWeight`. 
-
-    @param _tokenIds The IDs of the tokens to get the cumulative redemption weight of.
-
-    @return cumulativeWeight The weight.
-  */
-  function redemptionWeightOf(
-    uint256[] memory _tokenIds,
-    JBRedeemParamsData calldata
-  ) public view virtual override returns (uint256 cumulativeWeight) {
-    // If the game is over, set the weight based on the scorecard results.
-    // Keep a reference to the number of tokens being redeemed.
-    uint256 _tokenCount = _tokenIds.length;
-
-    for (uint256 _i; _i < _tokenCount; ) {
-      // Calculate what percentage of the tier redemption amount a single token counts for.
-      cumulativeWeight += redemptionWeightOf(_tokenIds[_i]);
-
-      unchecked {
-        ++_i;
-      }
-    }
-  }
-
-  /** 
-    @notice
-    The cumulative weight that all token IDs have in redemptions. 
-
-    @return The total weight.
-  */
-  function totalRedemptionWeight(
-    JBRedeemParamsData calldata
-  ) public view virtual override returns (uint256) {
-    // Set the total weight as the total scorecard weight.
-    return TOTAL_REDEMPTION_WEIGHT;
   }
 
   /**
@@ -403,6 +280,60 @@ contract DefifaDelegate is IDefifaDelegate, JB721Delegate, Ownable, IERC2981 {
   //*********************************************************************//
 
   /** 
+    @notice 
+    The total number of tokens owned by the given owner across all tiers. 
+
+    @param _owner The address to check the balance of.
+
+    @return balance The number of tokens owners by the owner across all tiers.
+  */
+  function balanceOf(address _owner) public view override returns (uint256 balance) {
+    return store.balanceOf(address(this), _owner);
+  }
+
+  /** 
+    @notice
+    The metadata URI of the provided token ID.
+
+    @dev
+    Defer to the tokenUriResolver if set, otherwise, use the tokenUri set with the token's tier.
+
+    @param _tokenId The ID of the token to get the tier URI for. 
+
+    @return The token URI corresponding with the tier or the tokenUriResolver URI.
+  */
+  function tokenURI(uint256 _tokenId) public view virtual override returns (string memory) {
+    // Use the resolver.
+    return store.tokenUriResolverOf(address(this)).getUri(_tokenId);
+  }
+
+  /** 
+    @notice
+    The cumulative weight the given token IDs have in redemptions compared to the `_totalRedemptionWeight`. 
+
+    @param _tokenIds The IDs of the tokens to get the cumulative redemption weight of.
+
+    @return cumulativeWeight The weight.
+  */
+  function redemptionWeightOf(
+    uint256[] memory _tokenIds,
+    JBRedeemParamsData calldata
+  ) public view virtual override returns (uint256 cumulativeWeight) {
+    // If the game is over, set the weight based on the scorecard results.
+    // Keep a reference to the number of tokens being redeemed.
+    uint256 _tokenCount = _tokenIds.length;
+
+    for (uint256 _i; _i < _tokenCount; ) {
+      // Calculate what percentage of the tier redemption amount a single token counts for.
+      cumulativeWeight += redemptionWeightOf(_tokenIds[_i]);
+
+      unchecked {
+        ++_i;
+      }
+    }
+  }
+
+  /** 
     @notice
     The weight the given token ID have in redemptions. 
 
@@ -431,6 +362,117 @@ contract DefifaDelegate is IDefifaDelegate, JB721Delegate, Ownable, IERC2981 {
     return
       // Tier's are 1 indexed and are stored 0 indexed.
       _weight / (_tier.initialQuantity - _tier.remainingQuantity + _redeemedFromTier[_tierId]);
+  }
+
+  /** 
+    @notice
+    The cumulative weight that all token IDs have in redemptions. 
+
+    @return The total weight.
+  */
+  function totalRedemptionWeight(
+    JBRedeemParamsData calldata
+  ) public view virtual override returns (uint256) {
+    // Set the total weight as the total scorecard weight.
+    return TOTAL_REDEMPTION_WEIGHT;
+  }
+
+  /** 
+    @notice
+    Returns the URI where contract metadata can be found. 
+
+    @return The contract's metadata URI.
+  */
+  function contractURI() external view virtual override returns (string memory) {
+    return store.contractUriOf(address(this));
+  }
+
+  /**
+    @notice 
+    Part of IJBFundingCycleDataSource, this function gets called when a project's token holders redeem.
+
+    @param _data The Juicebox standard project redemption data.
+
+    @return reclaimAmount The amount that should be reclaimed from the treasury.
+    @return memo The memo that should be forwarded to the event.
+    @return delegateAllocations The amount to send to delegates instead of adding to the beneficiary.
+  */
+  function redeemParams(
+    JBRedeemParamsData calldata _data
+  )
+    public
+    view
+    override
+    returns (
+      uint256 reclaimAmount,
+      string memory memo,
+      JBRedemptionDelegateAllocation[] memory delegateAllocations
+    )
+  {
+    // Make sure fungible project tokens aren't being redeemed too.
+    if (_data.tokenCount > 0) revert UNEXPECTED_TOKEN_REDEEMED();
+
+    // Check the 4 bytes interfaceId and handle the case where the metadata was not intended for this contract
+    // Skip 32 bytes reserved for generic extension parameters.
+    if (
+      _data.metadata.length < 36 ||
+      bytes4(_data.metadata[32:36]) != type(IJB721Delegate).interfaceId
+    ) revert INVALID_REDEMPTION_METADATA();
+
+    // Set the only delegate allocation to be a callback to this contract.
+    delegateAllocations = new JBRedemptionDelegateAllocation[](1);
+    delegateAllocations[0] = JBRedemptionDelegateAllocation(this, 0);
+
+    // Decode the metadata
+    (, , uint256[] memory _decodedTokenIds) = abi.decode(
+      _data.metadata,
+      (bytes32, bytes4, uint256[])
+    );
+
+    // If the game is in its minting phase, reclaim Amount is the same as it cost to mint.
+    if (fundingCycleStore.currentOf(_data.projectId).number == _MINT_GAME_PHASE) {
+      // Keep a reference to the number of tokens.
+      uint256 _numberOfTokenIds = _decodedTokenIds.length;
+
+      for (uint256 _i; _i < _numberOfTokenIds; ) {
+        unchecked {
+          reclaimAmount += store
+            .tierOfTokenId(address(this), _decodedTokenIds[_i])
+            .contributionFloor;
+
+          _i++;
+        }
+      }
+
+      return (reclaimAmount, _data.memo, delegateAllocations);
+    }
+
+    // Return the weighted overflow, and this contract as the delegate so that tokens can be deleted.
+    return (
+      PRBMath.mulDiv(
+        _data.overflow + _amountRedeemed,
+        redemptionWeightOf(_decodedTokenIds, _data),
+        totalRedemptionWeight(_data)
+      ),
+      _data.memo,
+      delegateAllocations
+    );
+  }
+
+  /**
+    @notice
+    Indicates if this contract adheres to the specified interface.
+
+    @dev
+    See {IERC165-supportsInterface}.
+
+    @param _interfaceId The ID of the interface to check for adherence to.
+  */
+  function supportsInterface(
+    bytes4 _interfaceId
+  ) public view override(JB721Delegate, IERC165) returns (bool) {
+    return
+      _interfaceId == type(IJBDefifaDelegate).interfaceId || super.supportsInterface(_interfaceId);
   }
 
   //*********************************************************************//
