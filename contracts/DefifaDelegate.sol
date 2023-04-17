@@ -166,6 +166,16 @@ contract DefifaDelegate is IDefifaDelegate, JB721Delegate, Ownable, IERC2981 {
 
   /** 
     @notice
+    Returns the URI where contract metadata can be found. 
+
+    @return The contract's metadata URI.
+  */
+  function contractURI() external view virtual override returns (string memory) {
+    return store.contractUriOf(address(this));
+  }
+
+  /** 
+    @notice
     The redemption weight for each tier.
 
     @return The array of weights, indexed by tier.
@@ -375,16 +385,6 @@ contract DefifaDelegate is IDefifaDelegate, JB721Delegate, Ownable, IERC2981 {
   ) public view virtual override returns (uint256) {
     // Set the total weight as the total scorecard weight.
     return TOTAL_REDEMPTION_WEIGHT;
-  }
-
-  /** 
-    @notice
-    Returns the URI where contract metadata can be found. 
-
-    @return The contract's metadata URI.
-  */
-  function contractURI() external view virtual override returns (string memory) {
-    return store.contractUriOf(address(this));
   }
 
   /**
