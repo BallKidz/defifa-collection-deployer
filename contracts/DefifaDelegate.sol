@@ -866,7 +866,7 @@ contract DefifaDelegate is IDefifaDelegate, JB721Delegate, Ownable, IERC2981 {
       uint256 _votingUnitsForCurrentTier;
 
       // The price of the tier being iterated on.
-      uint256 _price;
+      uint256 _votingUnits;
 
       // Keep a reference to the number of tiers.
       uint256 _numberOfTiers = _tierIdsToMint.length;
@@ -876,7 +876,7 @@ contract DefifaDelegate is IDefifaDelegate, JB721Delegate, Ownable, IERC2981 {
         // Keep track of the current tier being iterated on and its price.
         if (_currentTierId != _tierIdsToMint[_i]) {
           _currentTierId = _tierIdsToMint[_i];
-          _price = store.tier(address(this), _tierIdsToMint[_i]).contributionFloor;
+          _votingUnits = store.tier(address(this), _tierIdsToMint[_i]).votingUnits;
         }
 
         // Get a reference to the old delegate.
@@ -886,7 +886,7 @@ contract DefifaDelegate is IDefifaDelegate, JB721Delegate, Ownable, IERC2981 {
         if (_votingDelegate != address(0) || _oldDelegate != address(0)) {
           // Increment the total voting units for the tier based on price.
           if (_i < _numberOfTiers - 1 && _tierIdsToMint[_i + 1] == _currentTierId) {
-            _votingUnitsForCurrentTier += _price;
+            _votingUnitsForCurrentTier += _votingUnits;
             // Set the tier's total voting power.
           } else {
             // Switch delegates if needed.
@@ -899,7 +899,7 @@ contract DefifaDelegate is IDefifaDelegate, JB721Delegate, Ownable, IERC2981 {
               // Delegate to current delegate if a new one isn't specified.
               _votingDelegate != address(0) ? _votingDelegate : _oldDelegate,
               _currentTierId,
-              _votingUnitsForCurrentTier + _price
+              _votingUnitsForCurrentTier + _votingUnits
             );
 
             // Reset the counter
