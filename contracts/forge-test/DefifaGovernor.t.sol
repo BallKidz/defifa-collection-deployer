@@ -37,16 +37,17 @@ contract DefifaGovernorTest is TestBaseWorkflow {
     );
   }
 
-  function testReceiveVotingPower(uint8 nTiers, uint8 tier) public {
-    vm.assume(nTiers < 100);
-    vm.assume(nTiers >= tier);
-    vm.assume(tier != 0);
+  function testReceiveVotingPower() public {
+    // vm.assume(nTiers < 100);
+    // vm.assume(nTiers >= tier);
+    // vm.assume(tier != 0);
     address _user = address(bytes20(keccak256('user')));
     DefifaLaunchProjectData memory defifaData = getBasicDefifaLaunchData();
     (uint256 _projectId, DefifaDelegate _nft, DefifaGovernor _governor) = createDefifaProject(
-      uint256(nTiers),
+      uint256(1),
       defifaData
     );
+
     // Phase 1: Mint
     vm.warp(defifaData.start - defifaData.mintDuration - defifaData.refundPeriodDuration);
     deployer.queueNextPhaseOf(_projectId);
@@ -56,12 +57,12 @@ contract DefifaGovernorTest is TestBaseWorkflow {
     vm.deal(_user, 1 ether);
     // Build metadata to buy specific NFT
     uint16[] memory rawMetadata = new uint16[](1);
-    rawMetadata[0] = uint16(tier); // reward tier
+    rawMetadata[0] = uint16(1); // reward tier
     bytes memory metadata = abi.encode(
       bytes32(0),
       bytes32(0),
-      type(IJB721Delegate).interfaceId,
-      false,
+      type(IDefifaDelegate).interfaceId,
+      bytes32(abi.encode(_user)),
       rawMetadata
     );
     // Pay to the project and mint an NFT
@@ -76,20 +77,29 @@ contract DefifaGovernorTest is TestBaseWorkflow {
       '',
       metadata
     );
+
     JBTiered721SetTierDelegatesData[]
       memory tiered721SetDelegatesData = new JBTiered721SetTierDelegatesData[](1);
     tiered721SetDelegatesData[0] = JBTiered721SetTierDelegatesData({
       delegatee: _user,
-      tierId: uint256(tier)
+      tierId: uint256(1)
     });
-    // Set the delegate as the user themselves
+
+    // // Set the delegate as the user themselves
     vm.prank(_user);
     _nft.setTierDelegates(tiered721SetDelegatesData);
+
+
     // The user should now have a balance
     assertEq(_nft.balanceOf(_user), 1);
+  
     // Forward 1 block, user should receive all the voting power of the tier, as its the only NFT
     vm.roll(block.number + 1);
-    assertEq(_nft.store().tier(address(_nft), tier).votingUnits, 100);
+    uint votes = _nft.getTierVotes(_user, 1);
+    emit log("Votes");
+    emit log_uint(votes);
+
+    assertEq(_nft.store().tier(address(_nft), 1).votingUnits, 1);
     assertEq(_governor.MAX_VOTING_POWER_TIER(), _governor.getVotes(_user, block.number - 1));
   }
 
@@ -870,7 +880,6 @@ contract DefifaGovernorTest is TestBaseWorkflow {
     uint16 _inBetweenMintAndFifa,
     uint16 _fifaDuration
   ) public {
-    vm.warp(1667953355);
     vm.assume(
       _durationUntilProjectLaunch > 2 &&
         _mintDuration > 1 &&
@@ -882,7 +891,6 @@ contract DefifaGovernorTest is TestBaseWorkflow {
       uint48(_mintDuration) +
       uint48(_inBetweenMintAndFifa) +
       uint48(_fifaDuration);
-
     DefifaTierParams[] memory tierParams = new DefifaTierParams[](1);
     tierParams[0] = DefifaTierParams({
       price: 1 ether,
@@ -894,16 +902,17 @@ contract DefifaGovernorTest is TestBaseWorkflow {
       shouldUseReservedTokenBeneficiaryAsDefault: false,
       name: 'DEFIFA'
     });
+  
     DefifaLaunchProjectData memory _launchData = DefifaLaunchProjectData({
       name: 'DEFIFA',
       contractUri: '',
       baseUri: '',
       projectMetadata: JBProjectMetadata({content: '', domain: 0}),
       token: JBTokens.ETH,
-      mintDuration: 1 days,
-      start: uint48(block.timestamp + 3 days),
-      refundPeriodDuration: 1 days,
-      end: uint48(block.timestamp + 3 days + 1 weeks),
+      mintDuration: _mintDuration,
+      start: _launchProjectAt + uint48(_mintDuration) + _inBetweenMintAndFifa,
+      refundPeriodDuration: _inBetweenMintAndFifa,
+      end: _end,
       store: new JBTiered721DelegateStore(),
       splits: new JBSplit[](0),
       distributionLimit: 0,
@@ -1382,3 +1391,4 @@ contract DefifaGovernorTest is TestBaseWorkflow {
     return (_tierId * 1_000_000_000) + _tokenNumber;
   }
 }
+

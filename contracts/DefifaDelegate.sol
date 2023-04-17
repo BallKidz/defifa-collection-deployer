@@ -472,7 +472,7 @@ contract DefifaDelegate is IDefifaDelegate, JB721Delegate, Ownable, IERC2981 {
     bytes4 _interfaceId
   ) public view override(JB721Delegate, IERC165) returns (bool) {
     return
-      _interfaceId == type(IJBDefifaDelegate).interfaceId || super.supportsInterface(_interfaceId);
+      _interfaceId == type(IDefifaDelegate).interfaceId || super.supportsInterface(_interfaceId);
   }
 
   //*********************************************************************//
