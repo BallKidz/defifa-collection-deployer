@@ -78,25 +78,24 @@ contract DefifaGovernorTest is TestBaseWorkflow {
       metadata
     );
 
-    JBTiered721SetTierDelegatesData[]
-      memory tiered721SetDelegatesData = new JBTiered721SetTierDelegatesData[](1);
-    tiered721SetDelegatesData[0] = JBTiered721SetTierDelegatesData({
-      delegatee: _user,
-      tierId: uint256(1)
-    });
+    // JBTiered721SetTierDelegatesData[]
+    //   memory tiered721SetDelegatesData = new JBTiered721SetTierDelegatesData[](1);
+    // tiered721SetDelegatesData[0] = JBTiered721SetTierDelegatesData({
+    //   delegatee: _user,
+    //   tierId: uint256(1)
+    // });
 
     // // Set the delegate as the user themselves
-    vm.prank(_user);
-    _nft.setTierDelegates(tiered721SetDelegatesData);
-
+    // vm.prank(_user);
+    // _nft.setTierDelegates(tiered721SetDelegatesData);
 
     // The user should now have a balance
     assertEq(_nft.balanceOf(_user), 1);
-  
+
     // Forward 1 block, user should receive all the voting power of the tier, as its the only NFT
     vm.roll(block.number + 1);
-    uint votes = _nft.getTierVotes(_user, 1);
-    emit log("Votes");
+    uint votes = _nft.store().tierVotingUnitsOf(address(_nft), _user, 1);
+    emit log('Votes');
     emit log_uint(votes);
 
     assertEq(_nft.store().tier(address(_nft), 1).votingUnits, 1);
@@ -122,8 +121,8 @@ contract DefifaGovernorTest is TestBaseWorkflow {
       bytes memory metadata = abi.encode(
         bytes32(0),
         bytes32(0),
-        type(IJB721Delegate).interfaceId,
-        false,
+        type(IDefifaDelegate).interfaceId,
+        bytes32(abi.encode(_users[i])),
         rawMetadata
       );
       // Pay to the project and mint an NFT
@@ -138,15 +137,6 @@ contract DefifaGovernorTest is TestBaseWorkflow {
         '',
         metadata
       );
-      // Set the delegate as the user themselves
-      JBTiered721SetTierDelegatesData[]
-        memory tiered721SetDelegatesData = new JBTiered721SetTierDelegatesData[](1);
-      tiered721SetDelegatesData[0] = JBTiered721SetTierDelegatesData({
-        delegatee: _users[i],
-        tierId: uint256(i + 1)
-      });
-      vm.prank(_users[i]);
-      _nft.setTierDelegates(tiered721SetDelegatesData);
     }
     // Phase 2: Redeem
     vm.warp(block.timestamp + defifaData.mintDuration);
@@ -234,8 +224,8 @@ contract DefifaGovernorTest is TestBaseWorkflow {
       bytes memory metadata = abi.encode(
         bytes32(0),
         bytes32(0),
-        type(IJB721Delegate).interfaceId,
-        false,
+        type(IDefifaDelegate).interfaceId,
+        bytes32(abi.encode(_users[i])),
         rawMetadata
       );
       // Pay to the project and mint an NFT
@@ -268,8 +258,8 @@ contract DefifaGovernorTest is TestBaseWorkflow {
       bytes memory metadata = abi.encode(
         bytes32(0),
         bytes32(0),
-        type(IJB721Delegate).interfaceId,
-        false,
+        type(IDefifaDelegate).interfaceId,
+        bytes32(abi.encode(_users[i])),
         rawMetadata
       );
       // Pay to the project and mint an NFT
@@ -303,8 +293,8 @@ contract DefifaGovernorTest is TestBaseWorkflow {
       bytes memory metadata = abi.encode(
         bytes32(0),
         bytes32(0),
-        type(IJB721Delegate).interfaceId,
-        false,
+        type(IDefifaDelegate).interfaceId,
+        bytes32(abi.encode(_users[i])),
         rawMetadata
       );
       // Pay to the project and mint an NFT
@@ -402,8 +392,8 @@ contract DefifaGovernorTest is TestBaseWorkflow {
       bytes memory metadata = abi.encode(
         bytes32(0),
         bytes32(0),
-        type(IJB721Delegate).interfaceId,
-        false,
+        type(IDefifaDelegate).interfaceId,
+        bytes32(abi.encode(_users[i])),
         rawMetadata
       );
       // Pay to the project and mint an NFT
@@ -490,8 +480,8 @@ contract DefifaGovernorTest is TestBaseWorkflow {
       bytes memory metadata = abi.encode(
         bytes32(0),
         bytes32(0),
-        type(IJB721Delegate).interfaceId,
-        false,
+        type(IDefifaDelegate).interfaceId,
+        bytes32(abi.encode(_users[i])),
         rawMetadata
       );
       // Pay to the project and mint an NFT
@@ -586,8 +576,8 @@ contract DefifaGovernorTest is TestBaseWorkflow {
       bytes memory metadata = abi.encode(
         bytes32(0),
         bytes32(0),
-        type(IJB721Delegate).interfaceId,
-        false,
+        type(IDefifaDelegate).interfaceId,
+        bytes32(abi.encode(_users[i])),
         rawMetadata
       );
       // Pay to the project and mint an NFT
@@ -720,8 +710,8 @@ contract DefifaGovernorTest is TestBaseWorkflow {
         bytes memory metadata = abi.encode(
           bytes32(0),
           bytes32(0),
-          type(IJB721Delegate).interfaceId,
-          false,
+          type(IDefifaDelegate).interfaceId,
+          bytes32(abi.encode(_users[i])),
           rawMetadata
         );
         // Pay to the project and mint an NFT
@@ -749,8 +739,8 @@ contract DefifaGovernorTest is TestBaseWorkflow {
         bytes memory metadata = abi.encode(
           bytes32(0),
           bytes32(0),
-          type(IJB721Delegate).interfaceId,
-          false,
+          type(IDefifaDelegate).interfaceId,
+          bytes32(abi.encode(_users[i])),
           rawMetadata
         );
         // Pay to the project and mint an NFT
@@ -902,7 +892,7 @@ contract DefifaGovernorTest is TestBaseWorkflow {
       shouldUseReservedTokenBeneficiaryAsDefault: false,
       name: 'DEFIFA'
     });
-  
+
     DefifaLaunchProjectData memory _launchData = DefifaLaunchProjectData({
       name: 'DEFIFA',
       contractUri: '',
@@ -977,8 +967,8 @@ contract DefifaGovernorTest is TestBaseWorkflow {
       bytes memory metadata = abi.encode(
         bytes32(0),
         bytes32(0),
-        type(IJB721Delegate).interfaceId,
-        false,
+        type(IDefifaDelegate).interfaceId,
+        bytes32(abi.encode(_users[i])),
         rawMetadata
       );
       // Pay to the project and mint an NFT
@@ -1037,8 +1027,8 @@ contract DefifaGovernorTest is TestBaseWorkflow {
       bytes memory metadata = abi.encode(
         bytes32(0),
         bytes32(0),
-        type(IJB721Delegate).interfaceId,
-        false,
+        type(IDefifaDelegate).interfaceId,
+        bytes32(abi.encode(_users[i])),
         rawMetadata
       );
       // Pay to the project and mint an NFT
@@ -1121,8 +1111,8 @@ contract DefifaGovernorTest is TestBaseWorkflow {
       bytes memory metadata = abi.encode(
         bytes32(0),
         bytes32(0),
-        type(IJB721Delegate).interfaceId,
-        false,
+        type(IDefifaDelegate).interfaceId,
+        bytes32(abi.encode(_users[i])),
         rawMetadata
       );
       // Pay to the project and mint an NFT
@@ -1254,8 +1244,8 @@ contract DefifaGovernorTest is TestBaseWorkflow {
     bytes memory metadata = abi.encode(
       bytes32(0),
       bytes32(0),
-      type(IJB721Delegate).interfaceId,
-      false,
+      type(IDefifaDelegate).interfaceId,
+      bytes32(abi.encode(_refundUser)),
       rawMetadata
     );
     // Pay to the project and mint an NFT
@@ -1391,4 +1381,3 @@ contract DefifaGovernorTest is TestBaseWorkflow {
     return (_tierId * 1_000_000_000) + _tokenNumber;
   }
 }
-

@@ -860,7 +860,7 @@ contract DefifaDelegate is IDefifaDelegate, JB721Delegate, Ownable, IERC2981 {
         : address(0);
 
       // Keep a reference to the current tier ID.
-      uint256 _currentTierId = _tierIdsToMint[0];
+      uint256 _currentTierId;
 
       // Keep a reference to the number of voting units currently accumulated for the given tier.
       uint256 _votingUnitsForCurrentTier;
