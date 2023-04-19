@@ -366,7 +366,6 @@ contract DefifaDelegate is IDefifaDelegate, JB721Delegate, Ownable, IERC2981 {
 
     // If no tiers were minted, nothing to redeem.
     if (_tier.initialQuantity - _tier.remainingQuantity == 0) return 0;
-    // TODO allow anyone to move leftover funds from unminted winning tiers to ballkids.
 
     // Calculate what percentage of the tier redemption amount a single token counts for.
     return
