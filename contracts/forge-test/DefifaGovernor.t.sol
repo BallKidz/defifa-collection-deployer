@@ -37,14 +37,13 @@ contract DefifaGovernorTest is TestBaseWorkflow {
     );
   }
 
-  function testReceiveVotingPower() public {
-    // vm.assume(nTiers < 100);
-    // vm.assume(nTiers >= tier);
-    // vm.assume(tier != 0);
+  function testReceiveVotingPower(uint8 nTiers, uint8 tier) public {
+    vm.assume(nTiers < 100);
+    vm.assume(nTiers >= tier);
+    vm.assume(tier != 0);
     address _user = address(bytes20(keccak256('user')));
-    DefifaLaunchProjectData memory defifaData = getBasicDefifaLaunchData();
+    DefifaLaunchProjectData memory defifaData = getBasicDefifaLaunchData(nTiers);
     (uint256 _projectId, DefifaDelegate _nft, DefifaGovernor _governor) = createDefifaProject(
-      uint256(1),
       defifaData
     );
 
@@ -57,7 +56,8 @@ contract DefifaGovernorTest is TestBaseWorkflow {
     vm.deal(_user, 1 ether);
     // Build metadata to buy specific NFT
     uint16[] memory rawMetadata = new uint16[](1);
-    rawMetadata[0] = uint16(1); // reward tier
+    vm.assume(tier != 0);
+    rawMetadata[0] = uint16(tier); // reward tier
     bytes memory metadata = abi.encode(
       bytes32(0),
       bytes32(0),
@@ -78,17 +78,6 @@ contract DefifaGovernorTest is TestBaseWorkflow {
       metadata
     );
 
-    // JBTiered721SetTierDelegatesData[]
-    //   memory tiered721SetDelegatesData = new JBTiered721SetTierDelegatesData[](1);
-    // tiered721SetDelegatesData[0] = JBTiered721SetTierDelegatesData({
-    //   delegatee: _user,
-    //   tierId: uint256(1)
-    // });
-
-    // // Set the delegate as the user themselves
-    // vm.prank(_user);
-    // _nft.setTierDelegates(tiered721SetDelegatesData);
-
     // The user should now have a balance
     assertEq(_nft.balanceOf(_user), 1);
 
@@ -98,15 +87,15 @@ contract DefifaGovernorTest is TestBaseWorkflow {
     emit log('Votes');
     emit log_uint(votes);
 
-    assertEq(_nft.store().tier(address(_nft), 1).votingUnits, 1);
+    assertEq(_nft.store().tier(address(_nft), tier).votingUnits, 1);
     assertEq(_governor.MAX_VOTING_POWER_TIER(), _governor.getVotes(_user, block.number - 1));
   }
 
   function testRefund_fails_afterMintPhase() external {
     uint8 nTiers = 10;
     address[] memory _users = new address[](nTiers);
-    DefifaLaunchProjectData memory defifaData = getBasicDefifaLaunchData();
-    (uint256 _projectId, DefifaDelegate _nft, ) = createDefifaProject(uint256(nTiers), defifaData);
+    DefifaLaunchProjectData memory defifaData = getBasicDefifaLaunchData(nTiers);
+    (uint256 _projectId, , ) = createDefifaProject(defifaData);
     // Phase 1: Mint
     vm.warp(defifaData.start - defifaData.mintDuration - defifaData.refundPeriodDuration);
     deployer.queueNextPhaseOf(_projectId);
@@ -203,8 +192,8 @@ contract DefifaGovernorTest is TestBaseWorkflow {
   function testMint_fails_afterMintPhase() external {
     uint8 nTiers = 10;
     address[] memory _users = new address[](nTiers);
-    DefifaLaunchProjectData memory defifaData = getBasicDefifaLaunchData();
-    (uint256 _projectId, , ) = createDefifaProject(uint256(nTiers), defifaData);
+    DefifaLaunchProjectData memory defifaData = getBasicDefifaLaunchData(nTiers);
+    (uint256 _projectId, , ) = createDefifaProject(defifaData);
     // Phase 1: minting
     vm.warp(defifaData.start - defifaData.mintDuration - defifaData.refundPeriodDuration);
     deployer.queueNextPhaseOf(_projectId);
@@ -373,9 +362,8 @@ contract DefifaGovernorTest is TestBaseWorkflow {
   function testSetRedemptionRates_fails_unmetQuorum() external {
     uint8 nTiers = 10;
     address[] memory _users = new address[](nTiers);
-    DefifaLaunchProjectData memory defifaData = getBasicDefifaLaunchData();
+    DefifaLaunchProjectData memory defifaData = getBasicDefifaLaunchData(nTiers);
     (uint256 _projectId, DefifaDelegate _nft, DefifaGovernor _governor) = createDefifaProject(
-      uint256(nTiers),
       defifaData
     );
     // Phase 1: minting
@@ -461,9 +449,8 @@ contract DefifaGovernorTest is TestBaseWorkflow {
   function testSetRedemptionRates_fails_declined() external {
     uint8 nTiers = 10;
     address[] memory _users = new address[](nTiers);
-    DefifaLaunchProjectData memory defifaData = getBasicDefifaLaunchData();
+    DefifaLaunchProjectData memory defifaData = getBasicDefifaLaunchData(nTiers);
     (uint256 _projectId, DefifaDelegate _nft, DefifaGovernor _governor) = createDefifaProject(
-      uint256(nTiers),
       defifaData
     );
     // Phase 1: minting
@@ -557,9 +544,8 @@ contract DefifaGovernorTest is TestBaseWorkflow {
     }
     vm.assume(_sumDistribution > 0);
     address[] memory _users = new address[](nTiers);
-    DefifaLaunchProjectData memory defifaData = getBasicDefifaLaunchData();
+    DefifaLaunchProjectData memory defifaData = getBasicDefifaLaunchData(nTiers);
     (uint256 _projectId, DefifaDelegate _nft, DefifaGovernor _governor) = createDefifaProject(
-      uint256(nTiers),
       defifaData
     );
     // Phase 1: minting
@@ -688,10 +674,14 @@ contract DefifaGovernorTest is TestBaseWorkflow {
     vm.assume(nUsersWithWinningTier > 1 && nUsersWithWinningTier < 100);
     uint256 totalWeight = baseRedemptionWeight * (nOfOtherTiers + 1) + winningTierExtraWeight;
     vm.assume(totalWeight > 1);
+    emit log("Weights");
+    emit log_uint(totalWeight);
+    emit log_uint(winningTierExtraWeight);
+    emit log_uint(baseRedemptionWeight);
+
     address[] memory _users = new address[](nOfOtherTiers + nUsersWithWinningTier);
-    DefifaLaunchProjectData memory defifaData = getBasicDefifaLaunchData();
+    DefifaLaunchProjectData memory defifaData = getBasicDefifaLaunchData(uint8(nOfOtherTiers + 1));
     (uint256 _projectId, DefifaDelegate _nft, DefifaGovernor _governor) = createDefifaProject(
-      uint256(nOfOtherTiers + 1), // All users will buying the same tier
       defifaData
     );
     // Phase 1: minting
@@ -699,8 +689,6 @@ contract DefifaGovernorTest is TestBaseWorkflow {
     for (uint256 i = 0; i < nOfOtherTiers + nUsersWithWinningTier; i++) {
       // Generate a new address for each tier
       _users[i] = address(bytes20(keccak256(abi.encode('user', Strings.toString(i)))));
-      // We randomly decide if we have a user mint and refund
-      //mintAndRefund(_nft, _projectId, i + 1);
       // fund user
       vm.deal(_users[i], 1 ether);
       if (i < nOfOtherTiers) {
@@ -912,7 +900,7 @@ contract DefifaGovernorTest is TestBaseWorkflow {
       defaultTokenUriResolver: IJBTokenUriResolver(address(0)),
       terminal: _jbETHPaymentTerminal
     });
-    (uint256 _projectId, DefifaDelegate _nft, ) = createDefifaProject(uint256(10), _launchData);
+    (uint256 _projectId, DefifaDelegate _nft, ) = createDefifaProject(_launchData);
     // Wait until the phase 1 start
     vm.warp(_launchProjectAt);
     // Get the delegate
@@ -948,9 +936,8 @@ contract DefifaGovernorTest is TestBaseWorkflow {
   function testWhenPhaseIsAlreadyQueued() public {
     uint8 nTiers = 10;
     address[] memory _users = new address[](nTiers);
-    DefifaLaunchProjectData memory defifaData = getBasicDefifaLaunchData();
+    DefifaLaunchProjectData memory defifaData = getBasicDefifaLaunchData(nTiers);
     (uint256 _projectId, DefifaDelegate _nft, DefifaGovernor _governor) = createDefifaProject(
-      uint256(nTiers),
       defifaData
     );
     // Phase 1: Mint
@@ -1008,9 +995,8 @@ contract DefifaGovernorTest is TestBaseWorkflow {
   function testSettingTierRedemptionWeightBeforeEndPhase() public {
     uint8 nTiers = 10;
     address[] memory _users = new address[](nTiers);
-    DefifaLaunchProjectData memory defifaData = getBasicDefifaLaunchData();
+    DefifaLaunchProjectData memory defifaData = getBasicDefifaLaunchData(nTiers);
     (uint256 _projectId, DefifaDelegate _nft, DefifaGovernor _governor) = createDefifaProject(
-      uint256(nTiers),
       defifaData
     );
     // Phase 1: Mint
@@ -1092,9 +1078,8 @@ contract DefifaGovernorTest is TestBaseWorkflow {
   function testWhenRedemptionWeightisMoreThanMaxRedemptionWeight() public {
     uint8 nTiers = 10;
     address[] memory _users = new address[](nTiers);
-    DefifaLaunchProjectData memory defifaData = getBasicDefifaLaunchData();
+    DefifaLaunchProjectData memory defifaData = getBasicDefifaLaunchData(nTiers);
     (uint256 _projectId, DefifaDelegate _nft, DefifaGovernor _governor) = createDefifaProject(
-      uint256(nTiers),
       defifaData
     );
     // Phase 1: Mint
@@ -1179,9 +1164,10 @@ contract DefifaGovernorTest is TestBaseWorkflow {
     _governor.ratifyScorecard(scorecards);
   }
 
-  function getBasicDefifaLaunchData() internal returns (DefifaLaunchProjectData memory) {
-    DefifaTierParams[] memory tierParams = new DefifaTierParams[](1);
-    tierParams[0] = DefifaTierParams({
+  function getBasicDefifaLaunchData(uint8 nTiers) internal returns (DefifaLaunchProjectData memory) {
+    DefifaTierParams[] memory tierParams = new DefifaTierParams[](nTiers);
+    for (uint i = 0; i < nTiers; i++) {
+      tierParams[i] = DefifaTierParams({
       price: 1 ether,
       reservedRate: 1001,
       reservedTokenBeneficiary: address(0),
@@ -1190,7 +1176,8 @@ contract DefifaGovernorTest is TestBaseWorkflow {
       encodedIPFSUri: bytes32(0), // this way we dont need more tokenUris
       shouldUseReservedTokenBeneficiaryAsDefault: false,
       name: 'DEFIFA'
-    });
+      });
+    }
 
     return
       DefifaLaunchProjectData({
@@ -1216,11 +1203,8 @@ contract DefifaGovernorTest is TestBaseWorkflow {
 
   // ----- internal helpers ------
   function createDefifaProject(
-    uint256 nTiers,
     DefifaLaunchProjectData memory defifaLaunchData
   ) internal returns (uint256 projectId, DefifaDelegate nft, DefifaGovernor governor) {
-    (JBDeployTiered721DelegateData memory NFTRewardDeployerData, ) = createData(nTiers);
-    string[] memory _names = new string[](0);
     IDefifaGovernor _governor;
     (projectId, _governor) = deployer.launchGameWith(defifaLaunchData);
     governor = DefifaGovernor(payable(address(_governor)));
@@ -1312,70 +1296,6 @@ contract DefifaGovernorTest is TestBaseWorkflow {
     bytes32(0x7D5A99F603F231D53A4F39D1521F98D2E8BB279CF29BEBFD0687DC98458E7F89),
     bytes32(0x7D5A99F603F231D53A4F39D1521F98D2E8BB279CF29BEBFD0687DC98458E7F89)
   ];
-
-  function createData(
-    uint256 n_tiers
-  )
-    internal
-    returns (
-      JBDeployTiered721DelegateData memory NFTRewardDeployerData,
-      JBLaunchProjectData memory launchProjectData
-    )
-  {
-    JB721TierParams[] memory tierParams = new JB721TierParams[](n_tiers);
-    for (uint256 i; i < n_tiers; i++) {
-      tierParams[i] = JB721TierParams({
-        contributionFloor: 1 ether,
-        lockedUntil: 0,
-        initialQuantity: 1000,
-        votingUnits: 100,
-        reservedRate: 1001,
-        reservedTokenBeneficiary: address(0),
-        royaltyRate: 0,
-        royaltyBeneficiary: address(0),
-        encodedIPFSUri: bytes32(0), // this way we dont need more tokenUris
-        category: 1,
-        shouldUseReservedTokenBeneficiaryAsDefault: false,
-        shouldUseRoyaltyBeneficiaryAsDefault: false,
-        allowManualMint: false,
-        transfersPausable: true
-      });
-    }
-    NFTRewardDeployerData = JBDeployTiered721DelegateData({
-      name: name,
-      symbol: symbol,
-      fundingCycleStore: _jbFundingCycleStore,
-      baseUri: baseUri,
-      tokenUriResolver: IJBTokenUriResolver(address(0)),
-      contractUri: contractUri,
-      owner: _projectOwner,
-      pricing: JB721PricingParams({
-        tiers: tierParams,
-        currency: 1,
-        decimals: 18,
-        prices: IJBPrices(address(0))
-      }),
-      reservedTokenBeneficiary: reserveBeneficiary,
-      store: new JBTiered721DelegateStore(),
-      flags: JBTiered721Flags({
-        preventOverspending: true,
-        lockReservedTokenChanges: false,
-        lockVotingUnitChanges: false,
-        lockManualMintingChanges: false
-      }),
-      governanceType: JB721GovernanceType.TIERED
-    });
-    launchProjectData = JBLaunchProjectData({
-      projectMetadata: _projectMetadata,
-      data: _data,
-      metadata: _metadata,
-      mustStartAtOrAfter: 0,
-      groupedSplits: _groupedSplits,
-      fundAccessConstraints: _fundAccessConstraints,
-      terminals: _terminals,
-      memo: ''
-    });
-  }
 
   function _generateTokenId(uint256 _tierId, uint256 _tokenNumber) internal pure returns (uint256) {
     return (_tierId * 1_000_000_000) + _tokenNumber;
