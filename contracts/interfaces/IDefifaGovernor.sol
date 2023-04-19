@@ -19,7 +19,7 @@ interface IDefifaGovernor {
     uint256 _votingPeriod
   ) external;
 
-  function submitScorecards(
+  function submitScorecard(
     DefifaTierRedemptionWeight[] calldata _tierWeights
   ) external returns (uint256);
 

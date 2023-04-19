@@ -423,7 +423,7 @@ contract DefifaGovernorTest is TestBaseWorkflow {
       scorecards[i].redemptionWeight = i % 2 == 0 ? 1_000_000_000 / (scorecards.length / 2) : 0;
     }
     // Forward time so proposals can be created
-    uint256 _proposalId = _governor.submitScorecards(scorecards);
+    uint256 _proposalId = _governor.submitScorecard(scorecards);
     // Forward time so voting becomes active
     vm.roll(block.number + _governor.votingDelay() + 1);
     // '_governor.votingDelay()' internally uses the timestamp and not the block number, so we have to modify it for the next assert
@@ -510,7 +510,7 @@ contract DefifaGovernorTest is TestBaseWorkflow {
       scorecards[i].redemptionWeight = i % 2 == 0 ? 1_000_000_000 / (scorecards.length / 2) : 0;
     }
     // Forward time so proposals can be created
-    uint256 _proposalId = _governor.submitScorecards(scorecards);
+    uint256 _proposalId = _governor.submitScorecard(scorecards);
     // Forward time so voting becomes active
     vm.roll(block.number + _governor.votingDelay() + 1);
     // '_governor.votingDelay()' internally uses the timestamp and not the block number, so we have to modify it for the next assert
@@ -603,7 +603,7 @@ contract DefifaGovernorTest is TestBaseWorkflow {
         _sumDistribution;
     }
     // Forward time so proposals can be created
-    uint256 _proposalId = _governor.submitScorecards(scorecards);
+    uint256 _proposalId = _governor.submitScorecard(scorecards);
     // Forward time so voting becomes active
     vm.roll(block.number + _governor.votingDelay() + 1);
     // '_governor.votingDelay()' internally uses the timestamp and not the block number, so we have to modify it for the next assert
@@ -674,7 +674,7 @@ contract DefifaGovernorTest is TestBaseWorkflow {
     vm.assume(nUsersWithWinningTier > 1 && nUsersWithWinningTier < 100);
     uint256 totalWeight = baseRedemptionWeight * (nOfOtherTiers + 1) + winningTierExtraWeight;
     vm.assume(totalWeight > 1);
-    emit log("Weights");
+    emit log('Weights');
     emit log_uint(totalWeight);
     emit log_uint(winningTierExtraWeight);
     emit log_uint(baseRedemptionWeight);
@@ -777,7 +777,7 @@ contract DefifaGovernorTest is TestBaseWorkflow {
     }
     {
       // Forward time so proposals can be created
-      uint256 _proposalId = _governor.submitScorecards(scorecards);
+      uint256 _proposalId = _governor.submitScorecard(scorecards);
       // Forward time so voting becomes active
       vm.roll(block.number + _governor.votingDelay() + 1);
       // '_governor.votingDelay()' internally uses the timestamp and not the block number, so we have to modify it for the next assert
@@ -1056,7 +1056,7 @@ contract DefifaGovernorTest is TestBaseWorkflow {
       scorecards[i].redemptionWeight = i % 2 == 0 ? 1_000_000_000 / (scorecards.length / 2) : 0;
     }
     // Forward time so proposals can be created
-    uint256 _proposalId = _governor.submitScorecards(scorecards);
+    uint256 _proposalId = _governor.submitScorecard(scorecards);
     // Forward time so voting becomes active
     vm.roll(block.number + _governor.votingDelay() + 1);
     // '_governor.votingDelay()' internally uses the timestamp and not the block number, so we have to modify it for the next assert
@@ -1139,7 +1139,7 @@ contract DefifaGovernorTest is TestBaseWorkflow {
       scorecards[i].redemptionWeight = 1_000_000_000;
     }
     // Forward time so proposals can be created
-    uint256 _proposalId = _governor.submitScorecards(scorecards);
+    uint256 _proposalId = _governor.submitScorecard(scorecards);
     // Forward time so voting becomes active
     vm.roll(block.number + _governor.votingDelay() + 1);
     // '_governor.votingDelay()' internally uses the timestamp and not the block number, so we have to modify it for the next assert
@@ -1164,18 +1164,20 @@ contract DefifaGovernorTest is TestBaseWorkflow {
     _governor.ratifyScorecard(scorecards);
   }
 
-  function getBasicDefifaLaunchData(uint8 nTiers) internal returns (DefifaLaunchProjectData memory) {
+  function getBasicDefifaLaunchData(
+    uint8 nTiers
+  ) internal returns (DefifaLaunchProjectData memory) {
     DefifaTierParams[] memory tierParams = new DefifaTierParams[](nTiers);
     for (uint i = 0; i < nTiers; i++) {
       tierParams[i] = DefifaTierParams({
-      price: 1 ether,
-      reservedRate: 1001,
-      reservedTokenBeneficiary: address(0),
-      royaltyRate: 0,
-      royaltyBeneficiary: address(0),
-      encodedIPFSUri: bytes32(0), // this way we dont need more tokenUris
-      shouldUseReservedTokenBeneficiaryAsDefault: false,
-      name: 'DEFIFA'
+        price: 1 ether,
+        reservedRate: 1001,
+        reservedTokenBeneficiary: address(0),
+        royaltyRate: 0,
+        royaltyBeneficiary: address(0),
+        encodedIPFSUri: bytes32(0), // this way we dont need more tokenUris
+        shouldUseReservedTokenBeneficiaryAsDefault: false,
+        name: 'DEFIFA'
       });
     }
 

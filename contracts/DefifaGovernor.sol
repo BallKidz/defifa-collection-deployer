@@ -29,6 +29,7 @@ contract DefifaGovernor is Governor, GovernorCountingSimple, IDefifaGovernor {
   // --------------------------- custom errors ------------------------- //
   //*********************************************************************//
   error INCORRECT_TIER_ORDER();
+  error UNOWNED_PROPOSED_REDEMPTION_VALUE();
   error DISABLED();
 
   //*********************************************************************//
@@ -131,9 +132,25 @@ contract DefifaGovernor is Governor, GovernorCountingSimple, IDefifaGovernor {
 
     @return The proposal ID. 
   */
-  function submitScorecards(
+  function submitScorecard(
     DefifaTierRedemptionWeight[] calldata _tierWeights
   ) external override returns (uint256) {
+    // Make sure no weight is assigned to an unowned tier.
+    uint256 _numberOfTierWeights = _tierWeights.length;
+
+    for (uint256 _i; _i < _numberOfTierWeights; ) {
+      // Get a reference to the tier.
+      JB721Tier memory _tier = store.tier(address(this), _tierWeights[_i].id);
+
+      // If there's a weight assigned to the tier, make sure there is a token backed by it.
+      if (_tier.initialQuantity == _tier.remainingQuantity && _tierWeights[_i].redemptionWeight > 0)
+        revert UNOWNED_PROPOSED_REDEMPTION_VALUE();
+
+      unchecked {
+        ++_i;
+      }
+    }
+
     // Build the calldata normalized such that the Governor contract accepts.
     (
       address[] memory _targets,
