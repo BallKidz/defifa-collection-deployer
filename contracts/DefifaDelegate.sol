@@ -24,7 +24,7 @@ import './interfaces/IDefifaDelegate.sol';
   Inherits from -
   JB721TieredGovernance: A generic tiered 721 delegate.
 */
-contract DefifaDelegate is IDefifaDelegate, JB721Delegate, Ownable, IERC2981 {
+contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate, IERC2981 {
   using Checkpoints for Checkpoints.History;
 
   //*********************************************************************//
