@@ -95,13 +95,25 @@ contract DefifaHTMLTokenUriResolver is IDefifaTokenUriResolver, IJBTokenUriResol
 
   /** 
     @notice
-    Trims a string.
+    Helper functions for parsing tokenUri to get image ipfs hash. Currently unused.
 
-    @dev TODO Why does this need to be external?? 
+    @dev TODO If parsing in sol js must be changed too 
   */
-  function trim(string calldata str, uint256 start, uint256 end) external view returns(string memory) {
-    return str[start:end];
+
+  function parseIpfsPath(string memory ipfsPath) internal pure returns (string memory image) {
+    bytes memory decoded = bytes(ipfsPath);
+    // Extract the name, description, image, and external URL
+    image = extractString(bytes(ipfsPath), 64, 96);
   }
+  
+  function extractString(bytes memory data, uint256 start, uint256 end) internal pure returns (string memory) {
+    bytes memory result = new bytes(end - start);
+    for (uint256 i = start; i < end; i++) {
+      result[i - start] = data[i];
+    }
+    return string(result);
+  }
+
   //*********************************************************************//
   // -------------------------- constructor ---------------------------- //
   //*********************************************************************//
@@ -196,7 +208,7 @@ contract DefifaHTMLTokenUriResolver is IDefifaTokenUriResolver, IJBTokenUriResol
     else _fontSize = '16';
 
     // Get the current game phase.
-    uint256 _gamePhase = 4; //_delegate.fundingCycleStore().currentOf(delegate.projectId()).number;
+    uint256 _gamePhase = _delegate.fundingCycleStore().currentOf(delegate.projectId()).number;
     string memory _gamePhaseText;
 
     {
@@ -221,25 +233,20 @@ contract DefifaHTMLTokenUriResolver is IDefifaTokenUriResolver, IJBTokenUriResol
         _rarityText = string(abi.encodePacked(_totalMinted.toString(), ' minted so far'));
       else _rarityText = string(abi.encodePacked(_totalMinted.toString(), ' in existence'));
     }
-    // TODO remove constant
-    // string memory artWorkIPFS = 'QmSX1ktBWiTX1BJs8hDEVN93vRVJq6iNrpR36ByjRXfLra';
+
     bytes32 _encodedTierIPFSUri = _delegate.store().encodedTierIPFSUriOf(
       address(_delegate),
       _tokenId
     );
-    string memory artWorkIPFSLong = _encodedTierIPFSUri.length != 0
+    string memory artWorkIPFS = _encodedTierIPFSUri.length != 0
       ? JBIpfsDecoder.decode(_delegate.store().baseUriOf(address(_delegate)), _encodedTierIPFSUri)
-      : 'ipfs://QmP5eWnXTsRCWBeDrHboLtFeuhjVLNEHb6np7DiYN7uZyx'; //todo 404 ipfs img.
-    // TODO remove these next two lines after done testing 
-    // string memory artWorkIPFSLong = 'ipfs://QmP5eWnXTsRCWBeDrHboLtFeuhjVLNEHb6np7DiYN7uZyx'; // 404 ipfs img.
-    //string memory artWorkIPFS = 'ipfs://QmQ5BFLt74A56hza8C9xcX1RGsxcYTAG7FaDDUQ3DmuFoA'; // 404 ipfs img.
-    string memory artWorkIPFS = this.trim(artWorkIPFSLong,7,53);
+      : 'QmP5eWnXTsRCWBeDrHboLtFeuhjVLNEHb6np7DiYN7uZyx'; // 404 ipfs img.
     // TODO @dev can we remove this and put into create flow?
     string memory scoreCardIPFS = 'QmeB47KfbHetHPpQrPgmD9CxCDb9e2U9j9fxLr1FM3vzMo';
     string memory buttonImageIPFS = 'QmdpL1xN4cAHQw4P1FZzw9P3oQofA8h45PfuTTbpV4BbJV';
 
     bytes memory controllerScript = abi.encodePacked(
-      'let artWorkIPFS ="',
+      'let artWorkSource ="',
       artWorkIPFS,
       '";',
       'let scoreCardIPFS ="',
@@ -274,13 +281,10 @@ contract DefifaHTMLTokenUriResolver is IDefifaTokenUriResolver, IJBTokenUriResol
       'let font = "data:font/truetype;charset=utf-8;base64,',
       DefifaFontImporter.getSkinnyFontSource(),
       '";',
-      // the p5js js code here
-      // TODO remove constant, put on ethfs.xyz, calc buffer size
-      'let page,camLoc,buttL,buttR,timer,buttonImg,pages=[],numOfPages=2,movingRight=!1,movingLeft=!1,isPaused=!1,artWorkPanel="https://jbm.infura-ipfs.io/ipfs/"+artWorkIPFS,scoreCardPanel="https://jbm.infura-ipfs.io/ipfs/"+scoreCardIPFS,buttonImage="https://jbm.infura-ipfs.io/ipfs/"+buttonImageIPFS,defifaBlue=[19,228,240],txt1=[[txt_1,txt_1Color,txt_1Size]],txt2=[[txt_2,txt_2Color,txt_2Size]],txt3=[[txt_3,txt_3Color,txt_3Size]],txt4=[[txt_4,txt_4Color,txt_4Size]],txt5=[[txt_5,txt_5Color,txt_5Size]],txt6=[[txt_6,txt_6Color,txt_6Size]],pageImg=[];function preload(){pageImg[0]=loadImage(artWorkPanel),pageImg[1]=loadImage(scoreCardPanel),buttonImg=loadImage(buttonImage)}function setup(){myFont=loadFont(font),createCanvas(500,500),camLoc=createVector(0,0);for(let a=0;a<numOfPages;a++)pages[a]=new Page(canvas.width/2*a,0,a,pageImg[a]);timer=canvas.width/2,buttL=new Button(canvas.width/2-90,5,75,75,buttonImg),buttR=new Button(canvas.width/2-90,5,75,75,buttonImg)}function draw(){background(220),slide(),push(),translate(camLoc.x,camLoc.y);for(let a=0;a<numOfPages;a++)pages[a].run();pop(),buttL.run(),buttR.run()}function goRight(){movingLeft||isPaused||(movingRight=!0)}function goLeft(){movingRight||isPaused||(movingLeft=!0)}function slide(){movingRight&&!movingLeft&&0<=timer&&(camLoc.x-=20,timer-=20),movingLeft&&!movingRight&&0<=timer&&(camLoc.x+=20,timer-=20),0==timer&&(movingRight=!1,movingLeft=!1,timer=canvas.width/2),0>=-camLoc.x?(camLoc.x=0,buttL.loc.x=-100):buttL.loc.x=canvas.height/2-75,-camLoc.x>=pages[pages.length-1].loc.x?(timer=canvas.width/2,movingRight=!1,movingLeft=!1,camLoc.x=-pages[pages.length-1].loc.x,buttR.loc.x=-100):buttR.loc.x=canvas.height/2-75}function drawtext(a,b,d){for(var e=a,f=0;f<d.length;++f){var g=d[f],h=g[0],j=g[1],c=g[2],k=textWidth(h);fill(j),textSize(c),text(h,e,b),e+=k}}function mousePressed(){mouseX>buttL.loc.x&&mouseX<buttL.loc.x+buttL.w&&mouseY>buttL.loc.y&&mouseY<buttL.loc.y+buttL.h&&goLeft(),mouseX>buttR.loc.x&&mouseX<buttR.loc.x+buttR.w&&mouseY>buttR.loc.y&&mouseY<buttR.loc.y+buttR.h&&goRight()}class Page{constructor(a,b,c,d){this.loc=createVector(a,b),this.w=canvas.width/2,this.h=canvas.height/2,this.pageNum=c+1,this.img=d}run(){image(this.img,this.loc.x,this.loc.y,500,500),textAlign(LEFT),textFont(myFont),2==this.pageNum&&(drawtext(this.loc.x+txt_1_x,this.loc.y+txt_1_y,txt1),drawtext(this.loc.x+txt_2_x,this.loc.y+txt_2_y,txt2),drawtext(this.loc.x+txt_3_x,this.loc.y+txt_3_y,txt3),drawtext(this.loc.x+txt_4_x,this.loc.y+txt_4_y,txt4),drawtext(this.loc.x+txt_5_x,this.loc.y+txt_5_y,txt5),drawtext(this.loc.x+txt_6_x,this.loc.y+txt_6_y,txt6));3==this.pageNum,line(this.loc.x,this.loc.y,this.loc.x+this.w,this.loc.y),line(this.loc.x,this.loc.y,this.loc.x,this.loc.y+this.h),line(this.loc.x,this.loc.y+this.h,this.loc.x+this.w,this.loc.y+this.h),line(this.loc.x+this.w,this.loc.y,this.loc.x+this.w,this.h)}}class Button{constructor(a,b,c,d,e){this.loc=new createVector(a,b),this.w=c,this.h=d,this.clr="white",this.img=e}run(){this.render(),this.checkMouse()}render(){fill(this.clr),stroke(20),strokeWeight(0),fill("black"),noStroke(),textSize(15),image(this.img,this.loc.x,this.loc.y,this.w,this.h)}checkMouse(){this.clr=mouseX>this.loc.x&&mouseX<this.loc.x+this.w&&mouseY>this.loc.y&&mouseY<this.loc.y+this.h?"gray":"white"}}'
+      // TODO remove line below and put file on chain eg ethfs.xyz, calc buffer size
+      'let page,camLoc,buttL,buttR,timer,buttonImg,pages=[],numOfPages=2,movingRight=!1,movingLeft=!1,isPaused=!1,artWorkPanel="https://jbm.infura-ipfs.io/ipfs/",scoreCardPanel="https://jbm.infura-ipfs.io/ipfs/"+scoreCardIPFS,buttonImage="https://jbm.infura-ipfs.io/ipfs/"+buttonImageIPFS,defifaBlue=[19,228,240],txt1=[[txt_1,txt_1Color,txt_1Size]],txt2=[[txt_2,txt_2Color,txt_2Size]],txt3=[[txt_3,txt_3Color,txt_3Size]],txt4=[[txt_4,txt_4Color,txt_4Size]],txt5=[[txt_5,txt_5Color,txt_5Size]],txt6=[[txt_6,txt_6Color,txt_6Size]],pageImg=[];function preload(){async function a(a){let c=await fetch("https://jbm.infura-ipfs.io/ipfs/"+a);console.log(b);const d=c.headers.get("content-type");console.log(d),d&&-1!==d.indexOf("application/json")?(b=await c.json(),pageImg[0]=loadImage(b.image)):(artWorkPanel="https://jbm.infura-ipfs.io/ipfs/"+a,pageImg[0]=loadImage(artWorkPanel),console.log(artWorkPanel))}let b;a(artWorkSource),pageImg[1]=loadImage(scoreCardPanel),buttonImg=loadImage(buttonImage)}function setup(){myFont=loadFont(font),createCanvas(500,500),camLoc=createVector(0,0);for(let a=0;a<numOfPages;a++)pages[a]=new Page(canvas.width/2*a,0,a,pageImg[a]);timer=canvas.width/2,buttL=new Button(canvas.width/2-90,5,75,75,buttonImg),buttR=new Button(canvas.width/2-90,5,75,75,buttonImg)}function draw(){background(220),slide(),push(),translate(camLoc.x,camLoc.y);for(let a=0;a<numOfPages;a++)pages[a].run();pop(),buttL.run(),buttR.run()}function goRight(){movingLeft||isPaused||(movingRight=!0)}function goLeft(){movingRight||isPaused||(movingLeft=!0)}function slide(){movingRight&&!movingLeft&&0<=timer&&(camLoc.x-=20,timer-=20),movingLeft&&!movingRight&&0<=timer&&(camLoc.x+=20,timer-=20),0==timer&&(movingRight=!1,movingLeft=!1,timer=canvas.width/2),0>=-camLoc.x?(camLoc.x=0,buttL.loc.x=-100):buttL.loc.x=canvas.height/2-75,-camLoc.x>=pages[pages.length-1].loc.x?(timer=canvas.width/2,movingRight=!1,movingLeft=!1,camLoc.x=-pages[pages.length-1].loc.x,buttR.loc.x=-100):buttR.loc.x=canvas.height/2-75}function drawtext(a,b,d){for(var e=a,f=0;f<d.length;++f){var g=d[f],h=g[0],j=g[1],c=g[2],k=textWidth(h);fill(j),textSize(c),text(h,e,b),e+=k}}function mousePressed(){mouseX>buttL.loc.x&&mouseX<buttL.loc.x+buttL.w&&mouseY>buttL.loc.y&&mouseY<buttL.loc.y+buttL.h&&goLeft(),mouseX>buttR.loc.x&&mouseX<buttR.loc.x+buttR.w&&mouseY>buttR.loc.y&&mouseY<buttR.loc.y+buttR.h&&goRight()}class Page{constructor(a,b,c,d){this.loc=createVector(a,b),this.w=canvas.width/2,this.h=canvas.height/2,this.pageNum=c+1,this.img=d}run(){image(this.img,this.loc.x,this.loc.y,500,500),textAlign(LEFT),textFont(myFont),2==this.pageNum&&(drawtext(this.loc.x+txt_1_x,this.loc.y+txt_1_y,txt1),drawtext(this.loc.x+txt_2_x,this.loc.y+txt_2_y,txt2),drawtext(this.loc.x+txt_3_x,this.loc.y+txt_3_y,txt3),drawtext(this.loc.x+txt_4_x,this.loc.y+txt_4_y,txt4),drawtext(this.loc.x+txt_5_x,this.loc.y+txt_5_y,txt5),drawtext(this.loc.x+txt_6_x,this.loc.y+txt_6_y,txt6));3==this.pageNum,line(this.loc.x,this.loc.y,this.loc.x+this.w,this.loc.y),line(this.loc.x,this.loc.y,this.loc.x,this.loc.y+this.h),line(this.loc.x,this.loc.y+this.h,this.loc.x+this.w,this.loc.y+this.h),line(this.loc.x+this.w,this.loc.y,this.loc.x+this.w,this.h)}}class Button{constructor(a,b,c,d,e){this.loc=new createVector(a,b),this.w=c,this.h=d,this.clr="white",this.img=e}run(){this.render(),this.checkMouse()}render(){fill(this.clr),stroke(20),strokeWeight(0),fill("black"),noStroke(),textSize(15),image(this.img,this.loc.x,this.loc.y,this.w,this.h)}checkMouse(){this.clr=mouseX>this.loc.x&&mouseX<this.loc.x+this.w&&mouseY>this.loc.y&&mouseY<this.loc.y+this.h?"gray":"white"}}'
     );
-
     requests[2].scriptContent = controllerScript;
-
     //requests[3].name = 'defifa_scorecard_min.0.0.1.js';
     //requests[3].contractAddress = _ETHFS_FILESTORAGE_ADDRESS;
     //requests[3].wrapType = 1;
@@ -289,7 +293,6 @@ contract DefifaHTMLTokenUriResolver is IDefifaTokenUriResolver, IJBTokenUriResol
     // is added to that to find the final buffer size.
 
     uint256 finalBufferSize = BUFFER_SIZE + controllerScript.length;
-
     // For easier testing, bufferSize is injected in the constructor
     // of this contract.
 
