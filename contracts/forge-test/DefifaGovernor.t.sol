@@ -586,6 +586,7 @@ contract DefifaGovernorTest is TestBaseWorkflow {
     }
     // Have a user mint and refund the tier
     mintAndRefund(_nft, _projectId, 1);
+
     // Phase 2: Redeem
     vm.warp(block.timestamp + defifaData.mintDuration);
     deployer.queueNextPhaseOf(_projectId);
@@ -658,6 +659,7 @@ contract DefifaGovernorTest is TestBaseWorkflow {
       _expectedTierRedemption = (_expectedTierRedemption * distribution[i]) / _sumDistribution;
       // Assert that our expected tier redemption is ~equal to the actual amount
       // Allowing for some rounding errors, max allowed error is 0.000001 ether
+      emit log("HERE CONTROL");
       assertLt(_expectedTierRedemption - _user.balance, 10 ** 12);
     }
     // All NFTs should have been redeemed, only some dust should be left
@@ -674,10 +676,6 @@ contract DefifaGovernorTest is TestBaseWorkflow {
     vm.assume(nUsersWithWinningTier > 1 && nUsersWithWinningTier < 100);
     uint256 totalWeight = baseRedemptionWeight * (nOfOtherTiers + 1) + winningTierExtraWeight;
     vm.assume(totalWeight > 1);
-    emit log('Weights');
-    emit log_uint(totalWeight);
-    emit log_uint(winningTierExtraWeight);
-    emit log_uint(baseRedemptionWeight);
 
     address[] memory _users = new address[](nOfOtherTiers + nUsersWithWinningTier);
     DefifaLaunchProjectData memory defifaData = getBasicDefifaLaunchData(uint8(nOfOtherTiers + 1));
@@ -933,6 +931,36 @@ contract DefifaGovernorTest is TestBaseWorkflow {
     assertEq(_jbFundingCycleStore.currentOf(_projectId).number, 4);
   }
 
+  function testWhenScorecardIsSubmittedWithUnmintedTier() public {
+    uint8 nTiers = 10;
+    address[] memory _users = new address[](nTiers);
+    DefifaLaunchProjectData memory defifaData = getBasicDefifaLaunchData(nTiers);
+    (uint256 _projectId, DefifaDelegate _nft, DefifaGovernor _governor) = createDefifaProject(
+      defifaData
+    );
+    // Phase 1: Mint
+    vm.warp(defifaData.start - defifaData.mintDuration - defifaData.refundPeriodDuration);
+    deployer.queueNextPhaseOf(_projectId);
+
+    // Phase 2: Redeem
+    vm.warp(block.timestamp + defifaData.mintDuration);
+    deployer.queueNextPhaseOf(_projectId);
+    // Phase 3: Start
+    vm.warp(defifaData.start + 1);
+    deployer.queueNextPhaseOf(_projectId);
+    // Generate the scorecards
+    DefifaTierRedemptionWeight[] memory scorecards = new DefifaTierRedemptionWeight[](nTiers);
+    // We can't have a neutral outcome, so we only give shares to tiers that are an even number (in our array)
+    for (uint256 i = 0; i < scorecards.length; i++) {
+      scorecards[i].id = i + 1;
+      scorecards[i].redemptionWeight = i % 2 == 0 ? 1_000_000_000 / (scorecards.length / 2) : 0;
+    }
+
+    vm.expectRevert(abi.encodeWithSignature('UNOWNED_PROPOSED_REDEMPTION_VALUE()'));
+    // Forward time so proposals can be created
+    uint256 _proposalId = _governor.submitScorecard(scorecards);
+  }
+
   function testWhenPhaseIsAlreadyQueued() public {
     uint8 nTiers = 10;
     address[] memory _users = new address[](nTiers);
@@ -1164,9 +1192,7 @@ contract DefifaGovernorTest is TestBaseWorkflow {
     _governor.ratifyScorecard(scorecards);
   }
 
-  function getBasicDefifaLaunchData(
-    uint8 nTiers
-  ) internal returns (DefifaLaunchProjectData memory) {
+  function getBasicDefifaLaunchData(uint8 nTiers) internal returns (DefifaLaunchProjectData memory) {
     DefifaTierParams[] memory tierParams = new DefifaTierParams[](nTiers);
     for (uint i = 0; i < nTiers; i++) {
       tierParams[i] = DefifaTierParams({
