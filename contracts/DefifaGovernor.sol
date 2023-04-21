@@ -140,7 +140,7 @@ contract DefifaGovernor is Governor, GovernorCountingSimple, IDefifaGovernor {
 
     for (uint256 _i; _i < _numberOfTierWeights; ) {
       // Get a reference to the tier.
-      JB721Tier memory _tier = delegate.store().tier(address(this), _tierWeights[_i].id);
+      JB721Tier memory _tier = delegate.store().tier(address(delegate), _tierWeights[_i].id);
 
       // If there's a weight assigned to the tier, make sure there is a token backed by it.
       if (_tier.initialQuantity == _tier.remainingQuantity && _tierWeights[_i].redemptionWeight > 0)
