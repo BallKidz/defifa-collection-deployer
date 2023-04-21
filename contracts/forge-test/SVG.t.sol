@@ -41,7 +41,7 @@ contract EmptyTest is Test {
       reservedTokenBeneficiary: address(0),
       royaltyRate: 0,
       royaltyBeneficiary: address(0),
-      encodedIPFSUri: bytes32(''),
+      encodedIPFSUri: bytes32(0xfb17901b2b08444d2bbe92ca39bdd64eab27b0481e841fcd9f14aeb56e28513b),
       category: 1,
       allowManualMint: false,
       shouldUseReservedTokenBeneficiaryAsDefault: false,
