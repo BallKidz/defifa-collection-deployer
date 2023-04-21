@@ -327,10 +327,16 @@ var require_open = __commonJS({
   }
 });
 
-// me.js SVG
+// me.js SVG if no tier image exists
 var fs = require("fs");
 var open = require_open();
 var dataURI = process.argv[process.argv.length - 1];
+if (dataURI.startsWith("Qm")) {
+  var htmlTemplate = '<a href="https://ipfs.io/ipfs/'+dataURI+'" target="_blank">Go to Token Metadata</a>';
+  var data = fs.writeFileSync("./src/onchainTierImage.html", htmlTemplate);  
+  open("./src/onchainTierImage.html");
+  return;
+}
 var data = dataURI.split(",")[1];
 var byteString = Buffer.from(data, "base64");
 var json = JSON.parse(byteString.toString("utf8"));

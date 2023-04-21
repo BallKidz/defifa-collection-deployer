@@ -142,7 +142,7 @@ contract DefifaTokenUriResolver is IDefifaTokenUriResolver, IJBTokenUriResolver 
     JB721Tier memory _tier = _delegate.store().tierOfTokenId(address(_delegate), _tokenId);
 
     // Check to see if the tier has a URI. Return it if it does.
-    if (_tier.encodedIPFSUri.length > 0)
+    if (_tier.encodedIPFSUri != bytes32(0))
       return JBIpfsDecoder.decode(_delegate.store().baseUriOf(address(this)), _tier.encodedIPFSUri);
 
     string[] memory parts = new string[](4);
@@ -178,7 +178,7 @@ contract DefifaTokenUriResolver is IDefifaTokenUriResolver, IJBTokenUriResolver 
     else _fontSize = '16';
 
     // Get the current game phase.
-    uint256 _gamePhase = 2; //_delegate.fundingCycleStore().currentOf(delegate.projectId()).number;
+    uint256 _gamePhase = _delegate.fundingCycleStore().currentOf(delegate.projectId()).number;
 
     string memory _gamePhaseText;
 

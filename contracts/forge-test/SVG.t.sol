@@ -25,7 +25,7 @@ contract EmptyTest is Test {
   address defifaBallkidz = address(0);
   address delegateRegistry = address(0);
 
-  function testOutput() public {
+  function testWithTierImage() public {
     DefifaDelegate _delegate = DefifaDelegate(Clones.clone(address(new DefifaDelegate())));
     DefifaTokenUriResolver _resolver = DefifaTokenUriResolver(
       Clones.clone(address(new DefifaTokenUriResolver()))
@@ -42,6 +42,67 @@ contract EmptyTest is Test {
       royaltyRate: 0,
       royaltyBeneficiary: address(0),
       encodedIPFSUri: bytes32(0xfb17901b2b08444d2bbe92ca39bdd64eab27b0481e841fcd9f14aeb56e28513b),
+      category: 1,
+      allowManualMint: false,
+      shouldUseReservedTokenBeneficiaryAsDefault: false,
+      shouldUseRoyaltyBeneficiaryAsDefault: false,
+      transfersPausable: false
+    });
+    _delegate.initialize({
+      _projectId: 123,
+      _directory: _directory,
+      _name: 'Example collection',
+      _symbol: 'EX',
+      _fundingCycleStore: _fundingCycleStore,
+      _baseUri: '',
+      _tokenUriResolver: _resolver,
+      _contractUri: '',
+      _pricing: JB721PricingParams({
+        tiers: _tiers,
+        currency: 1,
+        decimals: 18,
+        prices: IJBPrices(address(0))
+      }),
+      _store: _store,
+      _flags: JBTiered721Flags({
+        lockReservedTokenChanges: false,
+        lockVotingUnitChanges: false,
+        lockManualMintingChanges: false,
+        preventOverspending: false
+      })
+    });
+
+    string[] memory _tierNames = new string[](1);
+    _tierNames[0] = 'liverpool';
+
+    _resolver.initialize(_delegate, _tierNames);
+
+    string[] memory inputs = new string[](3);
+    inputs[0] = 'node';
+    inputs[1] = './open.js';
+    inputs[2] = _resolver.getUri(1000000001);
+    bytes memory res = vm.ffi(inputs);
+    res;
+    vm.ffi(inputs);
+  }
+
+  function testWithOutTierImage() public {
+    DefifaDelegate _delegate = DefifaDelegate(Clones.clone(address(new DefifaDelegate())));
+    DefifaTokenUriResolver _resolver = DefifaTokenUriResolver(
+      Clones.clone(address(new DefifaTokenUriResolver()))
+    );
+
+    JB721TierParams[] memory _tiers = new JB721TierParams[](1);
+    _tiers[0] = JB721TierParams({
+      contributionFloor: 1E18,
+      lockedUntil: 0,
+      initialQuantity: 100,
+      votingUnits: 0,
+      reservedRate: 0,
+      reservedTokenBeneficiary: address(0),
+      royaltyRate: 0,
+      royaltyBeneficiary: address(0),
+      encodedIPFSUri: bytes32(''),
       category: 1,
       allowManualMint: false,
       shouldUseReservedTokenBeneficiaryAsDefault: false,
