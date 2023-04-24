@@ -83,9 +83,6 @@ contract DefifaGovernorTest is TestBaseWorkflow {
 
     // Forward 1 block, user should receive all the voting power of the tier, as its the only NFT
     vm.roll(block.number + 1);
-    uint votes = _nft.store().tierVotingUnitsOf(address(_nft), _user, 1);
-    emit log('Votes');
-    emit log_uint(votes);
 
     assertEq(_nft.store().tier(address(_nft), tier).votingUnits, 1);
     assertEq(_governor.MAX_VOTING_POWER_TIER(), _governor.getVotes(_user, block.number - 1));
@@ -659,7 +656,6 @@ contract DefifaGovernorTest is TestBaseWorkflow {
       _expectedTierRedemption = (_expectedTierRedemption * distribution[i]) / _sumDistribution;
       // Assert that our expected tier redemption is ~equal to the actual amount
       // Allowing for some rounding errors, max allowed error is 0.000001 ether
-      emit log("HERE CONTROL");
       assertLt(_expectedTierRedemption - _user.balance, 10 ** 12);
     }
     // All NFTs should have been redeemed, only some dust should be left
