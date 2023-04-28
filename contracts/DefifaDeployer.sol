@@ -3,7 +3,7 @@ pragma solidity ^0.8.16;
 
 import '@openzeppelin/contracts/proxy/Clones.sol';
 import '@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol';
-import "@openzeppelin/contracts/utils/Strings.sol";
+import '@openzeppelin/contracts/utils/Strings.sol';
 import '@jbx-protocol/juice-contracts-v3/contracts/libraries/JBConstants.sol';
 import '@jbx-protocol/juice-contracts-v3/contracts/libraries/JBTokens.sol';
 import '@jbx-protocol/juice-contracts-v3/contracts/libraries/JBSplitsGroups.sol';
@@ -71,7 +71,7 @@ contract DefifaDeployer is IDefifaDeployer, IERC721Receiver {
     Includes the payment terminal being used, the distribution limit, and wether or not fees should be held.
   */
   mapping(uint256 => DefifaStoredOpsData) internal _opsFor;
-  
+
   /** 
     @notice 
     This contract current nonce, used for the registry initialized at 1 since the first contract deployed is the delegate
@@ -132,7 +132,7 @@ contract DefifaDeployer is IDefifaDeployer, IERC721Receiver {
     @notice
     The address that should be forwarded JBX accumulated in this contract from game fund distributions.
   */
-  address public override immutable protocolFeeProjectTokenAccount;
+  address public immutable override protocolFeeProjectTokenAccount;
 
   /** 
     @notice 
@@ -206,7 +206,9 @@ contract DefifaDeployer is IDefifaDeployer, IERC721Receiver {
     JBFundingCycle memory _queuedFundingCycle = controller.fundingCycleStore().queuedOf(_gameId);
 
     // If the configurations are the same and the game hasn't ended, queueing is still needed.
-    return _currentFundingCycle.number != 4 && _currentFundingCycle.configuration == _queuedFundingCycle.configuration;
+    return
+      _currentFundingCycle.number != 4 &&
+      _currentFundingCycle.configuration == _queuedFundingCycle.configuration;
   }
 
   //*********************************************************************//
@@ -258,7 +260,10 @@ contract DefifaDeployer is IDefifaDeployer, IERC721Receiver {
 
     // Make sure the provided gameplay timestamps are sequential.
     if (
-      _launchProjectData.start - _launchProjectData.refundPeriodDuration - _launchProjectData.mintDuration < block.timestamp ||
+      _launchProjectData.start -
+        _launchProjectData.refundPeriodDuration -
+        _launchProjectData.mintDuration <
+      block.timestamp ||
       _launchProjectData.end < _launchProjectData.start
     ) revert INVALID_GAME_CONFIGURATION();
 
@@ -276,7 +281,7 @@ contract DefifaDeployer is IDefifaDeployer, IERC721Receiver {
 
       // Store the terminal, distribution limit, and hold fees flag.
       _opsFor[gameId] = DefifaStoredOpsData({
-        terminal:_launchProjectData.terminal,
+        terminal: _launchProjectData.terminal,
         distributionLimit: _launchProjectData.distributionLimit,
         token: _launchProjectData.token
       });
@@ -299,12 +304,14 @@ contract DefifaDeployer is IDefifaDeployer, IERC721Receiver {
         controller.splitsStore().set(BALLKIDZ_PROJECT_ID, SPLIT_DOMAIN, _groupedSplits);
       }
     }
-    
+
     // Keep track of the number of tiers.
-    uint256 _numberOfTiers = _launchProjectData.tiers.length;  
+    uint256 _numberOfTiers = _launchProjectData.tiers.length;
 
     // Create the standard tiers struct that will be populated from the defifa tiers.
-    JB721TierParams[] memory _delegateTiers = new JB721TierParams[](_launchProjectData.tiers.length);
+    JB721TierParams[] memory _delegateTiers = new JB721TierParams[](
+      _launchProjectData.tiers.length
+    );
 
     // Group all the tier names together.
     string[] memory _tierNames = new string[](_launchProjectData.tiers.length);
@@ -313,7 +320,7 @@ contract DefifaDeployer is IDefifaDeployer, IERC721Receiver {
     DefifaTierParams memory _defifaTier;
 
     // Create the delegate tiers from the Defifa tiers.
-    for (uint256 _i; _i < _numberOfTiers;) {
+    for (uint256 _i; _i < _numberOfTiers; ) {
       _defifaTier = _launchProjectData.tiers[_i];
 
       // Set the tier.
@@ -329,7 +336,8 @@ contract DefifaDeployer is IDefifaDeployer, IERC721Receiver {
         encodedIPFSUri: _defifaTier.encodedIPFSUri,
         category: 1,
         allowManualMint: false,
-        shouldUseReservedTokenBeneficiaryAsDefault: _defifaTier.shouldUseReservedTokenBeneficiaryAsDefault, 
+        shouldUseReservedTokenBeneficiaryAsDefault: _defifaTier
+          .shouldUseReservedTokenBeneficiaryAsDefault,
         shouldUseRoyaltyBeneficiaryAsDefault: false,
         transfersPausable: false
       });
@@ -343,18 +351,21 @@ contract DefifaDeployer is IDefifaDeployer, IERC721Receiver {
     }
 
     JB721PricingParams memory _pricingParams = JB721PricingParams({
-        tiers: _delegateTiers,
-        currency: _launchProjectData.terminal.currencyForToken(_launchProjectData.token),
-        decimals: _launchProjectData.terminal.decimalsForToken(_launchProjectData.token),
-        prices: IJBPrices(address(0))
-      });
+      tiers: _delegateTiers,
+      currency: _launchProjectData.terminal.currencyForToken(_launchProjectData.token),
+      decimals: _launchProjectData.terminal.decimalsForToken(_launchProjectData.token),
+      prices: IJBPrices(address(0))
+    });
 
     // Clone and initialize the new delegate with a new token uri resolver.
     DefifaDelegate _delegate = DefifaDelegate(Clones.clone(delegateCodeOrigin));
 
     // Use the default uri resolver if provided, else use the hardcoded generic default.
-    IJBTokenUriResolver _uriResolver = _launchProjectData.defaultTokenUriResolver != IJBTokenUriResolver(address(0)) ? _launchProjectData.defaultTokenUriResolver : DefifaTokenUriResolver(Clones.clone(tokenUriResolverCodeOrigin));
-    
+    IJBTokenUriResolver _uriResolver = _launchProjectData.defaultTokenUriResolver !=
+      IJBTokenUriResolver(address(0))
+      ? _launchProjectData.defaultTokenUriResolver
+      : DefifaTokenUriResolver(Clones.clone(tokenUriResolverCodeOrigin));
+
     _delegate.initialize(
       gameId,
       controller.directory(),
@@ -367,28 +378,27 @@ contract DefifaDeployer is IDefifaDeployer, IERC721Receiver {
       _pricingParams,
       _launchProjectData.store,
       JBTiered721Flags({
-          preventOverspending: true,
-          lockReservedTokenChanges: false,
-          lockVotingUnitChanges: false,
-          lockManualMintingChanges: false
+        preventOverspending: true,
+        lockReservedTokenChanges: false,
+        lockVotingUnitChanges: false,
+        lockManualMintingChanges: false
       })
     );
 
-    // Initialize the fallback defauly uri resolver if needed.
-    if (_launchProjectData.defaultTokenUriResolver == IJBTokenUriResolver(address(0))) {
-
-    DefifaTokenUriResolver(address(_uriResolver)).initialize(_delegate, _tierNames);
-    }
+    // Initialize the fallback default uri resolver if needed.
+    if (_launchProjectData.defaultTokenUriResolver == IJBTokenUriResolver(address(0)))
+      DefifaTokenUriResolver(address(_uriResolver)).initialize(_delegate, _tierNames);
 
     // Make sure the provided terminal accepts the same currency as this game is being played in.
-    if (!_launchProjectData.terminal.acceptsToken(_launchProjectData.token, gameId)) revert UNEXPECTED_TERMINAL_CURRENCY();
+    if (!_launchProjectData.terminal.acceptsToken(_launchProjectData.token, gameId))
+      revert UNEXPECTED_TERMINAL_CURRENCY();
 
     // Queue the first phase of the game.
     _queuePhase1(_launchProjectData, address(_delegate));
 
     // Clone and initialize the new governor.
-     governor = IDefifaGovernor(Clones.clone(governorCodeOrigin));
-     governor.initialize(_delegate, _launchProjectData.end, _launchProjectData.votingPeriod);
+    governor = IDefifaGovernor(Clones.clone(governorCodeOrigin));
+    governor.initialize(_delegate, _launchProjectData.end, _launchProjectData.votingPeriod);
 
     // Transfer ownership to the specified owner.
     _delegate.transferOwnership(address(governor));
@@ -408,14 +418,12 @@ contract DefifaDeployer is IDefifaDeployer, IERC721Receiver {
 
     @return configuration The configuration of the funding cycle that was successfully reconfigured.
   */
-  function queueNextPhaseOf(uint256 _gameId)
-    external
-    override
-    returns (uint256 configuration)
-  {
+  function queueNextPhaseOf(uint256 _gameId) external override returns (uint256 configuration) {
     // Get the project's current funding cycle along with its metadata.
-    (JBFundingCycle memory _currentFundingCycle, JBFundingCycleMetadata memory _metadata) = controller
-      .currentFundingCycleOf(_gameId);
+    (
+      JBFundingCycle memory _currentFundingCycle,
+      JBFundingCycleMetadata memory _metadata
+    ) = controller.currentFundingCycleOf(_gameId);
 
     // There are only 4 phases.
     if (_currentFundingCycle.number >= 4) revert GAME_OVER();
@@ -455,8 +463,13 @@ contract DefifaDeployer is IDefifaDeployer, IERC721Receiver {
     @notice
     Allows this contract to receive 721s.
   */
-  function onERC721Received(address, address, uint256, bytes calldata) external pure override returns (bytes4) {
-     return IERC721Receiver.onERC721Received.selector;
+  function onERC721Received(
+    address,
+    address,
+    uint256,
+    bytes calldata
+  ) external pure override returns (bytes4) {
+    return IERC721Receiver.onERC721Received.selector;
   }
 
   //*********************************************************************//
