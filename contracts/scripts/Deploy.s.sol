@@ -17,6 +17,8 @@ contract DeployMainnet is Script {
   IJBDelegatesRegistry _delegateRegistry =
     IJBDelegatesRegistry(0x7A53cAA1dC4d752CAD283d039501c0Ee45719FaC);
 
+  uint256 _ballkidzProjectId = 369;
+
   function run() external {
     vm.startBroadcast();
 
@@ -35,8 +37,9 @@ contract DeployMainnet is Script {
       address(_defifaGovernorCodeOrigin),
       address(_defifaTokenUriResolverCodeOrigin),
       controller,
+      _delegateRegistry,
       _defifaBallkidz,
-      _delegateRegistry
+      _ballkidzProjectId
     );
 
     console.log(address(_defifaDeployer));
@@ -50,6 +53,8 @@ contract DeployGoerli is Script {
   address _defifaBallkidz = 0x11834239698c7336EF232C00a2A9926d3375DF9D;
   IJBDelegatesRegistry _delegateRegistry =
     IJBDelegatesRegistry(0xCe3Ebe8A7339D1f7703bAF363d26cD2b15D23C23);
+
+  uint256 _ballkidzProjectId = 369;
 
   function run() external {
     vm.startBroadcast();
@@ -69,8 +74,9 @@ contract DeployGoerli is Script {
       address(_defifaGovernorCodeOrigin),
       address(_defifaTokenUriResolverCodeOrigin),
       controller,
+      _delegateRegistry,
       _defifaBallkidz,
-      _delegateRegistry
+      _ballkidzProjectId
     );
 
     console.log(address(_defifaDeployer));
