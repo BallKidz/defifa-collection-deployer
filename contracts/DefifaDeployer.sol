@@ -239,6 +239,7 @@ contract DefifaDeployer is IDefifaDeployer, IERC721Receiver, Ownable {
     @param _delegatesRegistry The contract storing references to the deployer of each delegate.
     @param _protocolFeeProjectTokenAccount The address that should be forwarded JBX accumulated in this contract from game fund distributions. 
     @param _ballkidzProjectId The ID of the project that should take the fee from the games.
+    @param _owner The address that can change the fees.
   */
   constructor(
     address _delegateCodeOrigin,
@@ -247,7 +248,8 @@ contract DefifaDeployer is IDefifaDeployer, IERC721Receiver, Ownable {
     IJBController3_1 _controller,
     IJBDelegatesRegistry _delegatesRegistry,
     address _protocolFeeProjectTokenAccount,
-    uint256 _ballkidzProjectId
+    uint256 _ballkidzProjectId,
+    address _owner
   ) {
     delegateCodeOrigin = _delegateCodeOrigin;
     governorCodeOrigin = _governorCodeOrigin;
@@ -256,6 +258,8 @@ contract DefifaDeployer is IDefifaDeployer, IERC721Receiver, Ownable {
     protocolFeeProjectTokenAccount = _protocolFeeProjectTokenAccount;
     delegatesRegistry = _delegatesRegistry;
     ballkidzProjectId = _ballkidzProjectId;
+
+    _transferOwnership(_owner);
   }
 
   //*********************************************************************//

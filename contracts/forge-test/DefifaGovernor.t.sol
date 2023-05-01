@@ -28,6 +28,7 @@ contract DefifaGovernorTest is TestBaseWorkflow {
     DefifaTokenUriResolver _tokenURIResolver = new DefifaTokenUriResolver();
     address _protocolFeeProjectTokenAccount = 0x1000000000000000000000000000000000000000;
     uint256 _ballkidzProjectId = 1;
+    address _owner = 0x1000000000000000000000000000000000000000;
     deployer = new DefifaDeployer(
       address(_delegate),
       address(_governer),
@@ -35,7 +36,8 @@ contract DefifaGovernorTest is TestBaseWorkflow {
       _jbController,
       IJBDelegatesRegistry(address(_registry)),
       _protocolFeeProjectTokenAccount,
-      _ballkidzProjectId
+      _ballkidzProjectId,
+      _owner
     );
   }
 

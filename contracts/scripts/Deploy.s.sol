@@ -39,7 +39,8 @@ contract DeployMainnet is Script {
       controller,
       _delegateRegistry,
       _defifaBallkidz,
-      _ballkidzProjectId
+      _ballkidzProjectId,
+      _defifaBallkidz
     );
 
     console.log(address(_defifaDeployer));
@@ -76,7 +77,8 @@ contract DeployGoerli is Script {
       controller,
       _delegateRegistry,
       _defifaBallkidz,
-      _ballkidzProjectId
+      _ballkidzProjectId,
+      _defifaBallkidz
     );
 
     console.log(address(_defifaDeployer));
