@@ -27,13 +27,15 @@ contract DefifaGovernorTest is TestBaseWorkflow {
     JBDelegatesRegistry _registry = new JBDelegatesRegistry();
     DefifaTokenUriResolver _tokenURIResolver = new DefifaTokenUriResolver();
     address _protocolFeeProjectTokenAccount = 0x1000000000000000000000000000000000000000;
+    uint256 _ballkidzProjectId = 1;
     deployer = new DefifaDeployer(
       address(_delegate),
       address(_governer),
       address(_tokenURIResolver),
       _jbController,
+      IJBDelegatesRegistry(address(_registry)),
       _protocolFeeProjectTokenAccount,
-      IJBDelegatesRegistry(address(_registry))
+      _ballkidzProjectId
     );
   }
 
@@ -1188,7 +1190,9 @@ contract DefifaGovernorTest is TestBaseWorkflow {
     _governor.ratifyScorecard(scorecards);
   }
 
-  function getBasicDefifaLaunchData(uint8 nTiers) internal returns (DefifaLaunchProjectData memory) {
+  function getBasicDefifaLaunchData(
+    uint8 nTiers
+  ) internal returns (DefifaLaunchProjectData memory) {
     DefifaTierParams[] memory tierParams = new DefifaTierParams[](nTiers);
     for (uint i = 0; i < nTiers; i++) {
       tierParams[i] = DefifaTierParams({

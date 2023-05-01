@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.16;
 
-import "@openzeppelin/contracts/access/Ownable.sol";
+import '@openzeppelin/contracts/access/Ownable.sol';
 import '@openzeppelin/contracts/proxy/Clones.sol';
 import '@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol';
 import '@openzeppelin/contracts/utils/Strings.sol';
@@ -37,7 +37,7 @@ contract DefifaDeployer is IDefifaDeployer, IERC721Receiver, Ownable {
   error INVALID_FEE_PERCENT();
   error INVALID_GAME_CONFIGURATION();
   error PHASE_ALREADY_QUEUED();
-  error SPLITS_DONT_ADD_UP()
+  error SPLITS_DONT_ADD_UP();
   error UNEXPECTED_TERMINAL_CURRENCY();
 
   //*********************************************************************//
@@ -247,7 +247,7 @@ contract DefifaDeployer is IDefifaDeployer, IERC721Receiver, Ownable {
     IJBController3_1 _controller,
     IJBDelegatesRegistry _delegatesRegistry,
     address _protocolFeeProjectTokenAccount,
-    uint256 ballkidzProjectId
+    uint256 _ballkidzProjectId
   ) {
     delegateCodeOrigin = _delegateCodeOrigin;
     governorCodeOrigin = _governorCodeOrigin;
@@ -309,20 +309,21 @@ contract DefifaDeployer is IDefifaDeployer, IERC721Receiver, Ownable {
       uint256 _numberOfSplits = _launchProjectData.splits.length;
 
       // Keep a reference to the split percent.
-      uint256 _splitPercent = JBConstants.SPLITS_TOTAL_PERCENT / 20;
+      uint256 _splitPercent = JBConstants.SPLITS_TOTAL_PERCENT / feeDivisor;
 
       if (_numberOfSplits != 0) {
         // Keep a reference to the total percent of splits being set.
         uint256 _totalSplitPercent;
-        for (uint256 _i; _i < _numberOfSplits;) [
-          _totalSplitPercent += _launchProjectData.splits[_i].percent; 
+        for (uint256 _i; _i < _numberOfSplits; ) {
+          _totalSplitPercent += _launchProjectData.splits[_i].percent;
           unchecked {
             ++_i;
           }
-        ]
+        }
 
         // Make sure the splits leave room for the fee.
-        if (_totalSplitPercent != JBConstants.SPLITS_TOTAL_PERCENT - _splitPercent) revert SPLITS_DONT_ADD_UP();
+        if (_totalSplitPercent != JBConstants.SPLITS_TOTAL_PERCENT - _splitPercent)
+          revert SPLITS_DONT_ADD_UP();
 
         // Add a split for the Ballkidz fee.
         _launchProjectData.splits[_launchProjectData.splits.length] = JBSplit({
@@ -508,11 +509,11 @@ contract DefifaDeployer is IDefifaDeployer, IERC721Receiver, Ownable {
     @param _percent The percent fee to charge.
   */
   function changeFee(uint256 _percent) external onlyOwner {
-      // Make sure the fee is not greater than 5%.
-      if (_percent > 5) revert INVALID_FEE_PERCENT();
+    // Make sure the fee is not greater than 5%.
+    if (_percent > 5) revert INVALID_FEE_PERCENT();
 
-      // Set the fee divisor.
-      feeDivisor = 100 / _percent;
+    // Set the fee divisor.
+    feeDivisor = 100 / _percent;
   }
 
   /**
@@ -699,7 +700,7 @@ contract DefifaDeployer is IDefifaDeployer, IERC721Receiver, Ownable {
     });
 
     // Fetch splits.
-    JBSplit[] memory _splits =  controller.splitsStore().splitsOf(BALLKIDZ_PROJECT_ID, SPLIT_DOMAIN, _gameId);
+    JBSplit[] memory _splits =  controller.splitsStore().splitsOf(ballkidzProjectId, SPLIT_DOMAIN, _gameId);
 
     // Make a group split for ETH payouts.
     JBGroupedSplits[] memory _groupedSplits;
