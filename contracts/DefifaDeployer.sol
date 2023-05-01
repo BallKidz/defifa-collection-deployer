@@ -312,10 +312,10 @@ contract DefifaDeployer is IDefifaDeployer, IERC721Receiver, Ownable {
       // Keep a reference to the number of splits.
       uint256 _numberOfSplits = _launchProjectData.splits.length;
 
-      // Keep a reference to the split percent.
-      uint256 _splitPercent = JBConstants.SPLITS_TOTAL_PERCENT / feeDivisor;
-
       if (_numberOfSplits != 0) {
+        // Keep a reference to the split percent.
+        uint256 _feePercent = JBConstants.SPLITS_TOTAL_PERCENT / feeDivisor;
+
         // Keep a reference to the total percent of splits being set.
         uint256 _totalSplitPercent;
         for (uint256 _i; _i < _numberOfSplits; ) {
@@ -326,14 +326,14 @@ contract DefifaDeployer is IDefifaDeployer, IERC721Receiver, Ownable {
         }
 
         // Make sure the splits leave room for the fee.
-        if (_totalSplitPercent != JBConstants.SPLITS_TOTAL_PERCENT - _splitPercent)
+        if (_totalSplitPercent != JBConstants.SPLITS_TOTAL_PERCENT - _feePercent)
           revert SPLITS_DONT_ADD_UP();
 
         // Add a split for the Ballkidz fee.
         _launchProjectData.splits[_launchProjectData.splits.length] = JBSplit({
           preferClaimed: false,
           preferAddToBalance: false,
-          percent: _splitPercent,
+          percent: _feePercent,
           projectId: ballkidzProjectId,
           beneficiary: _launchProjectData.ballkidzFeeProjectTokenAccount,
           lockedUntil: 0,
