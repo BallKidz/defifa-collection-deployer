@@ -55,7 +55,7 @@ contract DeployGoerli is Script {
   IJBDelegatesRegistry _delegateRegistry =
     IJBDelegatesRegistry(0xCe3Ebe8A7339D1f7703bAF363d26cD2b15D23C23);
 
-  uint256 _ballkidzProjectId = 369;
+  uint256 _ballkidzProjectId = 1;
 
   function run() external {
     vm.startBroadcast();
