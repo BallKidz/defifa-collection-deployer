@@ -9,9 +9,9 @@ import '../structs/DefifaTimeData.sol';
 import './IDefifaGovernor.sol';
 
 interface IDefifaDeployer {
-  function BALLKIDZ_PROJECT_ID() external view returns (uint256);
-
   function SPLIT_DOMAIN() external view returns (uint256);
+
+  function ballkidzProjectId() external view returns (uint256);
 
   function delegateCodeOrigin() external view returns (address);
 

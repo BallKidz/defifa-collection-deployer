@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.16;
 
+import '@openzeppelin/contracts/access/Ownable.sol';
 import '@openzeppelin/contracts/proxy/Clones.sol';
 import '@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol';
 import '@openzeppelin/contracts/utils/Strings.sol';
@@ -26,15 +27,17 @@ import './DefifaTokenUriResolver.sol';
   Adheres to -
   IDefifaDeployer: General interface for the generic controller methods in this contract that interacts with funding cycles and tokens according to the protocol's rules.
 */
-contract DefifaDeployer is IDefifaDeployer, IERC721Receiver {
+contract DefifaDeployer is IDefifaDeployer, IERC721Receiver, Ownable {
   using Strings for uint256;
 
   //*********************************************************************//
   // --------------------------- custom errors ------------------------- //
   //*********************************************************************//
+  error GAME_OVER();
+  error INVALID_FEE_PERCENT();
   error INVALID_GAME_CONFIGURATION();
   error PHASE_ALREADY_QUEUED();
-  error GAME_OVER();
+  error SPLITS_DONT_ADD_UP();
   error UNEXPECTED_TERMINAL_CURRENCY();
 
   //*********************************************************************//
@@ -84,15 +87,6 @@ contract DefifaDeployer is IDefifaDeployer, IERC721Receiver {
 
   /**
     @notice
-    The project ID relative to which splits are stored.
-
-    @dev
-    The owner of this project ID must give this contract operator permissions over the SET_SPLITS operation.
-  */
-  uint256 public constant override BALLKIDZ_PROJECT_ID = 369;
-
-  /**
-    @notice
     The domain relative to which splits are stored.
 
     @dev
@@ -103,6 +97,15 @@ contract DefifaDeployer is IDefifaDeployer, IERC721Receiver {
   //*********************************************************************//
   // --------------- public immutable stored properties ---------------- //
   //*********************************************************************//
+
+  /**
+    @notice
+    The project ID relative to which splits are stored.
+
+    @dev
+    The owner of this project ID must give this contract operator permissions over the SET_SPLITS operation.
+  */
+  uint256 public immutable override ballkidzProjectId;
 
   /**
     @notice 
@@ -139,6 +142,19 @@ contract DefifaDeployer is IDefifaDeployer, IERC721Receiver {
     The delegates registry. 
   */
   IJBDelegatesRegistry public immutable delegatesRegistry;
+
+  //*********************************************************************//
+  // --------------------- public stored properties -------------------- //
+  //*********************************************************************//
+
+  /** 
+    @notice
+    The divisor that describes the fee that should be taken. 
+
+    @dev
+    This is equal to 100 divided by the fee percent.  
+  */
+  uint256 public feeDivisor = 20;
 
   //*********************************************************************//
   // ------------------------- external views -------------------------- //
@@ -220,16 +236,20 @@ contract DefifaDeployer is IDefifaDeployer, IERC721Receiver {
     @param _governorCodeOrigin The code of the Defifa governor.
     @param _tokenUriResolverCodeOrigin The token URI resolver with which new projects should be deployed. 
     @param _controller The controller to use to launch the game from.
-    @param _protocolFeeProjectTokenAccount The address that should be forwarded JBX accumulated in this contract from game fund distributions. 
     @param _delegatesRegistry The contract storing references to the deployer of each delegate.
+    @param _protocolFeeProjectTokenAccount The address that should be forwarded JBX accumulated in this contract from game fund distributions. 
+    @param _ballkidzProjectId The ID of the project that should take the fee from the games.
+    @param _owner The address that can change the fees.
   */
   constructor(
     address _delegateCodeOrigin,
     address _governorCodeOrigin,
     address _tokenUriResolverCodeOrigin,
     IJBController3_1 _controller,
+    IJBDelegatesRegistry _delegatesRegistry,
     address _protocolFeeProjectTokenAccount,
-    IJBDelegatesRegistry _delegatesRegistry
+    uint256 _ballkidzProjectId,
+    address _owner
   ) {
     delegateCodeOrigin = _delegateCodeOrigin;
     governorCodeOrigin = _governorCodeOrigin;
@@ -237,6 +257,9 @@ contract DefifaDeployer is IDefifaDeployer, IERC721Receiver {
     controller = _controller;
     protocolFeeProjectTokenAccount = _protocolFeeProjectTokenAccount;
     delegatesRegistry = _delegatesRegistry;
+    ballkidzProjectId = _ballkidzProjectId;
+
+    _transferOwnership(_owner);
   }
 
   //*********************************************************************//
@@ -279,29 +302,50 @@ contract DefifaDeployer is IDefifaDeployer, IERC721Receiver {
         end: _launchProjectData.end
       });
 
-      // Store the terminal, distribution limit, and hold fees flag.
+      // Store the terminal and distribution limit.
       _opsFor[gameId] = DefifaStoredOpsData({
         terminal: _launchProjectData.terminal,
         distributionLimit: _launchProjectData.distributionLimit,
         token: _launchProjectData.token
       });
 
-      if (_launchProjectData.splits.length != 0) {
-        // Store the splits. They'll be used when queueing phase 2.
-        JBGroupedSplits[] memory _groupedSplits = new JBGroupedSplits[](1);
+      // Keep a reference to the number of splits.
+      uint256 _numberOfSplits = _launchProjectData.splits.length;
+
+      if (_numberOfSplits != 0) {
+        // Keep a reference to the split percent.
+        uint256 _feePercent = JBConstants.SPLITS_TOTAL_PERCENT / feeDivisor;
+
+        // Keep a reference to the total percent of splits being set.
+        uint256 _totalSplitPercent;
+        for (uint256 _i; _i < _numberOfSplits; ) {
+          _totalSplitPercent += _launchProjectData.splits[_i].percent;
+          unchecked {
+            ++_i;
+          }
+        }
+
+        // Make sure the splits leave room for the fee.
+        if (_totalSplitPercent != JBConstants.SPLITS_TOTAL_PERCENT - _feePercent)
+          revert SPLITS_DONT_ADD_UP();
+
         // Add a split for the Ballkidz fee.
         _launchProjectData.splits[_launchProjectData.splits.length] = JBSplit({
           preferClaimed: false,
           preferAddToBalance: false,
-          percent: JBConstants.SPLITS_TOTAL_PERCENT / 20,
-          projectId: BALLKIDZ_PROJECT_ID,
+          percent: _feePercent,
+          projectId: ballkidzProjectId,
           beneficiary: _launchProjectData.ballkidzFeeProjectTokenAccount,
           lockedUntil: 0,
           allocator: IJBSplitAllocator(address(0))
         });
+
+        // Store the splits. They'll be used when queueing phase 2.
+        JBGroupedSplits[] memory _groupedSplits = new JBGroupedSplits[](1);
         _groupedSplits[0] = JBGroupedSplits({group: gameId, splits: _launchProjectData.splits});
+
         // This contract must have SET_SPLITS operator permissions.
-        controller.splitsStore().set(BALLKIDZ_PROJECT_ID, SPLIT_DOMAIN, _groupedSplits);
+        controller.splitsStore().set(ballkidzProjectId, SPLIT_DOMAIN, _groupedSplits);
       }
     }
 
@@ -457,6 +501,23 @@ contract DefifaDeployer is IDefifaDeployer, IERC721Receiver {
       protocolFeeProjectTokenAccount,
       controller.tokenStore().unclaimedBalanceOf(address(this), _PROTOCOL_FEE_PROJECT)
     );
+  }
+
+  /** 
+    @notice
+    Allow this contract's owner to change the publishing fee.
+
+    @dev
+    The max fee is %5.
+
+    @param _percent The percent fee to charge.
+  */
+  function changeFee(uint256 _percent) external onlyOwner {
+    // Make sure the fee is not greater than 5%.
+    if (_percent > 5) revert INVALID_FEE_PERCENT();
+
+    // Set the fee divisor.
+    feeDivisor = 100 / _percent;
   }
 
   /**
@@ -643,7 +704,7 @@ contract DefifaDeployer is IDefifaDeployer, IERC721Receiver {
     });
 
     // Fetch splits.
-    JBSplit[] memory _splits =  controller.splitsStore().splitsOf(BALLKIDZ_PROJECT_ID, SPLIT_DOMAIN, _gameId);
+    JBSplit[] memory _splits =  controller.splitsStore().splitsOf(ballkidzProjectId, SPLIT_DOMAIN, _gameId);
 
     // Make a group split for ETH payouts.
     JBGroupedSplits[] memory _groupedSplits;
