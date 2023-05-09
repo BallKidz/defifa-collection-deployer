@@ -63,6 +63,8 @@ contract DefifaTokenUriResolver is IDefifaTokenUriResolver, IJBTokenUriResolver 
 
   IDefifaDelegate public override delegate;
 
+  ITypeface typeface;
+
   //*********************************************************************//
   // ------------------------- external views -------------------------- //
   //*********************************************************************//
@@ -83,8 +85,9 @@ contract DefifaTokenUriResolver is IDefifaTokenUriResolver, IJBTokenUriResolver 
   // -------------------------- constructor ---------------------------- //
   //*********************************************************************//
 
-  constructor() {
+  constructor(ITypeface _typeface) {
     codeOrigin = address(this);
+    typeface = _typeface;
   }
 
   //*********************************************************************//
@@ -192,9 +195,9 @@ contract DefifaTokenUriResolver is IDefifaTokenUriResolver, IJBTokenUriResolver 
       if (_gamePhase == 0) _gamePhaseText = 'Minting starts soon.';
       else if (_gamePhase == 1) _gamePhaseText = 'Game starts soon, minting and refunds are open.';
       else if (_gamePhase == 2)
-        _gamePhaseText = 'Game starting, minting is closed. last chance for refunds.';
+        _gamePhaseText = 'Game starting, minting closed. last chance for refunds.';
       else if (_gamePhase == 3) _gamePhaseText = 'Game in progress.';
-      else if (_gamePhase == 4 && _delegate.tierRedemptionWeights().length == 0)
+      else if (_gamePhase == 4 && !_delegate.redemptionWeightIsSet())
         _gamePhaseText = 'Scorecard awaiting approval.';
       else
         _gamePhaseText = string(
@@ -214,10 +217,10 @@ contract DefifaTokenUriResolver is IDefifaTokenUriResolver, IJBTokenUriResolver 
       abi.encodePacked(
         '<svg width="500" height="500" viewBox="0 0 100% 100%" xmlns="http://www.w3.org/2000/svg">',
         '<style>@font-face{font-family:"Capsules-300";src:url(data:font/truetype;charset=utf-8;base64,',
-        DefifaFontImporter.getSkinnyFontSource(),
+        DefifaFontImporter.getSkinnyFontSource(typeface),
         ');format("opentype");}',
         '@font-face{font-family:"Capsules-700";src:url(data:font/truetype;charset=utf-8;base64,',
-        DefifaFontImporter.getBeefyFontSource(),
+        DefifaFontImporter.getBeefyFontSource(typeface),
         ');format("opentype");}',
         'text{white-space:pre-wrap; width:100%; }</style>',
         '<rect width="100vw" height="100vh" fill="#181424"/>',

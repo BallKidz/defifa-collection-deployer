@@ -67,6 +67,8 @@ interface IDefifaDelegate is IJB721Delegate {
 
   function codeOrigin() external view returns (address);
 
+  function redemptionWeightIsSet() external view returns (bool);
+
   function store() external view returns (IJBTiered721DelegateStore);
 
   function fundingCycleStore() external view returns (IJBFundingCycleStore);

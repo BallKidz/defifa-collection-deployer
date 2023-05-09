@@ -21,6 +21,7 @@ contract EmptyTest is Test {
     IJBFundingCycleStore(0x6f18cF9173136c0B5A6eBF45f19D58d3ff2E17e6);
   IJBTiered721DelegateStore _store =
     IJBTiered721DelegateStore(0x167ea060D75727Aa93C1c02873f189d22ef98856);
+  ITypeface _typeface = ITypeface(0x8Df17136B20DA6D1E23dB2DCdA8D20Aa4ebDcda7);
 
   address defifaBallkidz = address(0);
   address delegateRegistry = address(0);
@@ -28,7 +29,7 @@ contract EmptyTest is Test {
   function testWithTierImage() public {
     DefifaDelegate _delegate = DefifaDelegate(Clones.clone(address(new DefifaDelegate())));
     DefifaTokenUriResolver _resolver = DefifaTokenUriResolver(
-      Clones.clone(address(new DefifaTokenUriResolver()))
+      Clones.clone(address(new DefifaTokenUriResolver(_typeface)))
     );
 
     JB721TierParams[] memory _tiers = new JB721TierParams[](1);
@@ -89,7 +90,7 @@ contract EmptyTest is Test {
   function testWithOutTierImage() public {
     DefifaDelegate _delegate = DefifaDelegate(Clones.clone(address(new DefifaDelegate())));
     DefifaTokenUriResolver _resolver = DefifaTokenUriResolver(
-      Clones.clone(address(new DefifaTokenUriResolver()))
+      Clones.clone(address(new DefifaTokenUriResolver(_typeface)))
     );
 
     JB721TierParams[] memory _tiers = new JB721TierParams[](1);

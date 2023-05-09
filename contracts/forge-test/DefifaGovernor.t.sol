@@ -25,7 +25,7 @@ contract DefifaGovernorTest is TestBaseWorkflow {
     DefifaDelegate _delegate = new DefifaDelegate();
     DefifaGovernor _governer = new DefifaGovernor();
     JBDelegatesRegistry _registry = new JBDelegatesRegistry();
-    DefifaTokenUriResolver _tokenURIResolver = new DefifaTokenUriResolver();
+    DefifaTokenUriResolver _tokenURIResolver = new DefifaTokenUriResolver(ITypeface(address(0)));
     address _protocolFeeProjectTokenAccount = 0x1000000000000000000000000000000000000000;
     deployer = new DefifaDeployer(
       address(_delegate),

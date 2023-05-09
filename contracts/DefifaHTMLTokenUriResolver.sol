@@ -77,6 +77,8 @@ contract DefifaHTMLTokenUriResolver is IDefifaTokenUriResolver, IJBTokenUriResol
 
   IDefifaDelegate public override delegate;
 
+  ITypeface typeface;
+
   //*********************************************************************//
   // ------------------------- external views -------------------------- //
   //*********************************************************************//
@@ -118,8 +120,9 @@ contract DefifaHTMLTokenUriResolver is IDefifaTokenUriResolver, IJBTokenUriResol
   // -------------------------- constructor ---------------------------- //
   //*********************************************************************//
 
-  constructor() {
+  constructor(ITypeface _typeface) {
     codeOrigin = address(this);
+    typeface = _typeface;
   }
 
   //*********************************************************************//
@@ -222,7 +225,7 @@ contract DefifaHTMLTokenUriResolver is IDefifaTokenUriResolver, IJBTokenUriResol
       else if (_gamePhase == 1) _gamePhaseText = 'Starting soon, minting and refunds are open.';
       else if (_gamePhase == 2) _gamePhaseText = 'Starts soon. Last chance for refund.';
       else if (_gamePhase == 3) _gamePhaseText = 'Game in progress.';
-      else if (_gamePhase == 4 && _delegate.tierRedemptionWeights().length == 0)
+      else if (_gamePhase == 4 && _delegate.redemptionWeightIsSet())
         _gamePhaseText = 'Scorecard awaiting approval.';
       else _gamePhaseText = string.concat('Redeem for ', _percentOfPot, ' of the pot.');
     }
@@ -279,7 +282,7 @@ contract DefifaHTMLTokenUriResolver is IDefifaTokenUriResolver, IJBTokenUriResol
       _rarityText,
       '";let txt_6Size = 16;let txt_6Color = "#FFFFFF";let txt_6_x = 40;let txt_6_y = 400;',
       'let font = "data:font/truetype;charset=utf-8;base64,',
-      DefifaFontImporter.getSkinnyFontSource(),
+      DefifaFontImporter.getSkinnyFontSource(typeface),
       '";',
       // TODO remove line below and put file on chain eg ethfs.xyz, calc buffer size
       'let page,camLoc,buttL,buttR,timer,buttonImg,pages=[],numOfPages=2,movingRight=!1,movingLeft=!1,isPaused=!1,artWorkPanel="https://jbm.infura-ipfs.io/ipfs/",scoreCardPanel="https://jbm.infura-ipfs.io/ipfs/"+scoreCardIPFS,buttonImage="https://jbm.infura-ipfs.io/ipfs/"+buttonImageIPFS,defifaBlue=[19,228,240],txt1=[[txt_1,txt_1Color,txt_1Size]],txt2=[[txt_2,txt_2Color,txt_2Size]],txt3=[[txt_3,txt_3Color,txt_3Size]],txt4=[[txt_4,txt_4Color,txt_4Size]],txt5=[[txt_5,txt_5Color,txt_5Size]],txt6=[[txt_6,txt_6Color,txt_6Size]],pageImg=[];function preload(){async function a(a){let c=await fetch("https://jbm.infura-ipfs.io/ipfs/"+a);console.log(b);const d=c.headers.get("content-type");console.log(d),d&&-1!==d.indexOf("application/json")?(b=await c.json(),pageImg[0]=loadImage(b.image)):(artWorkPanel="https://jbm.infura-ipfs.io/ipfs/"+a,pageImg[0]=loadImage(artWorkPanel),console.log(artWorkPanel))}let b;a(artWorkSource),pageImg[1]=loadImage(scoreCardPanel),buttonImg=loadImage(buttonImage)}function setup(){myFont=loadFont(font),createCanvas(500,500),camLoc=createVector(0,0);for(let a=0;a<numOfPages;a++)pages[a]=new Page(canvas.width/2*a,0,a,pageImg[a]);timer=canvas.width/2,buttL=new Button(canvas.width/2-90,5,75,75,buttonImg),buttR=new Button(canvas.width/2-90,5,75,75,buttonImg)}function draw(){background(220),slide(),push(),translate(camLoc.x,camLoc.y);for(let a=0;a<numOfPages;a++)pages[a].run();pop(),buttL.run(),buttR.run()}function goRight(){movingLeft||isPaused||(movingRight=!0)}function goLeft(){movingRight||isPaused||(movingLeft=!0)}function slide(){movingRight&&!movingLeft&&0<=timer&&(camLoc.x-=20,timer-=20),movingLeft&&!movingRight&&0<=timer&&(camLoc.x+=20,timer-=20),0==timer&&(movingRight=!1,movingLeft=!1,timer=canvas.width/2),0>=-camLoc.x?(camLoc.x=0,buttL.loc.x=-100):buttL.loc.x=canvas.height/2-75,-camLoc.x>=pages[pages.length-1].loc.x?(timer=canvas.width/2,movingRight=!1,movingLeft=!1,camLoc.x=-pages[pages.length-1].loc.x,buttR.loc.x=-100):buttR.loc.x=canvas.height/2-75}function drawtext(a,b,d){for(var e=a,f=0;f<d.length;++f){var g=d[f],h=g[0],j=g[1],c=g[2],k=textWidth(h);fill(j),textSize(c),text(h,e,b),e+=k}}function mousePressed(){mouseX>buttL.loc.x&&mouseX<buttL.loc.x+buttL.w&&mouseY>buttL.loc.y&&mouseY<buttL.loc.y+buttL.h&&goLeft(),mouseX>buttR.loc.x&&mouseX<buttR.loc.x+buttR.w&&mouseY>buttR.loc.y&&mouseY<buttR.loc.y+buttR.h&&goRight()}class Page{constructor(a,b,c,d){this.loc=createVector(a,b),this.w=canvas.width/2,this.h=canvas.height/2,this.pageNum=c+1,this.img=d}run(){image(this.img,this.loc.x,this.loc.y,500,500),textAlign(LEFT),textFont(myFont),2==this.pageNum&&(drawtext(this.loc.x+txt_1_x,this.loc.y+txt_1_y,txt1),drawtext(this.loc.x+txt_2_x,this.loc.y+txt_2_y,txt2),drawtext(this.loc.x+txt_3_x,this.loc.y+txt_3_y,txt3),drawtext(this.loc.x+txt_4_x,this.loc.y+txt_4_y,txt4),drawtext(this.loc.x+txt_5_x,this.loc.y+txt_5_y,txt5),drawtext(this.loc.x+txt_6_x,this.loc.y+txt_6_y,txt6));3==this.pageNum,line(this.loc.x,this.loc.y,this.loc.x+this.w,this.loc.y),line(this.loc.x,this.loc.y,this.loc.x,this.loc.y+this.h),line(this.loc.x,this.loc.y+this.h,this.loc.x+this.w,this.loc.y+this.h),line(this.loc.x+this.w,this.loc.y,this.loc.x+this.w,this.h)}}class Button{constructor(a,b,c,d,e){this.loc=new createVector(a,b),this.w=c,this.h=d,this.clr="white",this.img=e}run(){this.render(),this.checkMouse()}render(){fill(this.clr),stroke(20),strokeWeight(0),fill("black"),noStroke(),textSize(15),image(this.img,this.loc.x,this.loc.y,this.w,this.h)}checkMouse(){this.clr=mouseX>this.loc.x&&mouseX<this.loc.x+this.w&&mouseY>this.loc.y&&mouseY<this.loc.y+this.h?"gray":"white"}}'

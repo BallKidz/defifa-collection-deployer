@@ -42,6 +42,7 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate, IERC2981 {
   error NOT_AVAILABLE();
   error OVERSPENDING();
   error PRICING_RESOLVER_CHANGES_PAUSED();
+  error REDEMPTION_WEIGHTS_ALREADY_SET();
   error RESERVED_TOKEN_MINTING_PAUSED();
   error TRANSFERS_PAUSED();
 
@@ -149,6 +150,12 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate, IERC2981 {
     The currency that is accepted when minting tier NFTs. 
   */
   uint256 public override pricingCurrency;
+
+  /** 
+    @notice
+    A flag indicating if the redemption weight has been set.
+  */
+  bool public override redemptionWeightIsSet;
 
   //*********************************************************************//
   // ------------------------- external views -------------------------- //
@@ -566,6 +573,9 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate, IERC2981 {
     if (fundingCycleStore.currentOf(projectId).number < _END_GAME_PHASE)
       revert GAME_ISNT_OVER_YET();
 
+    // Make sure the redemption weights haven't already been set.
+    if (redemptionWeightIsSet) revert REDEMPTION_WEIGHTS_ALREADY_SET();
+
     // Delete the currently set redemption weights.
     delete _tierRedemptionWeights;
 
@@ -595,6 +605,9 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate, IERC2981 {
 
     // Make sure the cumulative amount is contained within the total redemption weight.
     if (_cumulativeRedemptionWeight > TOTAL_REDEMPTION_WEIGHT) revert INVALID_REDEMPTION_WEIGHTS();
+
+    // Mark the redemption weight as set.
+    redemptionWeightIsSet = true;
   }
 
   /**
