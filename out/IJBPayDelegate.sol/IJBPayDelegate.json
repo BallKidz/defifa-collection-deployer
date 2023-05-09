@@ -368,26 +368,26 @@
   },
   "ast": {
     "absolutePath": "node_modules/@jbx-protocol/juice-contracts-v3/contracts/interfaces/IJBPayDelegate.sol",
-    "id": 57066,
+    "id": 57800,
     "exportedSymbols": {
       "IERC165": [
-        68397
+        69131
       ],
       "IJBPayDelegate": [
-        57065
+        57799
       ],
       "JBDidPayData": [
-        59153
+        59887
       ],
       "JBTokenAmount": [
-        59441
+        60175
       ]
     },
     "nodeType": "SourceUnit",
     "src": "32:1148:96",
     "nodes": [
       {
-        "id": 57052,
+        "id": 57786,
         "nodeType": "PragmaDirective",
         "src": "32:23:96",
         "nodes": [],
@@ -399,43 +399,43 @@
         ]
       },
       {
-        "id": 57053,
+        "id": 57787,
         "nodeType": "ImportDirective",
         "src": "57:65:96",
         "nodes": [],
         "absolutePath": "node_modules/@openzeppelin/contracts/utils/introspection/IERC165.sol",
         "file": "@openzeppelin/contracts/utils/introspection/IERC165.sol",
         "nameLocation": "-1:-1:-1",
-        "scope": 57066,
-        "sourceUnit": 68398,
+        "scope": 57800,
+        "sourceUnit": 69132,
         "symbolAliases": [],
         "unitAlias": ""
       },
       {
-        "id": 57054,
+        "id": 57788,
         "nodeType": "ImportDirective",
         "src": "123:39:96",
         "nodes": [],
         "absolutePath": "node_modules/@jbx-protocol/juice-contracts-v3/contracts/structs/JBDidPayData.sol",
         "file": "./../structs/JBDidPayData.sol",
         "nameLocation": "-1:-1:-1",
-        "scope": 57066,
-        "sourceUnit": 59154,
+        "scope": 57800,
+        "sourceUnit": 59888,
         "symbolAliases": [],
         "unitAlias": ""
       },
       {
-        "id": 57065,
+        "id": 57799,
         "nodeType": "ContractDefinition",
         "src": "377:802:96",
         "nodes": [
           {
-            "id": 57064,
+            "id": 57798,
             "nodeType": "FunctionDefinition",
             "src": "1115:62:96",
             "nodes": [],
             "documentation": {
-              "id": 57058,
+              "id": 57792,
               "nodeType": "StructuredDocumentation",
               "src": "417:695:96",
               "text": "@notice\nThis function is called by JBPaymentTerminal.pay(..), after the execution of its logic\n@dev\nCritical business logic should be protected by an appropriate access control\n@param _data the data passed by the terminal, as a JBDidPayData struct:\naddress payer;\nuint256 projectId;\nuint256 currentFundingCycleConfiguration;\nJBTokenAmount amount;\nJBTokenAmount forwardedAmount;\nuint256 projectTokenCount;\naddress beneficiary;\nbool preferClaimedTokens;\nstring memo;\nbytes metadata;"
@@ -447,41 +447,41 @@
             "name": "didPay",
             "nameLocation": "1124:6:96",
             "parameters": {
-              "id": 57062,
+              "id": 57796,
               "nodeType": "ParameterList",
               "parameters": [
                 {
                   "constant": false,
-                  "id": 57061,
+                  "id": 57795,
                   "mutability": "mutable",
                   "name": "_data",
                   "nameLocation": "1153:5:96",
                   "nodeType": "VariableDeclaration",
-                  "scope": 57064,
+                  "scope": 57798,
                   "src": "1131:27:96",
                   "stateVariable": false,
                   "storageLocation": "calldata",
                   "typeDescriptions": {
-                    "typeIdentifier": "t_struct$_JBDidPayData_$59153_calldata_ptr",
+                    "typeIdentifier": "t_struct$_JBDidPayData_$59887_calldata_ptr",
                     "typeString": "struct JBDidPayData"
                   },
                   "typeName": {
-                    "id": 57060,
+                    "id": 57794,
                     "nodeType": "UserDefinedTypeName",
                     "pathNode": {
-                      "id": 57059,
+                      "id": 57793,
                       "name": "JBDidPayData",
                       "nameLocations": [
                         "1131:12:96"
                       ],
                       "nodeType": "IdentifierPath",
-                      "referencedDeclaration": 59153,
+                      "referencedDeclaration": 59887,
                       "src": "1131:12:96"
                     },
-                    "referencedDeclaration": 59153,
+                    "referencedDeclaration": 59887,
                     "src": "1131:12:96",
                     "typeDescriptions": {
-                      "typeIdentifier": "t_struct$_JBDidPayData_$59153_storage_ptr",
+                      "typeIdentifier": "t_struct$_JBDidPayData_$59887_storage_ptr",
                       "typeString": "struct JBDidPayData"
                     }
                   },
@@ -491,12 +491,12 @@
               "src": "1130:29:96"
             },
             "returnParameters": {
-              "id": 57063,
+              "id": 57797,
               "nodeType": "ParameterList",
               "parameters": [],
               "src": "1176:0:96"
             },
-            "scope": 57065,
+            "scope": 57799,
             "stateMutability": "payable",
             "virtual": false,
             "visibility": "external"
@@ -506,16 +506,16 @@
         "baseContracts": [
           {
             "baseName": {
-              "id": 57056,
+              "id": 57790,
               "name": "IERC165",
               "nameLocations": [
                 "405:7:96"
               ],
               "nodeType": "IdentifierPath",
-              "referencedDeclaration": 68397,
+              "referencedDeclaration": 69131,
               "src": "405:7:96"
             },
-            "id": 57057,
+            "id": 57791,
             "nodeType": "InheritanceSpecifier",
             "src": "405:7:96"
           }
@@ -524,19 +524,19 @@
         "contractDependencies": [],
         "contractKind": "interface",
         "documentation": {
-          "id": 57055,
+          "id": 57789,
           "nodeType": "StructuredDocumentation",
           "src": "164:212:96",
           "text": "@title\nPay delegate\n@notice\nDelegate called after JBTerminal.pay(..) logic completion (if passed by the funding cycle datasource)\n@dev\nAdheres to:\nIERC165 for adequate interface integration"
         },
         "fullyImplemented": false,
         "linearizedBaseContracts": [
-          57065,
-          68397
+          57799,
+          69131
         ],
         "name": "IJBPayDelegate",
         "nameLocation": "387:14:96",
-        "scope": 57066,
+        "scope": 57800,
         "usedErrors": []
       }
     ],
