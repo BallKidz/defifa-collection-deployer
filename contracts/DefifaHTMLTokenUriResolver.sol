@@ -77,7 +77,7 @@ contract DefifaHTMLTokenUriResolver is IDefifaTokenUriResolver, IJBTokenUriResol
 
   IDefifaDelegate public override delegate;
 
-  ITypeface typeface;
+  ITypeface public override typeface;
 
   //*********************************************************************//
   // ------------------------- external views -------------------------- //

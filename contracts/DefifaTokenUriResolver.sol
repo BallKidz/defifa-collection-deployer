@@ -57,13 +57,13 @@ contract DefifaTokenUriResolver is IDefifaTokenUriResolver, IJBTokenUriResolver 
   */
   address public immutable override codeOrigin;
 
+  ITypeface public override immutable typeface;
+
   //*********************************************************************//
   // -------------------- public stored properties --------------------- //
   //*********************************************************************//
 
   IDefifaDelegate public override delegate;
-
-  ITypeface typeface;
 
   //*********************************************************************//
   // ------------------------- external views -------------------------- //

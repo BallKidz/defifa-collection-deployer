@@ -21,7 +21,7 @@ contract EmptyTest is Test {
     IJBFundingCycleStore(0x6f18cF9173136c0B5A6eBF45f19D58d3ff2E17e6);
   IJBTiered721DelegateStore _store =
     IJBTiered721DelegateStore(0x167ea060D75727Aa93C1c02873f189d22ef98856);
-  ITypeface _typeface = ITypeface(0x8Df17136B20DA6D1E23dB2DCdA8D20Aa4ebDcda7);
+  ITypeface _typeface = ITypeface(0xA77b7D93E79f1E6B4f77FaB29d9ef85733A3D44A);
 
   address defifaBallkidz = address(0);
   address delegateRegistry = address(0);
@@ -96,9 +96,9 @@ contract EmptyTest is Test {
     JB721TierParams[] memory _tiers = new JB721TierParams[](1);
     _tiers[0] = JB721TierParams({
       contributionFloor: 1E18,
-      lockedUntil: 0,
       initialQuantity: 100,
       votingUnits: 0,
+      lockedUntil: 0,
       reservedRate: 0,
       reservedTokenBeneficiary: address(0),
       royaltyRate: 0,
@@ -114,7 +114,7 @@ contract EmptyTest is Test {
       _projectId: 123,
       _directory: _directory,
       _name: 'Example collection',
-      _symbol: 'EX',
+      _symbol: 'DEFIFA: EXAMPLE',
       _fundingCycleStore: _fundingCycleStore,
       _baseUri: '',
       _tokenUriResolver: _resolver,
