@@ -452,6 +452,8 @@ contract DefifaDeployer is IDefifaDeployer, IERC721Receiver, Ownable {
 
     // Add three to the nonce because 3 contracts were deployed during this launch process.
     _nonce = _nonce + 3;
+
+    emit LaunchGame(_delegate, governor, _uriResolver, msg.sender);
   }
 
   /**

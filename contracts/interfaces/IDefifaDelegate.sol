@@ -27,22 +27,6 @@ interface IDefifaDelegate is IJB721Delegate {
     address caller
   );
 
-  event AddTier(uint256 indexed tierId, JB721TierParams data, address caller);
-
-  event RemoveTier(uint256 indexed tierId, address caller);
-
-  event SetDefaultReservedTokenBeneficiary(address indexed beneficiary, address caller);
-
-  event SetEncodedIPFSUri(uint256 indexed tierId, bytes32 encodedIPFSUri, address caller);
-
-  event TierDelegateChanged(
-    address indexed delegator,
-    address indexed fromDelegate,
-    address indexed toDelegate,
-    uint256 tierId,
-    address caller
-  );
-
   event TierDelegateVotesChanged(
     address indexed delegate,
     uint256 indexed tierId,
