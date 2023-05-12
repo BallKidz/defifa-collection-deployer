@@ -88,7 +88,7 @@ contract DefifaGovernorTest is TestBaseWorkflow {
     // Forward 1 block, user should receive all the voting power of the tier, as its the only NFT
     vm.roll(block.number + 1);
 
-    assertEq(_nft.store().tier(address(_nft), tier).votingUnits, 1);
+    assertEq(_nft.store().tierOf(address(_nft), tier, false).votingUnits, 1);
     assertEq(_governor.MAX_VOTING_POWER_TIER(), _governor.getVotes(_user, block.number - 1));
   }
 
@@ -1247,8 +1247,8 @@ contract DefifaGovernorTest is TestBaseWorkflow {
   }
 
   function mintAndRefund(DefifaDelegate _delegate, uint256 _projectId, uint256 _tierId) internal {
-    JB721Tier memory _tier = _delegate.store().tier(address(_delegate), _tierId);
-    uint256 _cost = _tier.contributionFloor;
+    JB721Tier memory _tier = _delegate.store().tierOf(address(_delegate), _tierId, false);
+    uint256 _cost = _tier.price;
     address _refundUser = address(bytes20(keccak256('refund_user')));
     // The user should have no balance
     assertEq(_delegate.balanceOf(_refundUser), 0);

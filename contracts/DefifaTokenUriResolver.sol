@@ -142,11 +142,11 @@ contract DefifaTokenUriResolver is IDefifaTokenUriResolver, IJBTokenUriResolver 
     IDefifaDelegate _delegate = delegate;
 
     // Get a reference to the tier.
-    JB721Tier memory _tier = _delegate.store().tierOfTokenId(address(_delegate), _tokenId);
+    JB721Tier memory _tier = _delegate.store().tierOfTokenId(address(_delegate), _tokenId, false);
 
     // Check to see if the tier has a URI. Return it if it does.
     if (_tier.encodedIPFSUri != bytes32(0))
-      return JBIpfsDecoder.decode(_delegate.store().baseUriOf(address(this)), _tier.encodedIPFSUri);
+      return JBIpfsDecoder.decode(_delegate.baseURI(), _tier.encodedIPFSUri);
 
     string[] memory parts = new string[](4);
     parts[0] = string('data:application/json;base64,');

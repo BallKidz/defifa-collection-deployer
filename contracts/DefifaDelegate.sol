@@ -24,7 +24,7 @@ import './interfaces/IDefifaDelegate.sol';
   Inherits from -
   JB721TieredGovernance: A generic tiered 721 delegate.
 */
-contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate, IERC2981 {
+contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate {
   using Checkpoints for Checkpoints.History;
 
   //*********************************************************************//
@@ -45,6 +45,7 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate, IERC2981 {
   error REDEMPTION_WEIGHTS_ALREADY_SET();
   error RESERVED_TOKEN_MINTING_PAUSED();
   error TRANSFERS_PAUSED();
+  error UNAUTHORIZED();
 
   //*********************************************************************//
   // -------------------- private constant properties ------------------ //
@@ -61,6 +62,19 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate, IERC2981 {
     The funding cycle number of the end game phase. 
   */
   uint256 private constant _END_GAME_PHASE = 4;
+
+  //*********************************************************************//
+  // --------------------- internal stored properties ------------------ //
+  //*********************************************************************//
+
+  /**
+    @notice
+    The first owner of each token ID, stored on first transfer out.
+
+    _nft The NFT contract to which the token belongs.
+    _tokenId The ID of the token to get the stored first owner of.
+  */
+  mapping(uint256 => address) internal _firstOwnerOf;
 
   //*********************************************************************//
   // --------------------- public constant properties ------------------ //
@@ -157,6 +171,22 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate, IERC2981 {
   */
   bool public override redemptionWeightIsSet;
 
+  /**
+    @notice
+    The common base for the tokenUri's
+
+    _nft The NFT for which the base URI applies.
+  */
+  string public override baseURI;
+
+  /**
+    @notice
+    Contract metadata uri.
+
+    _nft The NFT for which the contract URI resolver applies.
+  */
+  string public override contractURI;
+
   //*********************************************************************//
   // ------------------------- external views -------------------------- //
   //*********************************************************************//
@@ -169,16 +199,6 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate, IERC2981 {
   */
   function name() public view override(ERC721, IDefifaDelegate) returns (string memory) {
     return super.name();
-  }
-
-  /** 
-    @notice
-    Returns the URI where contract metadata can be found. 
-
-    @return The contract's metadata URI.
-  */
-  function contractURI() external view virtual override returns (string memory) {
-    return store.contractUriOf(address(this));
   }
 
   /** 
@@ -266,30 +286,13 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate, IERC2981 {
   */
   function firstOwnerOf(uint256 _tokenId) external view override returns (address) {
     // Get a reference to the first owner.
-    address _storedFirstOwner = store.firstOwnerOf(address(this), _tokenId);
+    address _storedFirstOwner = _firstOwnerOf[_tokenId];
 
     // If the stored first owner is set, return it.
     if (_storedFirstOwner != address(0)) return _storedFirstOwner;
 
     // Otherwise, the first owner must be the current owner.
     return _owners[_tokenId];
-  }
-
-  /**
-    @notice 
-    Royalty info conforming to EIP-2981.
-
-    @param _tokenId The ID of the token that the royalty is for.
-    @param _salePrice The price being paid for the token.
-
-    @return The address of the royalty's receiver.
-    @return The amount of the royalty.
-  */
-  function royaltyInfo(
-    uint256 _tokenId,
-    uint256 _salePrice
-  ) external view override returns (address, uint256) {
-    return store.royaltyInfo(address(this), _tokenId, _salePrice);
   }
 
   //*********************************************************************//
@@ -363,7 +366,7 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate, IERC2981 {
     uint256 _tierId = store.tierIdOfToken(_tokenId);
 
     // Keep a reference to the tier.
-    JB721Tier memory _tier = store.tier(address(this), _tierId);
+    JB721Tier memory _tier = store.tierOf(address(this), _tierId, false);
 
     // Get the tier Id.
     uint256 _weight = _tierRedemptionWeights[_tierId - 1];
@@ -443,8 +446,8 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate, IERC2981 {
       for (uint256 _i; _i < _numberOfTokenIds; ) {
         unchecked {
           reclaimAmount += store
-            .tierOfTokenId(address(this), _decodedTokenIds[_i])
-            .contributionFloor;
+            .tierOfTokenId(address(this), _decodedTokenIds[_i], false)
+            .price;
 
           _i++;
         }
@@ -476,7 +479,7 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate, IERC2981 {
   */
   function supportsInterface(
     bytes4 _interfaceId
-  ) public view override(JB721Delegate, IERC165) returns (bool) {
+  ) public view override returns (bool) {
     return
       _interfaceId == type(IDefifaDelegate).interfaceId || super.supportsInterface(_interfaceId);
   }
@@ -529,10 +532,10 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate, IERC2981 {
     pricingCurrency = _pricing.currency;
 
     // Store the base URI if provided.
-    if (bytes(_baseUri).length != 0) _store.recordSetBaseUri(_baseUri);
+    if (bytes(_baseUri).length != 0) baseURI = _baseUri;
 
     // Set the contract URI if provided.
-    if (bytes(_contractUri).length != 0) _store.recordSetContractUri(_contractUri);
+    if (bytes(_contractUri).length != 0) contractURI = _contractUri;
 
     // Set the token URI resolver if provided.
     if (_tokenUriResolver != IJBTokenUriResolver(address(0)))
@@ -800,7 +803,7 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate, IERC2981 {
     }
 
     // Keep a reference to the tier.
-    JB721Tier memory _tier = store.tier(address(this), _tierId);
+    JB721Tier memory _tier = store.tierOf(address(this), _tierId, false);
 
     // Transfer the voting units to the delegate.
     _transferTierVotingUnits(
@@ -808,32 +811,8 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate, IERC2981 {
       // Use the old delegate if there is one.
       _oldDelegate != address(0) ? _oldDelegate : _reservedTokenBeneficiary,
       _tierId,
-      _tier.contributionFloor * _tokenIds.length
+      _tier.price * _tokenIds.length
     );
-  }
-
-  /**
-    @notice
-    Unusable.
-  */
-  function setBaseUri(string calldata _baseUri) external pure override {
-    _baseUri;
-  }
-
-  /**
-    @notice
-    Unusable.
-  */
-  function setContractUri(string calldata _contractUri) external pure override {
-    _contractUri;
-  }
-
-  /**
-    @notice
-    Unusable.
-  */
-  function setTokenUriResolver(IJBTokenUriResolver _tokenUriResolver) external pure override {
-    _tokenUriResolver;
   }
 
   //*********************************************************************//
@@ -888,7 +867,7 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate, IERC2981 {
         // Keep track of the current tier being iterated on and its price.
         if (_currentTierId != _tierIdsToMint[_i]) {
           _currentTierId = _tierIdsToMint[_i];
-          _votingUnits = store.tier(address(this), _tierIdsToMint[_i]).votingUnits;
+          _votingUnits = store.tierOf(address(this), _tierIdsToMint[_i], false).votingUnits;
         }
 
         // Get a reference to the old delegate.
@@ -1115,7 +1094,7 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate, IERC2981 {
     // Transferred must not be paused when not minting or burning.
     if (_from != address(0)) {
       // Get a reference to the tier.
-      JB721Tier memory _tier = store.tierOfTokenId(address(this), _tokenId);
+      JB721Tier memory _tier = store.tierOfTokenId(address(this), _tokenId, false);
 
       // Transfers from the tier must be pausable.
       if (_tier.transfersPausable) {
@@ -1131,8 +1110,7 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate, IERC2981 {
       }
 
       // If there's no stored first owner, and the transfer isn't originating from the zero address as expected for mints, store the first owner.
-      if (store.firstOwnerOf(address(this), _tokenId) == address(0))
-        store.recordSetFirstOwnerOf(_tokenId, _from);
+      if (_firstOwnerOf[_tokenId] == address(0)) _firstOwnerOf[_tokenId] = _from;
     }
 
     super._beforeTokenTransfer(_from, _to, _tokenId);
@@ -1152,7 +1130,7 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate, IERC2981 {
     uint256 _tokenId
   ) internal virtual override {
     // Get a reference to the tier.
-    JB721Tier memory _tier = store.tierOfTokenId(address(this), _tokenId);
+    JB721Tier memory _tier = store.tierOfTokenId(address(this), _tokenId, false);
 
     // Record the transfer.
     store.recordTransferForTier(_tier.id, _from, _to);

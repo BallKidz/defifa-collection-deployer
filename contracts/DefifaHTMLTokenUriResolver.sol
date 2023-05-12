@@ -177,7 +177,7 @@ contract DefifaHTMLTokenUriResolver is IDefifaTokenUriResolver, IJBTokenUriResol
     IDefifaDelegate _delegate = delegate;
 
     // Get a reference to the tier.
-    JB721Tier memory _tier = _delegate.store().tierOfTokenId(address(_delegate), _tokenId);
+    JB721Tier memory _tier = _delegate.store().tierOfTokenId(address(_delegate), _tokenId, false);
 
     // Scripty builder
     WrappedScriptRequest[] memory requests = new WrappedScriptRequest[](3);
@@ -242,7 +242,7 @@ contract DefifaHTMLTokenUriResolver is IDefifaTokenUriResolver, IJBTokenUriResol
       _tokenId
     );
     string memory artWorkIPFS = _encodedTierIPFSUri.length != 0
-      ? JBIpfsDecoder.decode(_delegate.store().baseUriOf(address(_delegate)), _encodedTierIPFSUri)
+      ? JBIpfsDecoder.decode(_delegate.baseURI(), _encodedTierIPFSUri)
       : 'QmP5eWnXTsRCWBeDrHboLtFeuhjVLNEHb6np7DiYN7uZyx'; // 404 ipfs img.
     // TODO @dev can we remove this and put into create flow?
     string memory scoreCardIPFS = 'QmeB47KfbHetHPpQrPgmD9CxCDb9e2U9j9fxLr1FM3vzMo';

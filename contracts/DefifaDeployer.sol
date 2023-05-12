@@ -369,21 +369,18 @@ contract DefifaDeployer is IDefifaDeployer, IERC721Receiver, Ownable {
 
       // Set the tier.
       _delegateTiers[_i] = JB721TierParams({
-        contributionFloor: _defifaTier.price,
+        price: _defifaTier.price,
         initialQuantity: 999_999_999, // The max allowed value.
         votingUnits: 1,
-        lockedUntil: 0,
         reservedRate: _defifaTier.reservedRate,
         reservedTokenBeneficiary: _defifaTier.reservedTokenBeneficiary,
-        royaltyRate: _defifaTier.royaltyRate,
-        royaltyBeneficiary: _defifaTier.royaltyBeneficiary,
         encodedIPFSUri: _defifaTier.encodedIPFSUri,
         category: 1,
         allowManualMint: false,
         shouldUseReservedTokenBeneficiaryAsDefault: _defifaTier
           .shouldUseReservedTokenBeneficiaryAsDefault,
-        shouldUseRoyaltyBeneficiaryAsDefault: false,
-        transfersPausable: false
+        transfersPausable: false,
+        useVotingUnits: false
       });
 
       // Set the name.
@@ -396,8 +393,8 @@ contract DefifaDeployer is IDefifaDeployer, IERC721Receiver, Ownable {
 
     JB721PricingParams memory _pricingParams = JB721PricingParams({
       tiers: _delegateTiers,
-      currency: _launchProjectData.terminal.currencyForToken(_launchProjectData.token),
-      decimals: _launchProjectData.terminal.decimalsForToken(_launchProjectData.token),
+      currency: uint48(_launchProjectData.terminal.currencyForToken(_launchProjectData.token)),
+      decimals: uint48(_launchProjectData.terminal.decimalsForToken(_launchProjectData.token)),
       prices: IJBPrices(address(0))
     });
 
@@ -453,7 +450,7 @@ contract DefifaDeployer is IDefifaDeployer, IERC721Receiver, Ownable {
     // Add three to the nonce because 3 contracts were deployed during this launch process.
     _nonce = _nonce + 3;
 
-    emit LaunchGame(_delegate, governor, _uriResolver, msg.sender);
+    emit LaunchGame(gameId, _delegate, governor, _uriResolver, msg.sender);
   }
 
   /**

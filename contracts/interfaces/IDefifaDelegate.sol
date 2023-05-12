@@ -61,6 +61,8 @@ interface IDefifaDelegate is IJB721Delegate {
 
   function firstOwnerOf(uint256 _tokenId) external view returns (address);
 
+  function baseURI() external view returns (string memory);
+
   function contractURI() external view returns (string memory);
 
   function getTierDelegate(address _account, uint256 _tier) external view returns (address);

@@ -24,9 +24,9 @@
     js-tokens "^4.0.0"
 
 "@babel/runtime@^7.18.6":
-  version "7.21.0"
-  resolved "https://registry.yarnpkg.com/@babel/runtime/-/runtime-7.21.0.tgz#5b55c9d394e5fcf304909a8b00c07dc217b56673"
-  integrity sha512-xwII0//EObnq89Ji5AKYQaRYiW/nZ3llSv29d49IuxPhKbtJoLP+9QUUZ4nVragQVtaVGeZrpB+ZtG/Pdy/POw==
+  version "7.21.5"
+  resolved "https://registry.yarnpkg.com/@babel/runtime/-/runtime-7.21.5.tgz#8492dddda9644ae3bda3b45eabe87382caee7200"
+  integrity sha512-8jI69toZqqcsnqGGqwGS4Qb1VwLOEp4hz+CXPywcvjs60u3B4Pom/U/7rm4W8tMOYEB+E9wgD0mW1l3r8qlI9Q==
   dependencies:
     regenerator-runtime "^0.13.11"
 
@@ -51,18 +51,19 @@
   resolved "https://registry.yarnpkg.com/@ethersproject/logger/-/logger-5.7.0.tgz#6ce9ae168e74fecf287be17062b590852c311892"
   integrity sha512-0odtFdXu/XHtjQXJYA3u9G0G8btm0ND5Cu8M7i5vhEcE8/HmF4Lbdqanwyv4uQTr2tx6b7fQRmgLrsnpQlmnig==
 
-"@jbx-protocol/juice-721-delegate@^5.0.3":
-  version "5.0.3"
-  resolved "https://registry.yarnpkg.com/@jbx-protocol/juice-721-delegate/-/juice-721-delegate-5.0.3.tgz#237d7093924ea6656d3603ed735a0aa22dfcf9b3"
-  integrity sha512-Fz5iUPya+W42u4a+VgxcMWVHVdCwMYngTQ0ijujJK/zeRv7Eg92FyDVYvLrHGVG8Z99Im6xYgqiBWvJoDHBL0g==
+"@jbx-protocol/juice-721-delegate@^6.0.0":
+  version "6.0.0"
+  resolved "https://registry.yarnpkg.com/@jbx-protocol/juice-721-delegate/-/juice-721-delegate-6.0.0.tgz#62f4585042ee3fc2d4e81511b99970c0d8078c0d"
+  integrity sha512-YsvQtKEopYcgNNF0CmdzOb6r1w9kfVudxIeT1z8xuseAy6289I3fIcyPVsn+JdaqnSOXZKByOEB7RkGDF8SFEQ==
   dependencies:
     "@jbx-protocol/juice-contracts-v3" "^2.0.4"
     "@jbx-protocol/juice-delegates-registry" "^1.0.0"
+    "@jbx-protocol/juice-ownable" "https://github.com/jbx-protocol/juice-ownable"
     "@openzeppelin/contracts" "^4.6.0"
     "@paulrberg/contracts" "^3.7.0"
     prb-math "^2.4.3"
 
-"@jbx-protocol/juice-contracts-v3@^2.0.3", "@jbx-protocol/juice-contracts-v3@^2.0.4":
+"@jbx-protocol/juice-contracts-v3@^2.0.2", "@jbx-protocol/juice-contracts-v3@^2.0.3", "@jbx-protocol/juice-contracts-v3@^2.0.4":
   version "2.0.5"
   resolved "https://registry.yarnpkg.com/@jbx-protocol/juice-contracts-v3/-/juice-contracts-v3-2.0.5.tgz#b75e5547d3ffe660a3fb9124e5e747fc52b5d642"
   integrity sha512-pQSJbzz96nzHc2HDlN0Xx6uJufnRPAiUsilSwGRLjX38KZaeOtC7LU+YY0G5OHpH8tQPyAC/G/m5EwjpObIh3A==
@@ -76,10 +77,17 @@
     "@openzeppelin/contracts" "^4.8.0"
     "@paulrberg/contracts" "^3.7.0"
 
+"@jbx-protocol/juice-ownable@git+https://github.com/jbx-protocol/juice-ownable.git":
+  version "0.0.1"
+  resolved "git+https://github.com/jbx-protocol/juice-ownable.git#2e512e4590bc1aac59cf25db32ebbdf7a7627c4e"
+  dependencies:
+    "@jbx-protocol/juice-contracts-v3" "^2.0.2"
+    "@openzeppelin/contracts" "^4.8.0"
+
 "@openzeppelin/contracts@^4.6.0", "@openzeppelin/contracts@^4.7.3", "@openzeppelin/contracts@^4.8.0":
-  version "4.8.2"
-  resolved "https://registry.yarnpkg.com/@openzeppelin/contracts/-/contracts-4.8.2.tgz#d815ade0027b50beb9bcca67143c6bcc3e3923d6"
-  integrity sha512-kEUOgPQszC0fSYWpbh2kT94ltOJwj1qfT2DWo+zVttmGmf97JZ99LspePNaeeaLhCImaHVeBbjaQFZQn7+Zc5g==
+  version "4.8.3"
+  resolved "https://registry.yarnpkg.com/@openzeppelin/contracts/-/contracts-4.8.3.tgz#cbef3146bfc570849405f59cba18235da95a252a"
+  integrity sha512-bQHV8R9Me8IaJoJ2vPG4rXcL7seB7YVuskr4f+f5RyOStSZetwzkWtoqDMl5erkBJy0lDRUnIR2WIkPiC0GJlg==
 
 "@paulrberg/contracts@^3.7.0":
   version "3.7.0"
@@ -88,15 +96,10 @@
   dependencies:
     prb-math "^2.4.1"
 
-"@prb/math@^2.5.0":
-  version "2.5.0"
-  resolved "https://registry.yarnpkg.com/@prb/math/-/math-2.5.0.tgz#5f26dee609030d3584bfbff92be8dc3d6c7d91a8"
-  integrity sha512-iSNQd4L3HaYuAIhJliLVa7WGsyjFiQHGpomrFgdj7FhYGHT6Yo8bBwbmwAPF1bHD3LN8gdg+ssKrRUPNaNPEVw==
-  dependencies:
-    "@ethersproject/bignumber" "^5.5.0"
-    decimal.js "^10.3.1"
-    evm-bn "^1.1.1"
-    mathjs "^10.4.0"
+"@prb/math@^4.0.0":
+  version "4.0.0"
+  resolved "https://registry.yarnpkg.com/@prb/math/-/math-4.0.0.tgz#9b3a2cf5231c3e188515a6f17eb304f0c324d7de"
+  integrity sha512-zGOMIn3EMSxh2yo64uKly4xtwVvbUvsKAand4JFzDRFAPEzqBWJe1/Qf23o992ZR7xeA502L17rSTcOscfRO2Q==
 
 "@solidity-parser/parser@^0.16.0":
   version "0.16.0"
@@ -233,9 +236,9 @@ color-name@~1.1.4:
   integrity sha512-dOy+3AuW3a2wNbZHIuMZpTcgjGuLU/uBL/ubcZF9OXbDo8ff4O8yVp5Bf0efS8uEoYo5q4Fx7dY9OgQGXgAsQA==
 
 commander@^10.0.0:
-  version "10.0.0"
-  resolved "https://registry.yarnpkg.com/commander/-/commander-10.0.0.tgz#71797971162cd3cf65f0b9d24eb28f8d303acdf1"
-  integrity sha512-zS5PnTI22FIRM6ylNW8G4Ap0IEOyk62fhLSD0+uHRT9McRCLGpkVNvao4bjimpK/GShynyQkFFxHhwMcETmduA==
+  version "10.0.1"
+  resolved "https://registry.yarnpkg.com/commander/-/commander-10.0.1.tgz#881ee46b4f77d1c1dccc5823433aa39b022cbe06"
+  integrity sha512-y4Mg2tXshplEbSGzx7amzPwKKOCGuoSRP/CjEdwwk0FOGlUbq6lKuoyDZTNZkmxHdJtp54hdfY/JUrdL7Xfdug==
 
 complex.js@^2.1.1:
   version "2.1.1"
@@ -428,7 +431,7 @@ lru-cache@^6.0.0:
   dependencies:
     yallist "^4.0.0"
 
-mathjs@^10.1.1, mathjs@^10.4.0:
+mathjs@^10.1.1:
   version "10.6.4"
   resolved "https://registry.yarnpkg.com/mathjs/-/mathjs-10.6.4.tgz#1b87a1268781d64f0c8b4e5e1b36cf7ecf58bb05"
   integrity sha512-omQyvRE1jIy+3k2qsqkWASOcd45aZguXZDckr3HtnTYyXk5+2xpVfC3kATgbO2Srjxlqww3TVdhD0oUdZ/hiFA==
@@ -511,9 +514,9 @@ prettier-plugin-solidity@^1.0.0-beta.19:
     solidity-comments-extractor "^0.0.7"
 
 prettier@^2.4.0, prettier@^2.8.3:
-  version "2.8.7"
-  resolved "https://registry.yarnpkg.com/prettier/-/prettier-2.8.7.tgz#bb79fc8729308549d28fe3a98fce73d2c0656450"
-  integrity sha512-yPngTo3aXUUmyuTjeTUT75txrf+aMh9FiD7q9ZE/i6r0bPb22g4FsE6Y338PQX1bmfy08i9QQCB7/rcUAVntfw==
+  version "2.8.8"
+  resolved "https://registry.yarnpkg.com/prettier/-/prettier-2.8.8.tgz#e8c5d7e98a4305ffe3de2e1fc4aca1a71c28b1da"
+  integrity sha512-tdN8qQGvNjw4CHbY+XXk0JgCXn9QiF21a55rBe5LJAU+kDyC4WQn4+awm2Xfk2lQMk5fKup9XgzTZtGkjBdP9Q==
 
 punycode@^2.1.0:
   version "2.3.0"
@@ -551,9 +554,9 @@ semver@^6.3.0:
   integrity sha512-b39TBaTSfV6yBrapU89p5fKekE2m/NwnDocOVruQFS1/veMgdzuPcnOM34M6CwxW8jH/lxEa5rBoDeUwu5HHTw==
 
 semver@^7.3.8:
-  version "7.3.8"
-  resolved "https://registry.yarnpkg.com/semver/-/semver-7.3.8.tgz#07a78feafb3f7b32347d725e33de7e2a2df67798"
-  integrity sha512-NB1ctGL5rlHrPJtFDVIVzTyQylMLu9N9VICA6HSFJo8MCGVTMW6gfpicwKmmK/dAjTOrqu5l63JJOpDSrAis3A==
+  version "7.5.1"
+  resolved "https://registry.yarnpkg.com/semver/-/semver-7.5.1.tgz#c90c4d631cf74720e46b21c1d37ea07edfab91ec"
+  integrity sha512-Wvss5ivl8TMRZXXESstBA4uR5iXgEN/VC5/sOcuXdVLzcdkz4HWetIoRfG5gb5X+ij/G9rw9YoGn3QoQ8OCSpw==
   dependencies:
     lru-cache "^6.0.0"
 

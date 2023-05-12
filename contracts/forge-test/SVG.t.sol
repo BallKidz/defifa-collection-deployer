@@ -34,20 +34,17 @@ contract EmptyTest is Test {
 
     JB721TierParams[] memory _tiers = new JB721TierParams[](1);
     _tiers[0] = JB721TierParams({
-      contributionFloor: 1E18,
-      lockedUntil: 0,
+      price: 1E18,
       initialQuantity: 100,
       votingUnits: 0,
       reservedRate: 0,
       reservedTokenBeneficiary: address(0),
-      royaltyRate: 0,
-      royaltyBeneficiary: address(0),
       encodedIPFSUri: bytes32(0xfb17901b2b08444d2bbe92ca39bdd64eab27b0481e841fcd9f14aeb56e28513b),
       category: 1,
       allowManualMint: false,
       shouldUseReservedTokenBeneficiaryAsDefault: false,
-      shouldUseRoyaltyBeneficiaryAsDefault: false,
-      transfersPausable: false
+      transfersPausable: false,
+      useVotingUnits: true
     });
     _delegate.initialize({
       _projectId: 123,
@@ -95,20 +92,17 @@ contract EmptyTest is Test {
 
     JB721TierParams[] memory _tiers = new JB721TierParams[](1);
     _tiers[0] = JB721TierParams({
-      contributionFloor: 1E18,
+      price: 1E18,
       initialQuantity: 100,
       votingUnits: 0,
-      lockedUntil: 0,
       reservedRate: 0,
       reservedTokenBeneficiary: address(0),
-      royaltyRate: 0,
-      royaltyBeneficiary: address(0),
       encodedIPFSUri: bytes32(''),
       category: 1,
       allowManualMint: false,
       shouldUseReservedTokenBeneficiaryAsDefault: false,
-      shouldUseRoyaltyBeneficiaryAsDefault: false,
-      transfersPausable: false
+      transfersPausable: false,
+      useVotingUnits: true
     });
     _delegate.initialize({
       _projectId: 123,

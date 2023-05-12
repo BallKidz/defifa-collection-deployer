@@ -13,9 +13,10 @@ import './IDefifaGovernor.sol';
 interface IDefifaDeployer {
   
   event LaunchGame(
+    uint256 indexed gameId,
     IDefifaDelegate indexed delegate,
     IDefifaGovernor indexed governor,
-    IJBTokenUriResolver indexed tokenUriResolver,
+    IJBTokenUriResolver tokenUriResolver,
     address caller
   );
 
