@@ -872,8 +872,6 @@ contract DefifaGovernorTest is TestBaseWorkflow {
       price: 1 ether,
       reservedRate: 1001,
       reservedTokenBeneficiary: address(0),
-      royaltyRate: 0,
-      royaltyBeneficiary: address(0),
       encodedIPFSUri: bytes32(0), // this way we dont need more tokenUris
       shouldUseReservedTokenBeneficiaryAsDefault: false,
       name: 'DEFIFA'
@@ -1201,8 +1199,6 @@ contract DefifaGovernorTest is TestBaseWorkflow {
         price: 1 ether,
         reservedRate: 1001,
         reservedTokenBeneficiary: address(0),
-        royaltyRate: 0,
-        royaltyBeneficiary: address(0),
         encodedIPFSUri: bytes32(0), // this way we dont need more tokenUris
         shouldUseReservedTokenBeneficiaryAsDefault: false,
         name: 'DEFIFA'
