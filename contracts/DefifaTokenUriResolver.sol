@@ -161,7 +161,7 @@ contract DefifaTokenUriResolver is IDefifaTokenUriResolver, IJBTokenUriResolver 
       abi.encodePacked(
         '{"name":"',
         _title,
-        '", "id": ',
+        '", "id": "',
         _tier.id.toString(),
         '","description":"Team: ',
         _team,
