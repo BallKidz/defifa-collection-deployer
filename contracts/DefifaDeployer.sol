@@ -371,16 +371,16 @@ contract DefifaDeployer is IDefifaDeployer, IERC721Receiver, Ownable {
       _delegateTiers[_i] = JB721TierParams({
         price: _defifaTier.price,
         initialQuantity: 999_999_999, // The max allowed value.
-        votingUnits: 1,
+        votingUnits: 0,
         reservedRate: _defifaTier.reservedRate,
         reservedTokenBeneficiary: _defifaTier.reservedTokenBeneficiary,
         encodedIPFSUri: _defifaTier.encodedIPFSUri,
-        category: 1,
+        category: 0,
         allowManualMint: false,
         shouldUseReservedTokenBeneficiaryAsDefault: _defifaTier
           .shouldUseReservedTokenBeneficiaryAsDefault,
         transfersPausable: false,
-        useVotingUnits: false
+        useVotingUnits: true
       });
 
       // Set the name.
@@ -391,13 +391,6 @@ contract DefifaDeployer is IDefifaDeployer, IERC721Receiver, Ownable {
       }
     }
 
-    JB721PricingParams memory _pricingParams = JB721PricingParams({
-      tiers: _delegateTiers,
-      currency: uint48(_launchProjectData.terminal.currencyForToken(_launchProjectData.token)),
-      decimals: uint48(_launchProjectData.terminal.decimalsForToken(_launchProjectData.token)),
-      prices: IJBPrices(address(0))
-    });
-
     // Clone and initialize the new delegate with a new token uri resolver.
     DefifaDelegate _delegate = DefifaDelegate(Clones.clone(delegateCodeOrigin));
 
@@ -407,28 +400,32 @@ contract DefifaDeployer is IDefifaDeployer, IERC721Receiver, Ownable {
       ? _launchProjectData.defaultTokenUriResolver
       : DefifaTokenUriResolver(Clones.clone(tokenUriResolverCodeOrigin));
 
-    _delegate.initialize(
-      gameId,
-      controller.directory(),
-      _launchProjectData.name,
-      string.concat('DEFIFA ', gameId.toString()),
-      controller.fundingCycleStore(),
-      _launchProjectData.baseUri,
-      _uriResolver,
-      _launchProjectData.contractUri,
-      _pricingParams,
-      _launchProjectData.store,
-      JBTiered721Flags({
+    _delegate.initialize({
+      _gameId: gameId,
+      _directory: controller.directory(),
+      _name: _launchProjectData.name,
+      _symbol: string.concat('DEFIFA ', gameId.toString()),
+      _fundingCycleStore: controller.fundingCycleStore(),
+      _baseUri: _launchProjectData.baseUri,
+      _tokenUriResolver: _uriResolver,
+      _contractUri: _launchProjectData.contractUri,
+      _tiers: _delegateTiers,
+      _currency: uint48(_launchProjectData.terminal.currencyForToken(_launchProjectData.token)),
+      _store: _launchProjectData.store,
+      _flags: JBTiered721Flags({
         preventOverspending: true,
         lockReservedTokenChanges: false,
         lockVotingUnitChanges: false,
         lockManualMintingChanges: false
       })
-    );
+  });
 
     // Initialize the fallback default uri resolver if needed.
     if (_launchProjectData.defaultTokenUriResolver == IJBTokenUriResolver(address(0)))
-      DefifaTokenUriResolver(address(_uriResolver)).initialize(_delegate, _tierNames);
+      DefifaTokenUriResolver(address(_uriResolver)).initialize({
+        _delegate: _delegate, 
+        _tierNames: _tierNames
+    });
 
     // Make sure the provided terminal accepts the same currency as this game is being played in.
     if (!_launchProjectData.terminal.acceptsToken(_launchProjectData.token, gameId))
@@ -439,7 +436,11 @@ contract DefifaDeployer is IDefifaDeployer, IERC721Receiver, Ownable {
 
     // Clone and initialize the new governor.
     governor = IDefifaGovernor(Clones.clone(governorCodeOrigin));
-    governor.initialize(_delegate, _launchProjectData.end, _launchProjectData.votingPeriod);
+    governor.initialize({ 
+      _delegate: _delegate, 
+      _votingStartTime:  _launchProjectData.end, 
+      _votingPeriod: _launchProjectData.votingPeriod
+    });
 
     // Transfer ownership to the specified owner.
     _delegate.transferOwnership(address(governor));

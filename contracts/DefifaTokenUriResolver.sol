@@ -57,6 +57,10 @@ contract DefifaTokenUriResolver is IDefifaTokenUriResolver, IJBTokenUriResolver 
   */
   address public immutable override codeOrigin;
 
+  /**
+    @notice
+    The typeface of the SVGs.
+  */
   ITypeface public override immutable typeface;
 
   //*********************************************************************//
@@ -157,11 +161,13 @@ contract DefifaTokenUriResolver is IDefifaTokenUriResolver, IJBTokenUriResolver 
       abi.encodePacked(
         '{"name":"',
         _title,
+        '", "id": ',
+        _tier.id.toString(),
         '","description":"Team: ',
         _team,
         ', ID: ',
         _tier.id.toString(),
-        '","image":"data:image/svg+xml;base64,'
+        '.","image":"data:image/svg+xml;base64,'
       )
     );
     string memory _titleFontSize;

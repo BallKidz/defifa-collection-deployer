@@ -145,7 +145,7 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate {
     @notice
     The address of the origin 'JBTiered721Delegate', used to check in the init if the contract is the original or not
   */
-  address public override codeOrigin;
+  address public immutable override codeOrigin;
 
   /**
     @notice
@@ -493,7 +493,7 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate {
   }
 
   /**
-    @param _projectId The ID of the project this contract's functionality applies to.
+    @param _gameId The ID of the project this contract's functionality applies to.
     @param _directory The directory of terminals and controllers for projects.
     @param _name The name of the token.
     @param _symbol The symbol that the token should be represented by.
@@ -501,12 +501,13 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate {
     @param _baseUri A URI to use as a base for full token URIs.
     @param _tokenUriResolver A contract responsible for resolving the token URI for each token ID.
     @param _contractUri A URI where contract metadata can be found. 
-    @param _pricing The tier pricing according to which token distribution will be made. Must be passed in order of contribution floor, with implied increasing value.
+    @param _tiers The tiers to set.
+    @param _currency The currency that the tier contribution floors are denoted in.
     @param _store A contract that stores the NFT's data.
     @param _flags A set of flags that help define how this contract works.
   */
   function initialize(
-    uint256 _projectId,
+    uint256 _gameId,
     IJBDirectory _directory,
     string memory _name,
     string memory _symbol,
@@ -514,7 +515,8 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate {
     string memory _baseUri,
     IJBTokenUriResolver _tokenUriResolver,
     string memory _contractUri,
-    JB721PricingParams memory _pricing,
+    JB721TierParams[] memory _tiers,
+    uint48 _currency,
     IJBTiered721DelegateStore _store,
     JBTiered721Flags memory _flags
   ) public override {
@@ -525,11 +527,11 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate {
     if (address(store) != address(0)) revert();
 
     // Initialize the superclass.
-    JB721Delegate._initialize(_projectId, _directory, _name, _symbol);
+    JB721Delegate._initialize(_gameId, _directory, _name, _symbol);
 
     fundingCycleStore = _fundingCycleStore;
     store = _store;
-    pricingCurrency = _pricing.currency;
+    pricingCurrency = _currency;
 
     // Store the base URI if provided.
     if (bytes(_baseUri).length != 0) baseURI = _baseUri;
@@ -542,7 +544,7 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate {
       _store.recordSetTokenUriResolver(_tokenUriResolver);
 
     // Record adding the provided tiers.
-    if (_pricing.tiers.length > 0) _store.recordAddTiers(_pricing.tiers);
+    if (_tiers.length > 0) _store.recordAddTiers(_tiers);
 
     // Set the flags if needed.
     if (

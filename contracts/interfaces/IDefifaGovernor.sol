@@ -14,7 +14,7 @@ interface IDefifaGovernor {
   function votingStartTime() external view returns (uint256);
 
   function initialize(
-    IDefifaDelegate _defifaDelegate,
+    IDefifaDelegate _delegate,
     uint256 _votingStartTime,
     uint256 _votingPeriod
   ) external;

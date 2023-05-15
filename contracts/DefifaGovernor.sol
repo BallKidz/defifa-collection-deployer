@@ -49,7 +49,7 @@ contract DefifaGovernor is Governor, GovernorCountingSimple, IDefifaGovernor {
     @notice
     The time the vote will be active for once it has started, measured in blocks.
   */
-  uint256 private _votingPeriod;
+  uint256 private __votingPeriod;
 
   //*********************************************************************//
   // ------------------------ public constants ------------------------- //
@@ -105,12 +105,12 @@ contract DefifaGovernor is Governor, GovernorCountingSimple, IDefifaGovernor {
 
     @param _delegate The Defifa delegate contract that this contract is Governing.
     @param _votingStartTime Voting start time.
-    @param __votingPeriod The time the vote will be active for once it has started, measured in blocks. This is two weeks by default.
+    @param _votingPeriod The time the vote will be active for once it has started, measured in blocks. This is two weeks by default.
   */
   function initialize(
     IDefifaDelegate _delegate,
     uint256 _votingStartTime,
-    uint256 __votingPeriod
+    uint256 _votingPeriod
   ) public virtual override {
     // Make the original un-initializable.
     if (address(this) == codeOrigin) revert();
@@ -120,8 +120,8 @@ contract DefifaGovernor is Governor, GovernorCountingSimple, IDefifaGovernor {
 
     delegate = _delegate;
     votingStartTime = _votingStartTime;
-    // two weeks by default.
-    _votingPeriod = __votingPeriod == 0 ? 100381 : __votingPeriod;
+    // one weeks by default.
+    __votingPeriod = _votingPeriod == 0 ? 50191 : _votingPeriod;
   }
 
   /**
@@ -349,7 +349,7 @@ contract DefifaGovernor is Governor, GovernorCountingSimple, IDefifaGovernor {
     The amount of time that must go by for voting on a proposal to no longer be allowed.
   */
   function votingPeriod() public view override(IGovernor) returns (uint256) {
-    return _votingPeriod;
+    return __votingPeriod;
   }
 
   /** 

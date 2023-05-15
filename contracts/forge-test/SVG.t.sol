@@ -47,7 +47,7 @@ contract EmptyTest is Test {
       useVotingUnits: true
     });
     _delegate.initialize({
-      _projectId: 123,
+      _gameId: 123,
       _directory: _directory,
       _name: 'Example collection',
       _symbol: 'EX',
@@ -55,12 +55,8 @@ contract EmptyTest is Test {
       _baseUri: '',
       _tokenUriResolver: _resolver,
       _contractUri: '',
-      _pricing: JB721PricingParams({
-        tiers: _tiers,
-        currency: 1,
-        decimals: 18,
-        prices: IJBPrices(address(0))
-      }),
+      _tiers: _tiers,
+      _currency: 1,
       _store: _store,
       _flags: JBTiered721Flags({
         lockReservedTokenChanges: false,
@@ -105,7 +101,7 @@ contract EmptyTest is Test {
       useVotingUnits: true
     });
     _delegate.initialize({
-      _projectId: 123,
+      _gameId: 123,
       _directory: _directory,
       _name: 'Example collection',
       _symbol: 'DEFIFA: EXAMPLE',
@@ -113,12 +109,8 @@ contract EmptyTest is Test {
       _baseUri: '',
       _tokenUriResolver: _resolver,
       _contractUri: '',
-      _pricing: JB721PricingParams({
-        tiers: _tiers,
-        currency: 1,
-        decimals: 18,
-        prices: IJBPrices(address(0))
-      }),
+      _tiers: _tiers,
+      _currency: 1,
       _store: _store,
       _flags: JBTiered721Flags({
         lockReservedTokenChanges: false,
