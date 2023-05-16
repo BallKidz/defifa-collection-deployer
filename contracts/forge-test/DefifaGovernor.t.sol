@@ -66,7 +66,7 @@ contract DefifaGovernorTest is TestBaseWorkflow {
       bytes32(0),
       bytes32(0),
       type(IDefifaDelegate).interfaceId,
-      bytes32(abi.encode(_user)),
+      _user,
       rawMetadata
     );
     // Pay to the project and mint an NFT
@@ -112,7 +112,7 @@ contract DefifaGovernorTest is TestBaseWorkflow {
         bytes32(0),
         bytes32(0),
         type(IDefifaDelegate).interfaceId,
-        bytes32(abi.encode(_users[i])),
+        _users[i],
         rawMetadata
       );
       // Pay to the project and mint an NFT
@@ -215,7 +215,7 @@ contract DefifaGovernorTest is TestBaseWorkflow {
         bytes32(0),
         bytes32(0),
         type(IDefifaDelegate).interfaceId,
-        bytes32(abi.encode(_users[i])),
+        _users[i],
         rawMetadata
       );
       // Pay to the project and mint an NFT
@@ -249,7 +249,7 @@ contract DefifaGovernorTest is TestBaseWorkflow {
         bytes32(0),
         bytes32(0),
         type(IDefifaDelegate).interfaceId,
-        bytes32(abi.encode(_users[i])),
+        _users[i],
         rawMetadata
       );
       // Pay to the project and mint an NFT
@@ -284,7 +284,7 @@ contract DefifaGovernorTest is TestBaseWorkflow {
         bytes32(0),
         bytes32(0),
         type(IDefifaDelegate).interfaceId,
-        bytes32(abi.encode(_users[i])),
+        _users[i],
         rawMetadata
       );
       // Pay to the project and mint an NFT
@@ -382,7 +382,7 @@ contract DefifaGovernorTest is TestBaseWorkflow {
         bytes32(0),
         bytes32(0),
         type(IDefifaDelegate).interfaceId,
-        bytes32(abi.encode(_users[i])),
+        _users[i],
         rawMetadata
       );
       // Pay to the project and mint an NFT
@@ -469,7 +469,7 @@ contract DefifaGovernorTest is TestBaseWorkflow {
         bytes32(0),
         bytes32(0),
         type(IDefifaDelegate).interfaceId,
-        bytes32(abi.encode(_users[i])),
+        _users[i],
         rawMetadata
       );
       // Pay to the project and mint an NFT
@@ -564,7 +564,7 @@ contract DefifaGovernorTest is TestBaseWorkflow {
         bytes32(0),
         bytes32(0),
         type(IDefifaDelegate).interfaceId,
-        bytes32(abi.encode(_users[i])),
+        _users[i],
         rawMetadata
       );
       // Pay to the project and mint an NFT
@@ -697,7 +697,7 @@ contract DefifaGovernorTest is TestBaseWorkflow {
           bytes32(0),
           bytes32(0),
           type(IDefifaDelegate).interfaceId,
-          bytes32(abi.encode(_users[i])),
+          _users[i],
           rawMetadata
         );
         // Pay to the project and mint an NFT
@@ -726,7 +726,7 @@ contract DefifaGovernorTest is TestBaseWorkflow {
           bytes32(0),
           bytes32(0),
           type(IDefifaDelegate).interfaceId,
-          bytes32(abi.encode(_users[i])),
+          _users[i],
           rawMetadata
         );
         // Pay to the project and mint an NFT
@@ -981,7 +981,7 @@ contract DefifaGovernorTest is TestBaseWorkflow {
         bytes32(0),
         bytes32(0),
         type(IDefifaDelegate).interfaceId,
-        bytes32(abi.encode(_users[i])),
+        _users[i],
         rawMetadata
       );
       // Pay to the project and mint an NFT
@@ -1040,7 +1040,7 @@ contract DefifaGovernorTest is TestBaseWorkflow {
         bytes32(0),
         bytes32(0),
         type(IDefifaDelegate).interfaceId,
-        bytes32(abi.encode(_users[i])),
+        _users[i],
         rawMetadata
       );
       // Pay to the project and mint an NFT
@@ -1123,7 +1123,7 @@ contract DefifaGovernorTest is TestBaseWorkflow {
         bytes32(0),
         bytes32(0),
         type(IDefifaDelegate).interfaceId,
-        bytes32(abi.encode(_users[i])),
+        _users[i],
         rawMetadata
       );
       // Pay to the project and mint an NFT
@@ -1255,7 +1255,7 @@ contract DefifaGovernorTest is TestBaseWorkflow {
       bytes32(0),
       bytes32(0),
       type(IDefifaDelegate).interfaceId,
-      bytes32(abi.encode(_refundUser)),
+      _refundUser,
       rawMetadata
     );
     // Pay to the project and mint an NFT

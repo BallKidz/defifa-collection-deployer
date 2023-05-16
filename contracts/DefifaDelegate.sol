@@ -527,7 +527,12 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate {
     if (address(store) != address(0)) revert();
 
     // Initialize the superclass.
-    JB721Delegate._initialize(_gameId, _directory, _name, _symbol);
+    JB721Delegate._initialize({
+      _projectId: _gameId, 
+      _directory: _directory, 
+      _name: _name, 
+      _symbol: _symbol
+    });
 
     fundingCycleStore = _fundingCycleStore;
     store = _store;
@@ -544,7 +549,7 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate {
       _store.recordSetTokenUriResolver(_tokenUriResolver);
 
     // Record adding the provided tiers.
-    if (_tiers.length > 0) _store.recordAddTiers(_tiers);
+    _store.recordAddTiers(_tiers);
 
     // Set the flags if needed.
     if (
@@ -826,7 +831,7 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate {
     if (_data.amount.currency != pricingCurrency) revert WRONG_CURRENCY();
 
     // Keep a reference to the address that should be given attestation votes from this mint.
-    bytes32 _votingDelegateSegment;
+    address _votingDelegate;
 
     // Skip the first 32 bytes which are used by the JB protocol to pass the paying project's ID when paying from a JBSplit.
     // The address of the voting delegate for the mint is included in the next 32 bytes reserved for generic extension parameters.
@@ -839,18 +844,13 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate {
       uint16[] memory _tierIdsToMint;
 
       // Decode the metadata.
-      (, , , _votingDelegateSegment, _tierIdsToMint) = abi.decode(
+      (, , , _votingDelegate, _tierIdsToMint) = abi.decode(
         _data.metadata,
-        (bytes32, bytes32, bytes4, bytes32, uint16[])
+        (bytes32, bytes32, bytes4, address, uint16[])
       );
 
       // Make sure something is being minted.
       if (_tierIdsToMint.length == 0) revert NOTHING_TO_MINT();
-
-      // Delegate to the specified address, or to the payer.
-      address _votingDelegate = _votingDelegateSegment != bytes32('')
-        ? address(uint160(uint256(_votingDelegateSegment)))
-        : address(0);
 
       // Keep a reference to the current tier ID.
       uint256 _currentTierId;
