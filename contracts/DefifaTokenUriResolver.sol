@@ -229,7 +229,7 @@ contract DefifaTokenUriResolver is IDefifaTokenUriResolver, IJBTokenUriResolver 
         DefifaFontImporter.getBeefyFontSource(typeface),
         ');format("opentype");}',
         'text{white-space:pre-wrap; width:100%; }</style>',
-        '<rect width="100vw" height="100vh" fill="#181424"/>',
+        '<rect width="100%" height="100%" fill="#181424"/>',
         '<text x="10" y="40" style="font-size:',
         _titleFontSize,
         'px; font-family: Capsules-300; font-weight:300; fill: #fea282;">',
