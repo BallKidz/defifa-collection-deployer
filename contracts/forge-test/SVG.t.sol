@@ -47,7 +47,7 @@ contract EmptyTest is Test {
       useVotingUnits: true
     });
     _delegate.initialize({
-      _gameId: 1234,
+      _gameId: 12345,
       _directory: _directory,
       _name: 'Example collection',
       _symbol: 'EX',
