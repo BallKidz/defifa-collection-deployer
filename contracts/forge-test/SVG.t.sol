@@ -25,7 +25,7 @@ contract EmptyTest is Test {
 
   address defifaBallkidz = address(0);
   address delegateRegistry = address(0);
-
+  
   function testWithTierImage() public {
     DefifaDelegate _delegate = DefifaDelegate(Clones.clone(address(new DefifaDelegate())));
     DefifaTokenUriResolver _resolver = DefifaTokenUriResolver(

@@ -203,6 +203,7 @@ contract DefifaGovernorTest is TestBaseWorkflow {
     deployer.queueNextPhaseOf(_projectId);
     // Make sure this is actually Phase 2
     assertEq(_jbFundingCycleStore.currentOf(_projectId).number, 2);
+
     for (uint256 i = 0; i < nTiers; i++) {
       // Generate a new address for each tier
       _users[i] = address(bytes20(keccak256(abi.encode('user', Strings.toString(i)))));

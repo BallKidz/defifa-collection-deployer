@@ -31,6 +31,7 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate {
   // --------------------------- custom errors ------------------------- //
   //*********************************************************************//
 
+  error BAD_TIER_ORDER();
   error BLOCK_NOT_YET_MINED();
   error DELEGATE_ADDRESS_ZERO();
   error GAME_ISNT_OVER_YET();
@@ -868,6 +869,8 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate {
       for (uint256 _i; _i < _numberOfTiers; ) {
         // Keep track of the current tier being iterated on and its price.
         if (_currentTierId != _tierIdsToMint[_i]) {
+          // Make sure the tier IDs are passed in order.
+          if (_tierIdsToMint[_i] < _currentTierId) revert BAD_TIER_ORDER();
           _currentTierId = _tierIdsToMint[_i];
           _votingUnits = store.tierOf(address(this), _tierIdsToMint[_i], false).votingUnits;
         }
