@@ -158,10 +158,10 @@ contract DefifaGovernorTest is TestBaseWorkflow {
         _metadata: redemptionMetadata
       });
     }
-    // Phase 4: End
-    vm.warp(deployer.endOf(_projectId));
+    // // Phase 4: End
+    // vm.warp(deployer.endOf(_projectId));
     // Forward the amount of blocks needed to reach the end (and round up)
-    vm.roll(deployer.endOf(_projectId) - block.timestamp / 12 + 1);
+    // vm.roll(deployer.endOf(_projectId) - block.timestamp / 12 + 1);
     vm.warp(block.timestamp + 1 weeks);
     assertEq(_jbFundingCycleStore.currentOf(_projectId).number, 4);
     for (uint256 i = 0; i < _users.length; i++) {
@@ -268,9 +268,9 @@ contract DefifaGovernorTest is TestBaseWorkflow {
       );
     }
     // Phase 4: End
-    vm.warp(deployer.endOf(_projectId));
+    // vm.warp(deployer.endOf(_projectId));
     // Forward the amount of blocks needed to reach the end (and round up)
-    vm.roll(deployer.endOf(_projectId) - block.timestamp / 12 + 1);
+    // vm.roll(deployer.endOf(_projectId) - block.timestamp / 12 + 1);
     // Make sure this is actually Phase 4
     assertEq(_jbFundingCycleStore.currentOf(_projectId).number, 4);
     for (uint256 i = 0; i < nTiers; i++) {
@@ -439,9 +439,9 @@ contract DefifaGovernorTest is TestBaseWorkflow {
       _governor.castVote(_proposalId, 0);
     }
     // Phase 4: End
-    vm.warp(deployer.endOf(_projectId));
+    // vm.warp(deployer.endOf(_projectId));
     // Forward the amount of blocks needed to reach the end (and round up)
-    vm.roll(deployer.endOf(_projectId) - block.timestamp / 12 + 1);
+    // vm.roll(deployer.endOf(_projectId) - block.timestamp / 12 + 1);
     vm.warp(block.timestamp + 1 weeks);
     // Execute the proposal
     vm.expectRevert('Governor: proposal not successful');
@@ -526,8 +526,8 @@ contract DefifaGovernorTest is TestBaseWorkflow {
       _governor.castVote(_proposalId, 0);
     }
     // Phase 4: End
-    vm.warp(deployer.endOf(_projectId));
-    vm.roll(deployer.endOf(_projectId));
+    // vm.warp(deployer.endOf(_projectId));
+    // vm.roll(deployer.endOf(_projectId));
     vm.warp(block.timestamp + 1 weeks);
     // Execute the proposal
     vm.expectRevert('Governor: proposal not successful');
@@ -623,9 +623,9 @@ contract DefifaGovernorTest is TestBaseWorkflow {
       _governor.castVote(_proposalId, 1);
     }
     // Phase 4: End
-    vm.warp(deployer.endOf(_projectId));
+    // vm.warp(deployer.endOf(_projectId));
     // Forward the amount of blocks needed to reach the end (and round up)
-    vm.roll(deployer.endOf(_projectId) - block.timestamp / 12 + 1);
+    // vm.roll(deployer.endOf(_projectId) - block.timestamp / 12 + 1);
     vm.warp(block.timestamp + 1 weeks);
     _governor.ratifyScorecard(scorecards);
     vm.roll(block.number + 1);
@@ -795,8 +795,8 @@ contract DefifaGovernorTest is TestBaseWorkflow {
     }
     // Phase 4: End
     // Forward the amount of blocks needed to reach the end (and round up)
-    vm.roll(deployer.endOf(_projectId) - block.timestamp / 12 + 1);
-    vm.warp(deployer.endOf(_projectId));
+    // vm.roll(deployer.endOf(_projectId) - block.timestamp / 12 + 1);
+    // vm.warp(deployer.endOf(_projectId));
     deployer.queueNextPhaseOf(_projectId);
     vm.warp(block.timestamp + 1 weeks);
     _governor.ratifyScorecard(scorecards);
@@ -1183,8 +1183,8 @@ contract DefifaGovernorTest is TestBaseWorkflow {
       _governor.castVote(_proposalId, 1);
     }
     // Phase 4: End
-    vm.warp(deployer.endOf(_projectId));
-    vm.roll(deployer.endOf(_projectId));
+    // vm.warp(deployer.endOf(_projectId));
+    // vm.roll(deployer.endOf(_projectId));
     vm.warp(block.timestamp + 1 weeks);
     // Execute the proposal
     vm.expectRevert(abi.encodeWithSignature('INVALID_REDEMPTION_WEIGHTS()'));

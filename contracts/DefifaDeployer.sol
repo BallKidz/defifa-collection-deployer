@@ -11,6 +11,7 @@ import '@jbx-protocol/juice-contracts-v3/contracts/libraries/JBSplitsGroups.sol'
 import '@jbx-protocol/juice-contracts-v3/contracts/structs/JBFundAccessConstraints.sol';
 import '@jbx-protocol/juice-721-delegate/contracts/libraries/JBTiered721FundingCycleMetadataResolver.sol';
 import './interfaces/IDefifaDeployer.sol';
+import './interfaces/IDefifaNoContestReporter.sol';
 import './structs/DefifaStoredOpsData.sol';
 import './DefifaDelegate.sol';
 import './DefifaGovernor.sol';
@@ -27,7 +28,7 @@ import './DefifaTokenUriResolver.sol';
   Adheres to -
   IDefifaDeployer: General interface for the generic controller methods in this contract that interacts with funding cycles and tokens according to the protocol's rules.
 */
-contract DefifaDeployer is IDefifaDeployer, IERC721Receiver, Ownable {
+contract DefifaDeployer is IDefifaDeployer, IDefifaNoContestReporter, IERC721Receiver, Ownable {
   using Strings for uint256;
 
   //*********************************************************************//
@@ -80,6 +81,12 @@ contract DefifaDeployer is IDefifaDeployer, IERC721Receiver, Ownable {
     This contract current nonce, used for the registry initialized at 1 since the first contract deployed is the delegate
   */
   uint256 internal _nonce = 1;
+  
+  /** 
+    @notice
+    If each game has been set to no contest. 
+  */
+  mapping(uint256 => bool) internal _noContestIsSet;
 
   //*********************************************************************//
   // ------------------------ public constants ------------------------- //
@@ -176,10 +183,6 @@ contract DefifaDeployer is IDefifaDeployer, IERC721Receiver, Ownable {
     return _timesFor[_gameId].start;
   }
 
-  function endOf(uint256 _gameId) external view override returns (uint256) {
-    return _timesFor[_gameId].end;
-  }
-
   function terminalOf(uint256 _gameId) external view override returns (IJBPaymentTerminal) {
     return _opsFor[_gameId].terminal;
   }
@@ -223,8 +226,34 @@ contract DefifaDeployer is IDefifaDeployer, IERC721Receiver, Ownable {
 
     // If the configurations are the same and the game hasn't ended, queueing is still needed.
     return
-      _currentFundingCycle.number != 4 &&
+      _currentFundingCycle.duration != 0 &&
       _currentFundingCycle.configuration == _queuedFundingCycle.configuration;
+  }
+
+  //*********************************************************************//
+  // -------------------------- public views --------------------------- //
+  //*********************************************************************//
+
+  /** 
+    @notice
+    Check to see if the game is in no contest, meaning it isn't in a finishable state. 
+
+    @param _gameId The ID of the game being checked for no contest.
+
+    @return flag A flag indicating if the game is in no contest.
+  */
+  function isNoContest(uint256 _gameId) external view override returns (bool) {
+    // If the No Contest phase has already been queued, lettem know.
+    if (_noContestIsSet[_gameId]) return true;
+
+    // Check if the game will be No Contest.
+
+    // Get the project's current funding cycle.
+    (
+      JBFundingCycle memory _currentFundingCycle,
+    ) = controller.currentFundingCycleOf(_gameId);
+
+    return _isNoContest(_gameId, _currentFundingCycle);
   }
 
   //*********************************************************************//
@@ -286,8 +315,7 @@ contract DefifaDeployer is IDefifaDeployer, IERC721Receiver, Ownable {
       _launchProjectData.start -
         _launchProjectData.refundPeriodDuration -
         _launchProjectData.mintDuration <
-      block.timestamp ||
-      _launchProjectData.end < _launchProjectData.start
+      block.timestamp
     ) revert INVALID_GAME_CONFIGURATION();
 
     // Get the game ID, optimistically knowing it will be one greater than the current count.
@@ -298,8 +326,7 @@ contract DefifaDeployer is IDefifaDeployer, IERC721Receiver, Ownable {
       _timesFor[gameId] = DefifaTimeData({
         mintDuration: _launchProjectData.mintDuration,
         refundPeriodDuration: _launchProjectData.refundPeriodDuration,
-        start: _launchProjectData.start,
-        end: _launchProjectData.end
+        start: _launchProjectData.start
       });
 
       // Store the terminal and distribution limit.
@@ -417,7 +444,8 @@ contract DefifaDeployer is IDefifaDeployer, IERC721Receiver, Ownable {
         lockReservedTokenChanges: false,
         lockVotingUnitChanges: false,
         lockManualMintingChanges: false
-      })
+      }),
+      _noContestReporter: this
   });
 
     // Initialize the fallback default uri resolver if needed.
@@ -469,20 +497,24 @@ contract DefifaDeployer is IDefifaDeployer, IERC721Receiver, Ownable {
       JBFundingCycleMetadata memory _metadata
     ) = controller.currentFundingCycleOf(_gameId);
 
-    // There are only 4 phases.
-    if (_currentFundingCycle.number >= 4) revert GAME_OVER();
+    // No more queuing once duration is set to 0.
+    if (_noContestIsSet[_gameId] || _currentFundingCycle.duration == 0) revert GAME_OVER();
+
+    // Check for no contest.
+    if (_isNoContest(_gameId, _currentFundingCycle))
+      return _queueNoContest(_gameId, _metadata.dataSource);
 
     // Get the project's queued funding cycle.
-    (JBFundingCycle memory queuedFundingCycle, ) = controller.queuedFundingCycleOf(_gameId);
+    (JBFundingCycle memory _queuedFundingCycle, ) = controller.queuedFundingCycleOf(_gameId);
 
     // Make sure the next game phase isn't already queued.
-    if (_currentFundingCycle.configuration != queuedFundingCycle.configuration)
+    if (_currentFundingCycle.configuration != _queuedFundingCycle.configuration)
       revert PHASE_ALREADY_QUEUED();
 
     // Queue the next phase of the game.
+    // If a funding cycle has rolled over, queue no contest.
     if (_currentFundingCycle.number == 1) return _queuePhase2(_gameId, _metadata.dataSource);
-    else if (_currentFundingCycle.number == 2) return _queuePhase3(_gameId, _metadata.dataSource);
-    else return _queuePhase4(_gameId, _metadata.dataSource);
+    else return _queuePhase3(_gameId, _metadata.dataSource);
   }
 
   /** 
@@ -725,68 +757,6 @@ contract DefifaDeployer is IDefifaDeployer, IERC721Receiver, Ownable {
       controller.reconfigureFundingCyclesOf(
         _gameId,
         JBFundingCycleData ({
-          duration: _times.end - _times.start,
-          // Don't mint project tokens.
-          weight: 0,
-          discountRate: 0,
-          ballot: IJBFundingCycleBallot(address(0))
-        }),
-        JBFundingCycleMetadata({
-         global: JBGlobalFundingCycleMetadata({
-            allowSetTerminals: false,
-            allowSetController: false,
-            pauseTransfers: false
-          }),
-          reservedRate: 0,
-          redemptionRate: 0,
-          ballotRedemptionRate: 0,
-          // No more payments.
-          pausePay: true,
-          pauseDistributions: false,
-          // No redemptions.
-          pauseRedeem: true,
-          pauseBurn: false,
-          allowMinting: false,
-          allowTerminalMigration: false,
-          allowControllerMigration: false,
-          holdFees: false,
-          preferClaimedTokenOverride: false,
-          useTotalOverflowForRedemptions: false,
-          useDataSourceForPay: true,
-          useDataSourceForRedeem: true,
-          dataSource: _dataSource,
-          metadata: JBTiered721FundingCycleMetadataResolver.packFundingCycleGlobalMetadata(
-            JBTiered721FundingCycleMetadata({
-              pauseTransfers: false,
-              pauseMintingReserves: false
-            })
-          )
-        }),
-        0, // mustStartAtOrAfter should be ASAP
-         _groupedSplits,
-        fundAccessConstraints,
-        'Defifa game phase 3.'
-      );
-  }
-
-  /**
-    @notice
-    Gets reconfiguration data for phase 4 of the game.
-
-    @dev
-    Phase 4 removes the trade deadline and opens up redemptions.
-
-    @param _gameId The ID of the project that's being reconfigured.
-    @param _dataSource The data source to use.
-
-    @return configuration The configuration of the funding cycle that was successfully reconfigured.
-  */
-  function _queuePhase4(uint256 _gameId, address _dataSource) internal returns (uint256 configuration) {
-    return
-      controller.reconfigureFundingCyclesOf(
-        _gameId,
-        JBFundingCycleData ({
-          // No duration, lasts indefinately.
           duration: 0,
           // Don't mint project tokens.
           weight: 0,
@@ -818,7 +788,6 @@ contract DefifaDeployer is IDefifaDeployer, IERC721Receiver, Ownable {
           useDataSourceForPay: true,
           useDataSourceForRedeem: true,
           dataSource: _dataSource,
-          // Transferability unlocked.
           metadata: JBTiered721FundingCycleMetadataResolver.packFundingCycleGlobalMetadata(
             JBTiered721FundingCycleMetadata({
               pauseTransfers: false,
@@ -827,9 +796,102 @@ contract DefifaDeployer is IDefifaDeployer, IERC721Receiver, Ownable {
           )
         }),
         0, // mustStartAtOrAfter should be ASAP
-        new JBGroupedSplits[](0),
-        new JBFundAccessConstraints[](0),
-        'Defifa game phase 4.'
+         _groupedSplits,
+        fundAccessConstraints,
+        'Defifa game phase 3.'
       );
   }
+
+  /**
+    @notice
+    Gets reconfiguration data for if the game resolves in no contest.
+
+    @dev
+    
+    If the game resolves in no contest, funds are made available to minters at the same price that was initially paid.
+
+    @param _gameId The ID of the project that's being reconfigured.
+    @param _dataSource The data source to use.
+
+    @return configuration The configuration of the funding cycle that was successfully reconfigured.
+  */
+  function _queueNoContest(uint256 _gameId, address _dataSource)
+    internal
+    returns (uint256 configuration)
+  {
+    return
+      controller.reconfigureFundingCyclesOf(
+        _gameId,
+        JBFundingCycleData ({
+          // No duration, lasts indefinately.
+          duration: 0,
+          // Don't mint project tokens.
+          weight: 0,
+          discountRate: 0,
+          ballot: IJBFundingCycleBallot(address(0))
+        }),
+        JBFundingCycleMetadata({
+         global: JBGlobalFundingCycleMetadata({
+            allowSetTerminals: false,
+            allowSetController: false,
+            pauseTransfers: false
+          }),
+          reservedRate: 0,
+          // Full refunds.
+          redemptionRate: JBConstants.MAX_REDEMPTION_RATE,
+          ballotRedemptionRate: JBConstants.MAX_REDEMPTION_RATE,
+          // No more payments.
+          pausePay: true,
+          pauseDistributions: false,
+          // Allow redemptions.
+          pauseRedeem: false,
+          pauseBurn: false,
+          allowMinting: false,
+          allowTerminalMigration: false,
+          allowControllerMigration: false,
+          holdFees: false,
+          preferClaimedTokenOverride: false,
+          useTotalOverflowForRedemptions: false,
+          useDataSourceForPay: true,
+          useDataSourceForRedeem: true,
+          dataSource: _dataSource,
+          // Set a metadata of 1 to impose token non-transferability.
+          metadata: JBTiered721FundingCycleMetadataResolver.packFundingCycleGlobalMetadata(
+            JBTiered721FundingCycleMetadata({
+              pauseTransfers: false,
+              // Reserved tokens can't be minted during this funding cycle.
+              pauseMintingReserves: true
+            })
+          )
+        }),
+        0, // mustStartAtOrAfter should be ASAP
+        new JBGroupedSplits[](0),
+        new JBFundAccessConstraints[](0),
+        'Defifa no contest.'
+      );
+
+      // Set no contest.
+      _noContestIsSet[_gameId] = true;
+  }
+
+  /** 
+    @notice
+    Given a current funding cycle, determine if the game is in no contest.
+
+    @param _gameId The ID of the game to check for no contest for.
+    @param _currentFundingCycle The cycle to check for no contest against.
+
+    @return A flag indicating if a game with the current funding cycle is in no contest.
+  */
+  function _isNoContest(uint256 _gameId, JBFundingCycle memory _currentFundingCycle) internal view returns (bool) {
+    // Get the project's previously configured funding cycle.
+    (JBFundingCycle memory _previouslyConfiguredFundingCycle, ) = controller.getFundingCycleOf(_gameId, _currentFundingCycle.basedOn);
+
+    // If a funding cycle has rolled over, it's in No Contest.
+    if (_currentFundingCycle.number != _previouslyConfiguredFundingCycle.number + 1) return true;
+
+    return false;
+  }
+
+
 }

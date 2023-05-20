@@ -33,7 +33,7 @@ contract DefifaTokenUriResolver is IDefifaTokenUriResolver, IJBTokenUriResolver 
     @notice
     The fidelity of the decimal returned in the NFT image.
   */
-  uint256 private constant _IMG_DECIMAL_FIDELITY = 8;
+  uint256 private constant _IMG_DECIMAL_FIDELITY = 5;
 
   //*********************************************************************//
   // --------------------- private stored properties ------------------- //
@@ -67,6 +67,10 @@ contract DefifaTokenUriResolver is IDefifaTokenUriResolver, IJBTokenUriResolver 
   // -------------------- public stored properties --------------------- //
   //*********************************************************************//
 
+  /**
+    @notice
+    The delegate being shown.
+  */
   IDefifaDelegate public override delegate;
 
   //*********************************************************************//
@@ -102,7 +106,8 @@ contract DefifaTokenUriResolver is IDefifaTokenUriResolver, IJBTokenUriResolver 
     @notice
     Initializes the contract.
 
-    @param _delegate The Defifa delegate contract that this contract is Governing.
+    @param _delegate The Defifa delegate contract that this contract is showing.
+    @param _tierNames The names of each tier.
   */
   function initialize(
     IDefifaDelegate _delegate,
@@ -145,79 +150,107 @@ contract DefifaTokenUriResolver is IDefifaTokenUriResolver, IJBTokenUriResolver 
     // Keep a reference to the delegate.
     IDefifaDelegate _delegate = delegate;
 
-    // Get a reference to the tier.
-    JB721Tier memory _tier = _delegate.store().tierOfTokenId(address(_delegate), _tokenId, false);
+    // Get the game ID.
+    uint256 _gameId = _delegate.projectId();
 
-    // Check to see if the tier has a URI. Return it if it does.
-    if (_tier.encodedIPFSUri != bytes32(0))
-      return JBIpfsDecoder.decode(_delegate.baseURI(), _tier.encodedIPFSUri);
-
-    string[] memory parts = new string[](4);
-    parts[0] = string('data:application/json;base64,');
-    string memory _title = _delegate.name();
-    string memory _team = _tierNameOf[_tier.id];
-
-    parts[1] = string(
-      abi.encodePacked(
-        '{"name":"',
-        _title,
-        '", "id": "',
-        _tier.id.toString(),
-        '","description":"Team: ',
-        _team,
-        ', ID: ',
-        _tier.id.toString(),
-        '.","image":"data:image/svg+xml;base64,'
-      )
-    );
+    // Keep a reference to the title font size.
     string memory _titleFontSize;
-    if (bytes(_title).length < 35) _titleFontSize = '24';
-    else _titleFontSize = '20';
 
+    // Keep a reference to the font size.
     string memory _fontSize;
-    if (bytes(_team).length < 3) _fontSize = '240';
-    else if (bytes(_team).length < 5) _fontSize = '200';
-    else if (bytes(_team).length < 8) _fontSize = '140';
-    else if (bytes(_team).length < 10) _fontSize = '90';
-    else if (bytes(_team).length < 12) _fontSize = '80';
-    else if (bytes(_team).length < 16) _fontSize = '60';
-    else if (bytes(_team).length < 23) _fontSize = '40';
-    else if (bytes(_team).length < 30) _fontSize = '30';
-    else if (bytes(_team).length < 35) _fontSize = '20';
-    else _fontSize = '16';
 
-    // Get the current game phase.
-    uint256 _gamePhase = _delegate.fundingCycleStore().currentOf(delegate.projectId()).number;
+    // Keep a reference to the current game phase.
+    uint256 _gamePhase; 
 
+    // Keep a reference to the game phase text.
     string memory _gamePhaseText;
 
-    {
-      string memory _percentOfPot = DefifaPercentFormatter.getFormattedPercentageOfRedemptionWeight(
-        _delegate.redemptionWeightOf(_tokenId),
-        _delegate.TOTAL_REDEMPTION_WEIGHT(),
-        _IMG_DECIMAL_FIDELITY
-      );
-
-      if (_gamePhase == 0) _gamePhaseText = 'Minting starts soon.';
-      else if (_gamePhase == 1) _gamePhaseText = 'Game starts soon, minting and refunds are open.';
-      else if (_gamePhase == 2)
-        _gamePhaseText = 'Game starting, minting closed. last chance for refunds.';
-      else if (_gamePhase == 3) _gamePhaseText = 'Game in progress.';
-      else if (_gamePhase == 4 && !_delegate.redemptionWeightIsSet())
-        _gamePhaseText = 'Scorecard awaiting approval.';
-      else
-        _gamePhaseText = string(
-          abi.encodePacked('Scorecard ratified. Redeem this for ', _percentOfPot, ' of the pot.')
-        );
-    }
-
+    // Keep a reference to the rarity text;
     string memory _rarityText;
+
+    // Keep a reference to the game's name.
+    string memory _title = _delegate.name();
+
+    // Keep a reference to the tier's name.
+    string memory _team;
+
+    // Keep a reference to the SVG parts.
+    string[] memory parts = new string[](4);
+
     {
-      uint256 _totalMinted = _tier.initialQuantity - _tier.remainingQuantity;
-      if (_gamePhase == 1)
-        _rarityText = string(abi.encodePacked(_totalMinted.toString(), ' minted so far'));
-      else _rarityText = string(abi.encodePacked(_totalMinted.toString(), ' in existence'));
+      // Get a reference to the tier.
+      JB721Tier memory _tier = _delegate.store().tierOfTokenId(address(_delegate), _tokenId, false);
+
+      // Set the tier's name.
+      _tierNameOf[_tier.id];
+
+      // Check to see if the tier has a URI. Return it if it does.
+      if (_tier.encodedIPFSUri != bytes32(0))
+        return JBIpfsDecoder.decode(_delegate.baseURI(), _tier.encodedIPFSUri);
+
+      parts[0] = string('data:application/json;base64,');
+
+      parts[1] = string(
+        abi.encodePacked(
+          '{"name":"',
+          _title,
+          '", "id": "',
+          _tier.id.toString(),
+          '","description":"Team: ',
+          _team,
+          ', ID: ',
+          _tier.id.toString(),
+          '.","image":"data:image/svg+xml;base64,'
+        )
+      );
+      if (bytes(_title).length < 35) _titleFontSize = '24';
+      else _titleFontSize = '20';
+
+      if (bytes(_team).length < 3) _fontSize = '240';
+      else if (bytes(_team).length < 5) _fontSize = '200';
+      else if (bytes(_team).length < 8) _fontSize = '120';
+      else if (bytes(_team).length < 10) _fontSize = '90';
+      else if (bytes(_team).length < 12) _fontSize = '85';
+      else if (bytes(_team).length < 16) _fontSize = '80';
+      else if (bytes(_team).length < 23) _fontSize = '70';
+      else if (bytes(_team).length < 30) _fontSize = '50';
+      else if (bytes(_team).length < 35) _fontSize = '40';
+      else _fontSize = '16';
+
+      {
+        // No contest.    
+        bool _isNoContest = delegate.noContestReporter().isNoContest(_gameId);
+
+        // Set the game phase. 
+        _gamePhase = _isNoContest ? 0 : _delegate.fundingCycleStore().currentOf(_gameId).number;
+
+        if (_isNoContest) _gamePhaseText = 'No contest.';
+        else if (_gamePhase == 0) _gamePhaseText = 'Minting starts soon.';
+        else if (_gamePhase == 1) _gamePhaseText = 'Game starts soon, minting and refunds are open.';
+        else if (_gamePhase == 2)
+          _gamePhaseText = 'Game starting, minting closed. last chance for refunds.';
+        else if (_gamePhase == 3 && !_delegate.redemptionWeightIsSet())
+          _gamePhaseText = 'Scorecard awaiting approval.';
+        else {
+          string memory _percentOfPot = DefifaPercentFormatter.getFormattedPercentageOfRedemptionWeight(
+            _delegate.redemptionWeightOf(_tokenId),
+            _delegate.TOTAL_REDEMPTION_WEIGHT(),
+            _IMG_DECIMAL_FIDELITY
+          );
+          _gamePhaseText = string(
+            abi.encodePacked('Scorecard ratified. Redeem for ~', _percentOfPot, ' of pot.')
+          );
+        }
+      }
+
+      {
+        uint256 _totalMinted = _tier.initialQuantity - _tier.remainingQuantity;
+        if (_gamePhase == 1)
+          _rarityText = string(abi.encodePacked(_totalMinted.toString(), ' minted so far'));
+        else _rarityText = string(abi.encodePacked(_totalMinted.toString(), ' in existence'));
+      }
     }
+
 
     parts[2] = Base64.encode(
       abi.encodePacked(
@@ -230,32 +263,31 @@ contract DefifaTokenUriResolver is IDefifaTokenUriResolver, IJBTokenUriResolver 
         ');format("opentype");}',
         'text{white-space:pre-wrap; width:100%; }</style>',
         '<rect width="100%" height="100%" fill="#181424"/>',
-        '<text x="10" y="40" style="font-size:',
-        _titleFontSize,
-        'px; font-family: Capsules-300; font-weight:300; fill: #fea282;">',
-        _title,
-        '</text>',
-        '<text x="10" y="60" style="font-size:16px; font-family: Capsules-300; font-weight:300; fill: #c0b3f1;">GAME PROGRESS: Phase ',
+        '<text x="10" y="40" style="font-size:16px; font-family: Capsules-300; font-weight:300; fill: #c0b3f1;">GAME ID: ',
+         _gameId.toString(),
+        ' | PHASE ',
         _gamePhase.toString(),
-        ' of 4',
+        ' OF 4',
         '</text>',
-        '<text x="10" y="80" style="font-size:16px; font-family: Capsules-300; font-weight:300; fill: #ed017c;">',
+        '<text x="10" y="60" style="font-size:16px; font-family: Capsules-300; font-weight:300; fill: #ed017c;">',
         _gamePhaseText,
         '</text>',
-        '<text x="10" y="440" style="font-size:16px; font-family: Capsules-300; font-weight:300; fill: #c0b3f1;">DEFIFA GAME ID: ',
-        _delegate.projectId().toString(),
-        '</text>',
-        '<text x="10" y="460" style="font-size:16px; font-family: Capsules-300; font-weight:300; fill: #c0b3f1;">TOKEN ID: ',
+        '<foreignObject width="90%" height="80px" x="10" y="70" ><div xmlns="http://www.w3.org/1999/xhtml" style="font-size:',
+        _titleFontSize,
+        'px; font-family: Capsules-300; font-weight:300; color:#fea282;"><span style="word-wrap: break-word; white-space: pre-line;">',
+        _title,
+        '</span></div></foreignObject>',
+        '<text x="10" y="455" style="font-size:16px; font-family: Capsules-300; font-weight:300; fill: #c0b3f1;">TOKEN ID: ',
         _tokenId.toString(),
         '</text>',
         '<text x="10" y="480" style="font-size:16px; font-family: Capsules-300; font-weight:300; fill: #c0b3f1;">RARITY: ',
         _rarityText,
         '</text>',
-        '<text textLength="500" lengthAdjust="spacing" x="50%" y="50%" style="font-size:',
+        '<foreignObject width="calc(100% - 20px)" height="50%" x="10" y="25%" ><div xmlns="http://www.w3.org/1999/xhtml" style="font-size:',
         _fontSize,
-        'px; font-family: Capsules-700; font-weight:700; fill:#fea282; text-anchor:middle; dominant-baseline:middle; ">',
+        'px; font-family: Capsules-700; font-weight:700; color:#fea282; display: flex; align-items: center; height: 100%; text-align: left;"><span style="word-wrap: break-word; white-space: pre-line;">',
         _team,
-        '</text>',
+        '</span></div></foreignObject>',
         '</svg>'
       )
     );

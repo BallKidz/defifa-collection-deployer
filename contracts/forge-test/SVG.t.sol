@@ -70,11 +70,12 @@ contract EmptyTest is Test {
         lockVotingUnitChanges: false,
         lockManualMintingChanges: false,
         preventOverspending: false
-      })
+      }),
+      _noContestReporter: IDefifaNoContestReporter(address(0))
     });
 
     string[] memory _tierNames = new string[](1);
-    _tierNames[0] = 'liverpool';
+    _tierNames[0] = 'lakers win. no one scores over 40pts.';
 
     _resolver.initialize(_delegate, _tierNames);
 
@@ -110,7 +111,7 @@ contract EmptyTest is Test {
     _delegate.initialize({
       _gameId: 123,
       _directory: _directory,
-      _name: 'Example collection',
+      _name: 'Example collection: Who will win the premier league 2023-2024?',
       _symbol: 'DEFIFA: EXAMPLE',
       _fundingCycleStore: _fundingCycleStore,
       _baseUri: '',
@@ -124,11 +125,12 @@ contract EmptyTest is Test {
         lockVotingUnitChanges: false,
         lockManualMintingChanges: false,
         preventOverspending: false
-      })
+      }),
+      _noContestReporter: IDefifaNoContestReporter(address(0))
     });
 
     string[] memory _tierNames = new string[](1);
-    _tierNames[0] = 'liverpool';
+    _tierNames[0] = 'liverpool wins by 2';
 
     _resolver.initialize(_delegate, _tierNames);
 

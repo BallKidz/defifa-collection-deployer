@@ -44,8 +44,6 @@ interface IDefifaDeployer {
 
   function refundPeriodDurationOf(uint256 _gameId) external view returns (uint256);
 
-  function endOf(uint256 _gameId) external view returns (uint256);
-
   function terminalOf(uint256 _gameId) external view returns (IJBPaymentTerminal);
 
   function distributionLimit(uint256 _gameId) external view returns (uint256);
