@@ -15,17 +15,24 @@ import '../DefifaTokenUriResolver.sol';
 // import {CapsulesTypeface} from "../lib/capsules/contracts/CapsulesTypeface.sol";
 
 contract EmptyTest is Test {
-  IJBController _controller = IJBController(0xFFdD70C318915879d5192e8a0dcbFcB0285b3C98);
-  IJBDirectory _directory = IJBDirectory(0x65572FB928b46f9aDB7cfe5A4c41226F636161ea);
-  IJBFundingCycleStore _fundingCycleStore =
-    IJBFundingCycleStore(0x6f18cF9173136c0B5A6eBF45f19D58d3ff2E17e6);
-  IJBTiered721DelegateStore _store =
-    IJBTiered721DelegateStore(0x167ea060D75727Aa93C1c02873f189d22ef98856);
-  ITypeface _typeface = ITypeface(0xA77b7D93E79f1E6B4f77FaB29d9ef85733A3D44A);
+  IJBController _controller;
+  IJBDirectory _directory;
+  IJBFundingCycleStore _fundingCycleStore;
+  IJBTiered721DelegateStore _store;
+  ITypeface _typeface;
 
   address defifaBallkidz = address(0);
   address delegateRegistry = address(0);
-  
+
+  function setUp() public {
+    vm.createSelectFork("https://rpc.ankr.com/eth");
+    _controller = IJBController(0xFFdD70C318915879d5192e8a0dcbFcB0285b3C98);
+    _directory = IJBDirectory(0x65572FB928b46f9aDB7cfe5A4c41226F636161ea);
+    _fundingCycleStore = IJBFundingCycleStore(0x6f18cF9173136c0B5A6eBF45f19D58d3ff2E17e6);
+    _store = IJBTiered721DelegateStore(0x67C31B9557201A341312CF78d315542b5AD83074);
+    _typeface = ITypeface(0xA77b7D93E79f1E6B4f77FaB29d9ef85733A3D44A);
+  }
+
   function testWithTierImage() public {
     DefifaDelegate _delegate = DefifaDelegate(Clones.clone(address(new DefifaDelegate())));
     DefifaTokenUriResolver _resolver = DefifaTokenUriResolver(
