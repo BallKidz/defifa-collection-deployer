@@ -19,6 +19,7 @@ import './DefifaTimeData.sol';
   @member splits Splits to distribute funds between during the game's second phase.
   @member distributionLimit The amount of funds to distribute from the pot during the game's second phase.
   @member ballkidzFeeProjectTokenAccount The address that should be sent Defifa Ballkidz tokens that are minted from paying the fee.
+  @member votingStartTime The time the vote will start for all submitted proposals.
   @member votingPeriod The time the vote will be active for once it has started, measured in blocks.
   @member defaultTokenUriResolver The contract used to resolve token URIs if not provided by a tier specifically.
   @member terminal A payment terminal to add for the project.
@@ -38,6 +39,7 @@ struct DefifaLaunchProjectData {
   JBSplit[] splits;
   uint88 distributionLimit;
   address payable ballkidzFeeProjectTokenAccount;
+  uint256 votingStartTime;
   uint256 votingPeriod;
   IJBTokenUriResolver defaultTokenUriResolver;
   IJBPaymentTerminal terminal;

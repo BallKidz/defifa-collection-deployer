@@ -466,7 +466,7 @@ contract DefifaDeployer is IDefifaDeployer, IDefifaNoContestReporter, IERC721Rec
     governor = IDefifaGovernor(Clones.clone(governorCodeOrigin));
     governor.initialize({ 
       _delegate: _delegate, 
-      _votingStartTime:  _launchProjectData.end, 
+      _votingStartTime:  _launchProjectData.votingStartTime, 
       _votingPeriod: _launchProjectData.votingPeriod
     });
 
