@@ -688,7 +688,6 @@ contract DefifaDeployer is IDefifaDeployer, IDefifaNoContestReporter, IERC721Rec
           useDataSourceForPay: true,
           useDataSourceForRedeem: true,
           dataSource: _dataSource,
-          // Set a metadata of 1 to impose token non-transferability.
           metadata: JBTiered721FundingCycleMetadataResolver.packFundingCycleGlobalMetadata(
             JBTiered721FundingCycleMetadata({
               pauseTransfers: false,
@@ -854,7 +853,6 @@ contract DefifaDeployer is IDefifaDeployer, IDefifaNoContestReporter, IERC721Rec
           useDataSourceForPay: true,
           useDataSourceForRedeem: true,
           dataSource: _dataSource,
-          // Set a metadata of 1 to impose token non-transferability.
           metadata: JBTiered721FundingCycleMetadataResolver.packFundingCycleGlobalMetadata(
             JBTiered721FundingCycleMetadata({
               pauseTransfers: false,
