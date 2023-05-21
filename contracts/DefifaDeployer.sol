@@ -512,7 +512,6 @@ contract DefifaDeployer is IDefifaDeployer, IDefifaNoContestReporter, IERC721Rec
       revert PHASE_ALREADY_QUEUED();
 
     // Queue the next phase of the game.
-    // If a funding cycle has rolled over, queue no contest.
     if (_currentFundingCycle.number == 1) return _queuePhase2(_gameId, _metadata.dataSource);
     else return _queuePhase3(_gameId, _metadata.dataSource);
   }
@@ -892,6 +891,4 @@ contract DefifaDeployer is IDefifaDeployer, IDefifaNoContestReporter, IERC721Rec
 
     return false;
   }
-
-
 }
