@@ -611,9 +611,6 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate {
     // Make sure the game is not in no contest.
     if (noContestReporter.isNoContest(projectId)) revert NO_CONTEST();
 
-    // Delete the currently set redemption weights.
-    delete _tierRedemptionWeights;
-
     // Keep a reference to the max tier ID.
     uint256 _maxTierId = store.maxTierIdOf(address(this));
 
