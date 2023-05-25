@@ -10,28 +10,28 @@
   },
   "ast": {
     "absolutePath": "node_modules/@jbx-protocol/juice-contracts-v3/contracts/structs/JBFundingCycle.sol",
-    "id": 59114,
+    "id": 58470,
     "exportedSymbols": {
       "IERC165": [
-        68282
+        67651
       ],
       "IJBFundingCycleBallot": [
-        56710
+        56061
       ],
       "JBBallotState": [
-        55689
+        55040
       ],
       "JBFundingCycle": [
-        59113
+        58469
       ]
     },
     "nodeType": "SourceUnit",
-    "src": "32:2552:124",
+    "src": "32:2552:125",
     "nodes": [
       {
-        "id": 59092,
+        "id": 58447,
         "nodeType": "PragmaDirective",
-        "src": "32:23:124",
+        "src": "32:23:125",
         "nodes": [],
         "literals": [
           "solidity",
@@ -41,34 +41,40 @@
         ]
       },
       {
-        "id": 59093,
+        "id": 58448,
         "nodeType": "ImportDirective",
-        "src": "57:51:124",
+        "src": "57:51:125",
         "nodes": [],
         "absolutePath": "node_modules/@jbx-protocol/juice-contracts-v3/contracts/interfaces/IJBFundingCycleBallot.sol",
         "file": "./../interfaces/IJBFundingCycleBallot.sol",
         "nameLocation": "-1:-1:-1",
-        "scope": 59114,
-        "sourceUnit": 56711,
+        "scope": 58470,
+        "sourceUnit": 56062,
         "symbolAliases": [],
         "unitAlias": ""
       },
       {
-        "id": 59113,
+        "id": 58469,
         "nodeType": "StructDefinition",
-        "src": "2365:218:124",
+        "src": "2365:218:125",
         "nodes": [],
         "canonicalName": "JBFundingCycle",
+        "documentation": {
+          "id": 58449,
+          "nodeType": "StructuredDocumentation",
+          "src": "110:2254:125",
+          "text": "@member number The funding cycle number for the cycle's project. Each funding cycle has a number that is an increment of the cycle that directly preceded it. Each project's first funding cycle has a number of 1.\n@member configuration The timestamp when the parameters for this funding cycle were configured. This value will stay the same for subsequent funding cycles that roll over from an originally configured cycle.\n@member basedOn The `configuration` of the funding cycle that was active when this cycle was created.\n@member start The timestamp marking the moment from which the funding cycle is considered active. It is a unix timestamp measured in seconds.\n@member duration The number of seconds the funding cycle lasts for, after which a new funding cycle will start. A duration of 0 means that the funding cycle will stay active until the project owner explicitly issues a reconfiguration, at which point a new funding cycle will immediately start with the updated properties. If the duration is greater than 0, a project owner cannot make changes to a funding cycle's parameters while it is active – any proposed changes will apply to the subsequent cycle. If no changes are proposed, a funding cycle rolls over to another one with the same properties but new `start` timestamp and a discounted `weight`.\n@member weight A fixed point number with 18 decimals that contracts can use to base arbitrary calculations on. For example, payment terminals can use this to determine how many tokens should be minted when a payment is received.\n@member discountRate A percent by how much the `weight` of the subsequent funding cycle should be reduced, if the project owner hasn't configured the subsequent funding cycle with an explicit `weight`. If it's 0, each funding cycle will have equal weight. If the number is 90%, the next funding cycle will have a 10% smaller weight. This weight is out of `JBConstants.MAX_DISCOUNT_RATE`.\n@member ballot An address of a contract that says whether a proposed reconfiguration should be accepted or rejected. It can be used to create rules around how a project owner can change funding cycle parameters over time.\n@member metadata Extra data that can be associated with a funding cycle."
+        },
         "members": [
           {
             "constant": false,
-            "id": 59095,
+            "id": 58451,
             "mutability": "mutable",
             "name": "number",
-            "nameLocation": "2399:6:124",
+            "nameLocation": "2399:6:125",
             "nodeType": "VariableDeclaration",
-            "scope": 59113,
-            "src": "2391:14:124",
+            "scope": 58469,
+            "src": "2391:14:125",
             "stateVariable": false,
             "storageLocation": "default",
             "typeDescriptions": {
@@ -76,10 +82,10 @@
               "typeString": "uint256"
             },
             "typeName": {
-              "id": 59094,
+              "id": 58450,
               "name": "uint256",
               "nodeType": "ElementaryTypeName",
-              "src": "2391:7:124",
+              "src": "2391:7:125",
               "typeDescriptions": {
                 "typeIdentifier": "t_uint256",
                 "typeString": "uint256"
@@ -89,13 +95,13 @@
           },
           {
             "constant": false,
-            "id": 59097,
+            "id": 58453,
             "mutability": "mutable",
             "name": "configuration",
-            "nameLocation": "2417:13:124",
+            "nameLocation": "2417:13:125",
             "nodeType": "VariableDeclaration",
-            "scope": 59113,
-            "src": "2409:21:124",
+            "scope": 58469,
+            "src": "2409:21:125",
             "stateVariable": false,
             "storageLocation": "default",
             "typeDescriptions": {
@@ -103,10 +109,10 @@
               "typeString": "uint256"
             },
             "typeName": {
-              "id": 59096,
+              "id": 58452,
               "name": "uint256",
               "nodeType": "ElementaryTypeName",
-              "src": "2409:7:124",
+              "src": "2409:7:125",
               "typeDescriptions": {
                 "typeIdentifier": "t_uint256",
                 "typeString": "uint256"
@@ -116,13 +122,13 @@
           },
           {
             "constant": false,
-            "id": 59099,
+            "id": 58455,
             "mutability": "mutable",
             "name": "basedOn",
-            "nameLocation": "2442:7:124",
+            "nameLocation": "2442:7:125",
             "nodeType": "VariableDeclaration",
-            "scope": 59113,
-            "src": "2434:15:124",
+            "scope": 58469,
+            "src": "2434:15:125",
             "stateVariable": false,
             "storageLocation": "default",
             "typeDescriptions": {
@@ -130,10 +136,10 @@
               "typeString": "uint256"
             },
             "typeName": {
-              "id": 59098,
+              "id": 58454,
               "name": "uint256",
               "nodeType": "ElementaryTypeName",
-              "src": "2434:7:124",
+              "src": "2434:7:125",
               "typeDescriptions": {
                 "typeIdentifier": "t_uint256",
                 "typeString": "uint256"
@@ -143,13 +149,13 @@
           },
           {
             "constant": false,
-            "id": 59101,
+            "id": 58457,
             "mutability": "mutable",
             "name": "start",
-            "nameLocation": "2461:5:124",
+            "nameLocation": "2461:5:125",
             "nodeType": "VariableDeclaration",
-            "scope": 59113,
-            "src": "2453:13:124",
+            "scope": 58469,
+            "src": "2453:13:125",
             "stateVariable": false,
             "storageLocation": "default",
             "typeDescriptions": {
@@ -157,10 +163,10 @@
               "typeString": "uint256"
             },
             "typeName": {
-              "id": 59100,
+              "id": 58456,
               "name": "uint256",
               "nodeType": "ElementaryTypeName",
-              "src": "2453:7:124",
+              "src": "2453:7:125",
               "typeDescriptions": {
                 "typeIdentifier": "t_uint256",
                 "typeString": "uint256"
@@ -170,13 +176,13 @@
           },
           {
             "constant": false,
-            "id": 59103,
+            "id": 58459,
             "mutability": "mutable",
             "name": "duration",
-            "nameLocation": "2478:8:124",
+            "nameLocation": "2478:8:125",
             "nodeType": "VariableDeclaration",
-            "scope": 59113,
-            "src": "2470:16:124",
+            "scope": 58469,
+            "src": "2470:16:125",
             "stateVariable": false,
             "storageLocation": "default",
             "typeDescriptions": {
@@ -184,10 +190,10 @@
               "typeString": "uint256"
             },
             "typeName": {
-              "id": 59102,
+              "id": 58458,
               "name": "uint256",
               "nodeType": "ElementaryTypeName",
-              "src": "2470:7:124",
+              "src": "2470:7:125",
               "typeDescriptions": {
                 "typeIdentifier": "t_uint256",
                 "typeString": "uint256"
@@ -197,13 +203,13 @@
           },
           {
             "constant": false,
-            "id": 59105,
+            "id": 58461,
             "mutability": "mutable",
             "name": "weight",
-            "nameLocation": "2498:6:124",
+            "nameLocation": "2498:6:125",
             "nodeType": "VariableDeclaration",
-            "scope": 59113,
-            "src": "2490:14:124",
+            "scope": 58469,
+            "src": "2490:14:125",
             "stateVariable": false,
             "storageLocation": "default",
             "typeDescriptions": {
@@ -211,10 +217,10 @@
               "typeString": "uint256"
             },
             "typeName": {
-              "id": 59104,
+              "id": 58460,
               "name": "uint256",
               "nodeType": "ElementaryTypeName",
-              "src": "2490:7:124",
+              "src": "2490:7:125",
               "typeDescriptions": {
                 "typeIdentifier": "t_uint256",
                 "typeString": "uint256"
@@ -224,13 +230,13 @@
           },
           {
             "constant": false,
-            "id": 59107,
+            "id": 58463,
             "mutability": "mutable",
             "name": "discountRate",
-            "nameLocation": "2516:12:124",
+            "nameLocation": "2516:12:125",
             "nodeType": "VariableDeclaration",
-            "scope": 59113,
-            "src": "2508:20:124",
+            "scope": 58469,
+            "src": "2508:20:125",
             "stateVariable": false,
             "storageLocation": "default",
             "typeDescriptions": {
@@ -238,10 +244,10 @@
               "typeString": "uint256"
             },
             "typeName": {
-              "id": 59106,
+              "id": 58462,
               "name": "uint256",
               "nodeType": "ElementaryTypeName",
-              "src": "2508:7:124",
+              "src": "2508:7:125",
               "typeDescriptions": {
                 "typeIdentifier": "t_uint256",
                 "typeString": "uint256"
@@ -251,36 +257,36 @@
           },
           {
             "constant": false,
-            "id": 59110,
+            "id": 58466,
             "mutability": "mutable",
             "name": "ballot",
-            "nameLocation": "2554:6:124",
+            "nameLocation": "2554:6:125",
             "nodeType": "VariableDeclaration",
-            "scope": 59113,
-            "src": "2532:28:124",
+            "scope": 58469,
+            "src": "2532:28:125",
             "stateVariable": false,
             "storageLocation": "default",
             "typeDescriptions": {
-              "typeIdentifier": "t_contract$_IJBFundingCycleBallot_$56710",
+              "typeIdentifier": "t_contract$_IJBFundingCycleBallot_$56061",
               "typeString": "contract IJBFundingCycleBallot"
             },
             "typeName": {
-              "id": 59109,
+              "id": 58465,
               "nodeType": "UserDefinedTypeName",
               "pathNode": {
-                "id": 59108,
+                "id": 58464,
                 "name": "IJBFundingCycleBallot",
                 "nameLocations": [
-                  "2532:21:124"
+                  "2532:21:125"
                 ],
                 "nodeType": "IdentifierPath",
-                "referencedDeclaration": 56710,
-                "src": "2532:21:124"
+                "referencedDeclaration": 56061,
+                "src": "2532:21:125"
               },
-              "referencedDeclaration": 56710,
-              "src": "2532:21:124",
+              "referencedDeclaration": 56061,
+              "src": "2532:21:125",
               "typeDescriptions": {
-                "typeIdentifier": "t_contract$_IJBFundingCycleBallot_$56710",
+                "typeIdentifier": "t_contract$_IJBFundingCycleBallot_$56061",
                 "typeString": "contract IJBFundingCycleBallot"
               }
             },
@@ -288,13 +294,13 @@
           },
           {
             "constant": false,
-            "id": 59112,
+            "id": 58468,
             "mutability": "mutable",
             "name": "metadata",
-            "nameLocation": "2572:8:124",
+            "nameLocation": "2572:8:125",
             "nodeType": "VariableDeclaration",
-            "scope": 59113,
-            "src": "2564:16:124",
+            "scope": 58469,
+            "src": "2564:16:125",
             "stateVariable": false,
             "storageLocation": "default",
             "typeDescriptions": {
@@ -302,10 +308,10 @@
               "typeString": "uint256"
             },
             "typeName": {
-              "id": 59111,
+              "id": 58467,
               "name": "uint256",
               "nodeType": "ElementaryTypeName",
-              "src": "2564:7:124",
+              "src": "2564:7:125",
               "typeDescriptions": {
                 "typeIdentifier": "t_uint256",
                 "typeString": "uint256"
@@ -315,12 +321,12 @@
           }
         ],
         "name": "JBFundingCycle",
-        "nameLocation": "2372:14:124",
-        "scope": 59114,
+        "nameLocation": "2372:14:125",
+        "scope": 58470,
         "visibility": "public"
       }
     ],
     "license": "MIT"
   },
-  "id": 124
+  "id": 125
 }
