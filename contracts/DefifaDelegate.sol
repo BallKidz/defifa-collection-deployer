@@ -41,6 +41,7 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate {
   error NOTHING_TO_MINT();
   error WRONG_CURRENCY();
   error NOT_AVAILABLE();
+  error NO_CONTEST();
   error OVERSPENDING();
   error PRICING_RESOLVER_CHANGES_PAUSED();
   error REDEMPTION_WEIGHTS_ALREADY_SET();
@@ -60,9 +61,15 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate {
 
   /** 
     @notice
+    The funding cycle number of the refund phase. 
+  */
+  uint256 private constant _REFUND_GAME_PHASE = 2;
+
+  /** 
+    @notice
     The funding cycle number of the end game phase. 
   */
-  uint256 private constant _END_GAME_PHASE = 4;
+  uint256 private constant _END_GAME_PHASE = 3;
 
   //*********************************************************************//
   // --------------------- internal stored properties ------------------ //
@@ -76,6 +83,8 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate {
     _tokenId The ID of the token to get the stored first owner of.
   */
   mapping(uint256 => address) internal _firstOwnerOf;
+
+  bool internal _isNoContest;
 
   //*********************************************************************//
   // --------------------- public constant properties ------------------ //
@@ -159,6 +168,12 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate {
     The contract storing all funding cycle configurations.
   */
   IJBFundingCycleStore public override fundingCycleStore;
+
+  /**
+    @notice
+    The contract reporting no contests.
+  */
+  IDefifaNoContestReporter public override noContestReporter;
 
   /** 
     @notice
@@ -439,8 +454,11 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate {
       (bytes32, bytes4, uint256[])
     );
 
-    // If the game is in its minting phase, reclaim Amount is the same as it cost to mint.
-    if (fundingCycleStore.currentOf(_data.projectId).number == _MINT_GAME_PHASE) {
+    // Get the current funding cycle.
+    uint256 _currentPhase = fundingCycleStore.currentOf(_data.projectId).number;
+
+    // If the game is in its minting, refund, or No Contest phase, reclaim amount is the same as it cost to mint.
+    if (_currentPhase == _MINT_GAME_PHASE || _currentPhase == _REFUND_GAME_PHASE || noContestReporter.isNoContest(_data.projectId)) {
       // Keep a reference to the number of tokens.
       uint256 _numberOfTokenIds = _decodedTokenIds.length;
 
@@ -506,6 +524,7 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate {
     @param _currency The currency that the tier contribution floors are denoted in.
     @param _store A contract that stores the NFT's data.
     @param _flags A set of flags that help define how this contract works.
+    @param _noContestReporter The contract that reports of the game has resolved in no contest.
   */
   function initialize(
     uint256 _gameId,
@@ -519,7 +538,8 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate {
     JB721TierParams[] memory _tiers,
     uint48 _currency,
     IJBTiered721DelegateStore _store,
-    JBTiered721Flags memory _flags
+    JBTiered721Flags memory _flags,
+    IDefifaNoContestReporter _noContestReporter
   ) public override {
     // Make the original un-initializable.
     if (address(this) == codeOrigin) revert();
@@ -538,6 +558,7 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate {
     fundingCycleStore = _fundingCycleStore;
     store = _store;
     pricingCurrency = _currency;
+    noContestReporter = _noContestReporter;
 
     // Store the base URI if provided.
     if (bytes(_baseUri).length != 0) baseURI = _baseUri;
@@ -586,9 +607,9 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate {
 
     // Make sure the redemption weights haven't already been set.
     if (redemptionWeightIsSet) revert REDEMPTION_WEIGHTS_ALREADY_SET();
-
-    // Delete the currently set redemption weights.
-    delete _tierRedemptionWeights;
+    
+    // Make sure the game is not in no contest.
+    if (noContestReporter.isNoContest(projectId)) revert NO_CONTEST();
 
     // Keep a reference to the max tier ID.
     uint256 _maxTierId = store.maxTierIdOf(address(this));
@@ -664,7 +685,7 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate {
     JBFundingCycle memory _currentFundingCycle = fundingCycleStore.currentOf(projectId);
 
     // Keep track of whether the redemption is happening during the end phase.
-    bool _isEndPhase = _currentFundingCycle.number == _END_GAME_PHASE;
+    bool _isEndPhase = _currentFundingCycle.number == _END_GAME_PHASE && !noContestReporter.isNoContest(projectId);
 
     // Iterate through all tokens, burning them if the owner is correct.
     for (uint256 _i; _i < _numberOfTokenIds; ) {

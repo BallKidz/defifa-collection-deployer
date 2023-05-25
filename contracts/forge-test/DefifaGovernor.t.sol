@@ -92,103 +92,104 @@ contract DefifaGovernorTest is TestBaseWorkflow {
     assertEq(_governor.MAX_VOTING_POWER_TIER(), _governor.getVotes(_user, block.number - 1));
   }
 
-  function testRefund_fails_afterMintPhase() external {
-    uint8 nTiers = 10;
-    address[] memory _users = new address[](nTiers);
-    DefifaLaunchProjectData memory defifaData = getBasicDefifaLaunchData(nTiers);
-    (uint256 _projectId, , ) = createDefifaProject(defifaData);
-    // Phase 1: Mint
-    vm.warp(defifaData.start - defifaData.mintDuration - defifaData.refundPeriodDuration);
-    deployer.queueNextPhaseOf(_projectId);
-    for (uint256 i = 0; i < nTiers; i++) {
-      // Generate a new address for each tier
-      _users[i] = address(bytes20(keccak256(abi.encode('user', Strings.toString(i)))));
-      // fund user
-      vm.deal(_users[i], 1 ether);
-      // Build metadata to buy specific NFT
-      uint16[] memory rawMetadata = new uint16[](1);
-      rawMetadata[0] = uint16(i + 1); // reward tier, 1 indexed
-      bytes memory metadata = abi.encode(
-        bytes32(0),
-        bytes32(0),
-        type(IDefifaDelegate).interfaceId,
-        _users[i],
-        rawMetadata
-      );
-      // Pay to the project and mint an NFT
-      vm.prank(_users[i]);
-      _terminals[0].pay{value: 1 ether}(
-        _projectId,
-        1 ether,
-        address(0),
-        _users[i],
-        0,
-        true,
-        '',
-        metadata
-      );
-    }
-    // Phase 2: Redeem
-    vm.warp(block.timestamp + defifaData.mintDuration);
-    deployer.queueNextPhaseOf(_projectId);
-    // Phase 3: Start
-    vm.warp(defifaData.start + 1);
-    deployer.queueNextPhaseOf(_projectId);
-    // Make sure this is actually Phase 3
-    assertEq(_jbFundingCycleStore.currentOf(_projectId).number, 3);
-    for (uint256 i = 0; i < _users.length; i++) {
-      address _user = _users[i];
-      // Craft the metadata: redeem the tokenId
-      bytes memory redemptionMetadata;
-      {
-        uint256[] memory redemptionId = new uint256[](1);
-        redemptionId[0] = _generateTokenId(i + 1, 1);
-        redemptionMetadata = abi.encode(bytes32(0), type(IJB721Delegate).interfaceId, redemptionId);
-      }
-      vm.expectRevert(abi.encodeWithSignature('FUNDING_CYCLE_REDEEM_PAUSED()'));
-      vm.prank(_user);
-      JBETHPaymentTerminal(address(_terminals[0])).redeemTokensOf({
-        _holder: _user,
-        _projectId: _projectId,
-        _tokenCount: 0,
-        _token: address(0),
-        _minReturnedTokens: 0,
-        _beneficiary: payable(_user),
-        _memo: 'Refund plz',
-        _metadata: redemptionMetadata
-      });
-    }
-    // Phase 4: End
-    vm.warp(deployer.endOf(_projectId));
-    // Forward the amount of blocks needed to reach the end (and round up)
-    vm.roll(deployer.endOf(_projectId) - block.timestamp / 12 + 1);
-    vm.warp(block.timestamp + 1 weeks);
-    assertEq(_jbFundingCycleStore.currentOf(_projectId).number, 4);
-    for (uint256 i = 0; i < _users.length; i++) {
-      address _user = _users[i];
-      // Craft the metadata: redeem the tokenId
-      bytes memory redemptionMetadata;
-      {
-        uint256[] memory redemptionId = new uint256[](1);
-        redemptionId[0] = _generateTokenId(i + 1, 1);
-        redemptionMetadata = abi.encode(bytes32(0), type(IJB721Delegate).interfaceId, redemptionId);
-      }
-      // Here the refunds are not allowed but redemptions are,
-      // so it should instead revert with an error showing that there is no redemption set for our tier
-      vm.expectRevert(abi.encodeWithSignature('NOTHING_TO_CLAIM()'));
-      vm.prank(_user);
-      JBETHPaymentTerminal(address(_terminals[0])).redeemTokensOf({
-        _holder: _user,
-        _projectId: _projectId,
-        _tokenCount: 0,
-        _token: address(0),
-        _minReturnedTokens: 0,
-        _beneficiary: payable(_user),
-        _memo: 'Refund plz',
-        _metadata: redemptionMetadata
-      });
-    }
-  }
+  // redemptions can happen after mint phase
+  // function testRefund_fails_afterMintPhase() external {
+  //   uint8 nTiers = 10;
+  //   address[] memory _users = new address[](nTiers);
+  //   DefifaLaunchProjectData memory defifaData = getBasicDefifaLaunchData(nTiers);
+  //   (uint256 _projectId, , ) = createDefifaProject(defifaData);
+  //   // Phase 1: Mint
+  //   vm.warp(defifaData.start - defifaData.mintDuration - defifaData.refundPeriodDuration);
+  //   deployer.queueNextPhaseOf(_projectId);
+  //   for (uint256 i = 0; i < nTiers; i++) {
+  //     // Generate a new address for each tier
+  //     _users[i] = address(bytes20(keccak256(abi.encode('user', Strings.toString(i)))));
+  //     // fund user
+  //     vm.deal(_users[i], 1 ether);
+  //     // Build metadata to buy specific NFT
+  //     uint16[] memory rawMetadata = new uint16[](1);
+  //     rawMetadata[0] = uint16(i + 1); // reward tier, 1 indexed
+  //     bytes memory metadata = abi.encode(
+  //       bytes32(0),
+  //       bytes32(0),
+  //       type(IDefifaDelegate).interfaceId,
+  //       _users[i],
+  //       rawMetadata
+  //     );
+  //     // Pay to the project and mint an NFT
+  //     vm.prank(_users[i]);
+  //     _terminals[0].pay{value: 1 ether}(
+  //       _projectId,
+  //       1 ether,
+  //       address(0),
+  //       _users[i],
+  //       0,
+  //       true,
+  //       '',
+  //       metadata
+  //     );
+  //   }
+  //   // Phase 2: Redeem
+  //   vm.warp(block.timestamp + defifaData.mintDuration);
+  //   deployer.queueNextPhaseOf(_projectId);
+  //   // Phase 3: Start
+  //   vm.warp(defifaData.start + 1);
+  //   deployer.queueNextPhaseOf(_projectId);
+  //   // Make sure this is actually Phase 3
+  //   assertEq(_jbFundingCycleStore.currentOf(_projectId).number, 3);
+  //   for (uint256 i = 0; i < _users.length; i++) {
+  //     address _user = _users[i];
+  //     // Craft the metadata: redeem the tokenId
+  //     bytes memory redemptionMetadata;
+  //     {
+  //       uint256[] memory redemptionId = new uint256[](1);
+  //       redemptionId[0] = _generateTokenId(i + 1, 1);
+  //       redemptionMetadata = abi.encode(bytes32(0), type(IJB721Delegate).interfaceId, redemptionId);
+  //     }
+  //     vm.expectRevert(abi.encodeWithSignature('FUNDING_CYCLE_REDEEM_PAUSED()'));
+  //     vm.prank(_user);
+  //     JBETHPaymentTerminal(address(_terminals[0])).redeemTokensOf({
+  //       _holder: _user,
+  //       _projectId: _projectId,
+  //       _tokenCount: 0,
+  //       _token: address(0),
+  //       _minReturnedTokens: 0,
+  //       _beneficiary: payable(_user),
+  //       _memo: 'Refund plz',
+  //       _metadata: redemptionMetadata
+  //     });
+  //   }
+  //   // // Phase 4: End
+  //   // vm.warp(deployer.endOf(_projectId));
+  //   // Forward the amount of blocks needed to reach the end (and round up)
+  //   // vm.roll(deployer.endOf(_projectId) - block.timestamp / 12 + 1);
+  //   vm.warp(block.timestamp + 1 weeks);
+  //   assertEq(_jbFundingCycleStore.currentOf(_projectId).number, 4);
+  //   for (uint256 i = 0; i < _users.length; i++) {
+  //     address _user = _users[i];
+  //     // Craft the metadata: redeem the tokenId
+  //     bytes memory redemptionMetadata;
+  //     {
+  //       uint256[] memory redemptionId = new uint256[](1);
+  //       redemptionId[0] = _generateTokenId(i + 1, 1);
+  //       redemptionMetadata = abi.encode(bytes32(0), type(IJB721Delegate).interfaceId, redemptionId);
+  //     }
+  //     // Here the refunds are not allowed but redemptions are,
+  //     // so it should instead revert with an error showing that there is no redemption set for our tier
+  //     vm.expectRevert(abi.encodeWithSignature('NOTHING_TO_CLAIM()'));
+  //     vm.prank(_user);
+  //     JBETHPaymentTerminal(address(_terminals[0])).redeemTokensOf({
+  //       _holder: _user,
+  //       _projectId: _projectId,
+  //       _tokenCount: 0,
+  //       _token: address(0),
+  //       _minReturnedTokens: 0,
+  //       _beneficiary: payable(_user),
+  //       _memo: 'Refund plz',
+  //       _metadata: redemptionMetadata
+  //     });
+  //   }
+  // }
 
   function testMint_fails_afterMintPhase() external {
     uint8 nTiers = 10;
@@ -233,46 +234,6 @@ contract DefifaGovernorTest is TestBaseWorkflow {
         metadata
       );
     }
-    // Phase 3: Start
-    vm.warp(defifaData.start + 1);
-    deployer.queueNextPhaseOf(_projectId);
-    // Make sure this is actually Phase 3
-    assertEq(_jbFundingCycleStore.currentOf(_projectId).number, 3);
-    for (uint256 i = 0; i < nTiers; i++) {
-      // Generate a new address for each tier
-      _users[i] = address(bytes20(keccak256(abi.encode('user', Strings.toString(i)))));
-      // fund user
-      vm.deal(_users[i], 1 ether);
-      // Build metadata to buy specific NFT
-      uint16[] memory rawMetadata = new uint16[](1);
-      rawMetadata[0] = uint16(i + 1); // reward tier, 1 indexed
-      bytes memory metadata = abi.encode(
-        bytes32(0),
-        bytes32(0),
-        type(IDefifaDelegate).interfaceId,
-        _users[i],
-        rawMetadata
-      );
-      // Pay to the project and mint an NFT
-      vm.expectRevert(abi.encodeWithSignature('FUNDING_CYCLE_PAYMENT_PAUSED()'));
-      vm.prank(_users[i]);
-      _terminals[0].pay{value: 1 ether}(
-        _projectId,
-        1 ether,
-        address(0),
-        _users[i],
-        0,
-        true,
-        '',
-        metadata
-      );
-    }
-    // Phase 4: End
-    vm.warp(deployer.endOf(_projectId));
-    // Forward the amount of blocks needed to reach the end (and round up)
-    vm.roll(deployer.endOf(_projectId) - block.timestamp / 12 + 1);
-    // Make sure this is actually Phase 4
-    assertEq(_jbFundingCycleStore.currentOf(_projectId).number, 4);
     for (uint256 i = 0; i < nTiers; i++) {
       // Generate a new address for each tier
       _users[i] = address(bytes20(keccak256(abi.encode('user', Strings.toString(i)))));
@@ -414,9 +375,6 @@ contract DefifaGovernorTest is TestBaseWorkflow {
     // Phase 2: Redeem
     vm.warp(block.timestamp + defifaData.mintDuration);
     deployer.queueNextPhaseOf(_projectId);
-    // Phase 3: Start
-    vm.warp(defifaData.start + 1);
-    deployer.queueNextPhaseOf(_projectId);
     // Generate the scorecards
     DefifaTierRedemptionWeight[] memory scorecards = new DefifaTierRedemptionWeight[](nTiers);
     // We can't have a neutral outcome, so we only give shares to tiers that are an even number (in our array)
@@ -438,11 +396,10 @@ contract DefifaGovernorTest is TestBaseWorkflow {
       vm.prank(_users[i]);
       _governor.castVote(_proposalId, 0);
     }
-    // Phase 4: End
-    vm.warp(deployer.endOf(_projectId));
     // Forward the amount of blocks needed to reach the end (and round up)
-    vm.roll(deployer.endOf(_projectId) - block.timestamp / 12 + 1);
-    vm.warp(block.timestamp + 1 weeks);
+    vm.roll(block.number + _governor.votingPeriod() + 1);
+    // each block is of 12 secs
+    vm.warp(block.timestamp + (_governor.votingPeriod() * 12) + 1);
     // Execute the proposal
     vm.expectRevert('Governor: proposal not successful');
     _governor.ratifyScorecard(scorecards);
@@ -501,9 +458,6 @@ contract DefifaGovernorTest is TestBaseWorkflow {
     // Phase 2: Redeem
     vm.warp(block.timestamp + defifaData.mintDuration);
     deployer.queueNextPhaseOf(_projectId);
-    // Phase 3: Start
-    vm.warp(defifaData.start + 1);
-    deployer.queueNextPhaseOf(_projectId);
     // Generate the scorecards
     DefifaTierRedemptionWeight[] memory scorecards = new DefifaTierRedemptionWeight[](nTiers);
     // We can't have a neutral outcome, so we only give shares to tiers that are an even number (in our array)
@@ -525,10 +479,11 @@ contract DefifaGovernorTest is TestBaseWorkflow {
       vm.prank(_users[i]);
       _governor.castVote(_proposalId, 0);
     }
-    // Phase 4: End
-    vm.warp(deployer.endOf(_projectId));
-    vm.roll(deployer.endOf(_projectId));
-    vm.warp(block.timestamp + 1 weeks);
+
+    // Forward the amount of blocks needed to reach the end (and round up)
+    vm.roll(block.number + _governor.votingPeriod() + 1);
+    // each block is of 12 secs
+    vm.warp(block.timestamp + (_governor.votingPeriod() * 12) + 1);
     // Execute the proposal
     vm.expectRevert('Governor: proposal not successful');
     _governor.ratifyScorecard(scorecards);
@@ -592,9 +547,6 @@ contract DefifaGovernorTest is TestBaseWorkflow {
     // Phase 2: Redeem
     vm.warp(block.timestamp + defifaData.mintDuration);
     deployer.queueNextPhaseOf(_projectId);
-    // Phase 3: Start
-    vm.warp(defifaData.start + 1);
-    deployer.queueNextPhaseOf(_projectId);
     // Generate the scorecards
     DefifaTierRedemptionWeight[] memory scorecards = new DefifaTierRedemptionWeight[](nTiers);
     // We can't have a neutral outcome, so we only give shares to tiers that are an even number (in our array)
@@ -622,11 +574,11 @@ contract DefifaGovernorTest is TestBaseWorkflow {
       vm.prank(_users[i]);
       _governor.castVote(_proposalId, 1);
     }
-    // Phase 4: End
-    vm.warp(deployer.endOf(_projectId));
     // Forward the amount of blocks needed to reach the end (and round up)
-    vm.roll(deployer.endOf(_projectId) - block.timestamp / 12 + 1);
-    vm.warp(block.timestamp + 1 weeks);
+    vm.roll(block.number + _governor.votingPeriod() + 1);
+    // each block is of 12 secs
+    vm.warp(block.timestamp + (_governor.votingPeriod() * 12) + 1);
+
     _governor.ratifyScorecard(scorecards);
     vm.roll(block.number + 1);
     // Verify that the redemptionWeights actually changed
@@ -685,6 +637,8 @@ contract DefifaGovernorTest is TestBaseWorkflow {
     );
     // Phase 1: minting
     vm.warp(defifaData.start - defifaData.mintDuration - defifaData.refundPeriodDuration);
+    deployer.queueNextPhaseOf(_projectId);
+
     for (uint256 i = 0; i < nOfOtherTiers + nUsersWithWinningTier; i++) {
       // Generate a new address for each tier
       _users[i] = address(bytes20(keccak256(abi.encode('user', Strings.toString(i)))));
@@ -755,9 +709,6 @@ contract DefifaGovernorTest is TestBaseWorkflow {
     // Phase 2: Redeem
     vm.warp(block.timestamp + defifaData.mintDuration);
     deployer.queueNextPhaseOf(_projectId);
-    // Phase 3: Start
-    vm.warp(defifaData.start + 1);
-    deployer.queueNextPhaseOf(_projectId);
     // Generate the scorecards
     DefifaTierRedemptionWeight[] memory scorecards = new DefifaTierRedemptionWeight[](
       nOfOtherTiers + 1
@@ -793,12 +744,12 @@ contract DefifaGovernorTest is TestBaseWorkflow {
         _governor.castVote(_proposalId, 1);
       }
     }
-    // Phase 4: End
+
     // Forward the amount of blocks needed to reach the end (and round up)
-    vm.roll(deployer.endOf(_projectId) - block.timestamp / 12 + 1);
-    vm.warp(deployer.endOf(_projectId));
-    deployer.queueNextPhaseOf(_projectId);
-    vm.warp(block.timestamp + 1 weeks);
+    vm.roll(block.number + _governor.votingPeriod() + 1);
+    // each block is of 12 secs
+    vm.warp(block.timestamp + (_governor.votingPeriod() * 12) + 1);
+
     _governor.ratifyScorecard(scorecards);
     vm.roll(block.number + 1);
     // Verify that the redemptionWeights actually changed
@@ -891,6 +842,7 @@ contract DefifaGovernorTest is TestBaseWorkflow {
       store: new JBTiered721DelegateStore(),
       splits: new JBSplit[](0),
       distributionLimit: 0,
+      votingStartTime: 0,
       votingPeriod: 100381,
       tiers: tierParams,
       ballkidzFeeProjectTokenAccount: payable(0x1000000000000000000000000000000000000000),
@@ -913,21 +865,11 @@ contract DefifaGovernorTest is TestBaseWorkflow {
     vm.warp(_launchProjectAt + _mintDuration);
     assertEq(_jbFundingCycleStore.currentOf(_projectId).number, 2);
     // Queue Phase 3
-    deployer.queueNextPhaseOf(_projectId);
-    // Go to the end of phase 2
-    vm.warp(_launchProjectAt + _mintDuration + _inBetweenMintAndFifa - 1);
-    assertEq(_jbFundingCycleStore.currentOf(_projectId).number, 2);
-    // We should now be in phase 3, trading deadline (start of fifa)
-    vm.warp(_launchProjectAt + _mintDuration + _inBetweenMintAndFifa);
-    assertEq(_jbFundingCycleStore.currentOf(_projectId).number, 3);
-    // Go to the end of phase 3
-    vm.warp(_launchProjectAt + _mintDuration + _inBetweenMintAndFifa + _fifaDuration - 1);
-    assertEq(_jbFundingCycleStore.currentOf(_projectId).number, 3);
-    // Queue Phase 4
+
     deployer.queueNextPhaseOf(_projectId);
     // We should now be in phase 4, game has ended
     vm.warp(_launchProjectAt + _mintDuration + _inBetweenMintAndFifa + _fifaDuration);
-    assertEq(_jbFundingCycleStore.currentOf(_projectId).number, 4);
+    assertEq(_jbFundingCycleStore.currentOf(_projectId).number, 3);
   }
 
   function testWhenScorecardIsSubmittedWithUnmintedTier() public {
@@ -943,9 +885,6 @@ contract DefifaGovernorTest is TestBaseWorkflow {
 
     // Phase 2: Redeem
     vm.warp(block.timestamp + defifaData.mintDuration);
-    deployer.queueNextPhaseOf(_projectId);
-    // Phase 3: Start
-    vm.warp(defifaData.start + 1);
     deployer.queueNextPhaseOf(_projectId);
     // Generate the scorecards
     DefifaTierRedemptionWeight[] memory scorecards = new DefifaTierRedemptionWeight[](nTiers);
@@ -1072,9 +1011,6 @@ contract DefifaGovernorTest is TestBaseWorkflow {
     // Phase 2: Redeem
     vm.warp(block.timestamp + defifaData.mintDuration);
     deployer.queueNextPhaseOf(_projectId);
-    // Phase 3: Start
-    vm.warp(defifaData.start + 1);
-    deployer.queueNextPhaseOf(_projectId);
     // Generate the scorecards
     DefifaTierRedemptionWeight[] memory scorecards = new DefifaTierRedemptionWeight[](nTiers);
     // We can't have a neutral outcome, so we only give shares to tiers that are an even number (in our array)
@@ -1155,9 +1091,7 @@ contract DefifaGovernorTest is TestBaseWorkflow {
     // Phase 2: Redeem
     vm.warp(block.timestamp + defifaData.mintDuration);
     deployer.queueNextPhaseOf(_projectId);
-    // Phase 3: Start
-    vm.warp(defifaData.start + 1);
-    deployer.queueNextPhaseOf(_projectId);
+ 
     // Generate the scorecards
     DefifaTierRedemptionWeight[] memory scorecards = new DefifaTierRedemptionWeight[](nTiers);
     // We can't have a neutral outcome, so we only give shares to tiers that are an even number (in our array)
@@ -1182,10 +1116,11 @@ contract DefifaGovernorTest is TestBaseWorkflow {
       vm.prank(_users[i]);
       _governor.castVote(_proposalId, 1);
     }
-    // Phase 4: End
-    vm.warp(deployer.endOf(_projectId));
-    vm.roll(deployer.endOf(_projectId));
-    vm.warp(block.timestamp + 1 weeks);
+
+    // Forward the amount of blocks needed to reach the end (and round up)
+    vm.roll(block.number + _governor.votingPeriod() + 1);
+    // each block is of 12 secs
+    vm.warp(block.timestamp + (_governor.votingPeriod() * 12) + 1);
     // Execute the proposal
     vm.expectRevert(abi.encodeWithSignature('INVALID_REDEMPTION_WEIGHTS()'));
     _governor.ratifyScorecard(scorecards);
@@ -1220,6 +1155,7 @@ contract DefifaGovernorTest is TestBaseWorkflow {
         store: new JBTiered721DelegateStore(),
         splits: new JBSplit[](0),
         distributionLimit: 0,
+        votingStartTime: 0,
         votingPeriod: 100381,
         tiers: tierParams,
         defaultTokenUriResolver: IJBTokenUriResolver(address(0)),
