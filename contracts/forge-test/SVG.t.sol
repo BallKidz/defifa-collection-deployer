@@ -11,10 +11,18 @@ import '@jbx-protocol/juice-contracts-v3/contracts/interfaces/IJBFundingCycleSto
 import '@jbx-protocol/juice-721-delegate/contracts/interfaces/IJBTiered721DelegateStore.sol';
 import '../DefifaDelegate.sol';
 import '../DefifaTokenUriResolver.sol';
+import '../interfaces/IDefifaNoContestReporter.sol';
 
 // import {CapsulesTypeface} from "../lib/capsules/contracts/CapsulesTypeface.sol";
 
-contract EmptyTest is Test {
+contract NoContestReporter is IDefifaNoContestReporter {
+  function isNoContest(uint256 _gameId) external pure returns (bool) {
+    _gameId;
+    return false;
+  }
+}
+
+contract SVGTest is Test {
   IJBController _controller;
   IJBDirectory _directory;
   IJBFundingCycleStore _fundingCycleStore;
@@ -32,12 +40,12 @@ contract EmptyTest is Test {
     _store = IJBTiered721DelegateStore(0x67C31B9557201A341312CF78d315542b5AD83074);
     _typeface = ITypeface(0xA77b7D93E79f1E6B4f77FaB29d9ef85733A3D44A);
   }
-
   function testWithTierImage() public {
     DefifaDelegate _delegate = DefifaDelegate(Clones.clone(address(new DefifaDelegate())));
     DefifaTokenUriResolver _resolver = DefifaTokenUriResolver(
       Clones.clone(address(new DefifaTokenUriResolver(_typeface)))
     );
+    NoContestReporter _noContestReporter = new NoContestReporter();
 
     JB721TierParams[] memory _tiers = new JB721TierParams[](1);
     _tiers[0] = JB721TierParams({
@@ -71,7 +79,7 @@ contract EmptyTest is Test {
         lockManualMintingChanges: false,
         preventOverspending: false
       }),
-      _noContestReporter: IDefifaNoContestReporter(address(0))
+      _noContestReporter: _noContestReporter
     });
 
     string[] memory _tierNames = new string[](1);
@@ -93,6 +101,7 @@ contract EmptyTest is Test {
     DefifaTokenUriResolver _resolver = DefifaTokenUriResolver(
       Clones.clone(address(new DefifaTokenUriResolver(_typeface)))
     );
+    NoContestReporter _noContestReporter = new NoContestReporter();
 
     JB721TierParams[] memory _tiers = new JB721TierParams[](1);
     _tiers[0] = JB721TierParams({
@@ -126,7 +135,7 @@ contract EmptyTest is Test {
         lockManualMintingChanges: false,
         preventOverspending: false
       }),
-      _noContestReporter: IDefifaNoContestReporter(address(0))
+      _noContestReporter: _noContestReporter
     });
 
     string[] memory _tierNames = new string[](1);

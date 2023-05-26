@@ -838,7 +838,6 @@ contract DefifaGovernorTest is TestBaseWorkflow {
       mintDuration: _mintDuration,
       start: _launchProjectAt + uint48(_mintDuration) + _inBetweenMintAndFifa,
       refundPeriodDuration: _inBetweenMintAndFifa,
-      end: _end,
       store: new JBTiered721DelegateStore(),
       splits: new JBSplit[](0),
       distributionLimit: 0,
@@ -873,6 +872,7 @@ contract DefifaGovernorTest is TestBaseWorkflow {
   }
 
   function testWhenScorecardIsSubmittedWithUnmintedTier() public {
+
     uint8 nTiers = 10;
     address[] memory _users = new address[](nTiers);
     DefifaLaunchProjectData memory defifaData = getBasicDefifaLaunchData(nTiers);
@@ -1151,7 +1151,6 @@ contract DefifaGovernorTest is TestBaseWorkflow {
         mintDuration: 1 days,
         start: uint48(block.timestamp + 3 days),
         refundPeriodDuration: 1 days,
-        end: uint48(block.timestamp + 3 days + 1 weeks),
         store: new JBTiered721DelegateStore(),
         splits: new JBSplit[](0),
         distributionLimit: 0,

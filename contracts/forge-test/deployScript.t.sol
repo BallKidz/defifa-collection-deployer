@@ -102,7 +102,6 @@ pragma solidity ^0.8.16;
 //         mintDuration: _mintDuration,
 //         start: _start,
 //         tradeDeadline: _tradeDeadline,
-//         end: _end,
 //         holdFees: false,
 //         splits: new JBSplit[](0),
 //         distributionLimit: 0,
