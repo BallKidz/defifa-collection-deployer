@@ -144,7 +144,7 @@ contract DefifaGovernorTest is TestBaseWorkflow {
   //     {
   //       uint256[] memory redemptionId = new uint256[](1);
   //       redemptionId[0] = _generateTokenId(i + 1, 1);
-  //       redemptionMetadata = abi.encode(bytes32(0), type(IJB721Delegate).interfaceId, redemptionId);
+  //       redemptionMetadata = abi.encode(bytes32(0), type(IDefifaDelegate).interfaceId, redemptionId);
   //     }
   //     vm.expectRevert(abi.encodeWithSignature('FUNDING_CYCLE_REDEEM_PAUSED()'));
   //     vm.prank(_user);
@@ -172,7 +172,7 @@ contract DefifaGovernorTest is TestBaseWorkflow {
   //     {
   //       uint256[] memory redemptionId = new uint256[](1);
   //       redemptionId[0] = _generateTokenId(i + 1, 1);
-  //       redemptionMetadata = abi.encode(bytes32(0), type(IJB721Delegate).interfaceId, redemptionId);
+  //       redemptionMetadata = abi.encode(bytes32(0), type(IDefifaDelegate).interfaceId, redemptionId);
   //     }
   //     // Here the refunds are not allowed but redemptions are,
   //     // so it should instead revert with an error showing that there is no redemption set for our tier
@@ -287,7 +287,7 @@ contract DefifaGovernorTest is TestBaseWorkflow {
   //     bytes memory metadata = abi.encode(
   //       bytes32(0),
   //       bytes32(0),
-  //       type(IJB721Delegate).interfaceId,
+  //       type(IDefifaDelegate).interfaceId,
   //       false,
   //       false,
   //       false,
@@ -591,7 +591,7 @@ contract DefifaGovernorTest is TestBaseWorkflow {
       {
         uint256[] memory redemptionId = new uint256[](1);
         redemptionId[0] = _generateTokenId(i + 1, 1);
-        redemptionMetadata = abi.encode(bytes32(0), type(IJB721Delegate).interfaceId, redemptionId);
+        redemptionMetadata = abi.encode(bytes32(0), type(IDefifaDelegate).interfaceId, redemptionId);
       }
       // If the redemption is 0 this will revert
       if (scorecards[i].redemptionWeight == 0)
@@ -764,7 +764,7 @@ contract DefifaGovernorTest is TestBaseWorkflow {
           _tier,
           _tier == nOfOtherTiers + 1 ? i - nOfOtherTiers + 1 : 1
         );
-        redemptionMetadata = abi.encode(bytes32(0), type(IJB721Delegate).interfaceId, redemptionId);
+        redemptionMetadata = abi.encode(bytes32(0), type(IDefifaDelegate).interfaceId, redemptionId);
       }
       uint256 _expectedTierRedemption;
       {
@@ -1220,7 +1220,7 @@ contract DefifaGovernorTest is TestBaseWorkflow {
         _tierId,
         _tier.initialQuantity - _tier.remainingQuantity + 1 + _numberBurned
       );
-      redemptionMetadata = abi.encode(bytes32(0), type(IJB721Delegate).interfaceId, redemptionId);
+      redemptionMetadata = abi.encode(bytes32(0), type(IDefifaDelegate).interfaceId, redemptionId);
     }
     vm.prank(_refundUser);
     JBETHPaymentTerminal(address(_terminals[0])).redeemTokensOf({

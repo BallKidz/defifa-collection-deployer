@@ -441,7 +441,7 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate {
     // Skip 32 bytes reserved for generic extension parameters.
     if (
       _data.metadata.length < 36 ||
-      bytes4(_data.metadata[32:36]) != type(IJB721Delegate).interfaceId
+      bytes4(_data.metadata[32:36]) != type(IDefifaDelegate).interfaceId
     ) revert INVALID_REDEMPTION_METADATA();
 
     // Set the only delegate allocation to be a callback to this contract.
@@ -666,7 +666,7 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate {
     // Skip 32 bytes reserved for generic extension parameters.
     if (
       _data.metadata.length < 36 ||
-      bytes4(_data.metadata[32:36]) != type(IJB721Delegate).interfaceId
+      bytes4(_data.metadata[32:36]) != type(IDefifaDelegate).interfaceId
     ) revert INVALID_REDEMPTION_METADATA();
 
     // Decode the metadata.
@@ -1162,7 +1162,7 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate {
     store.recordTransferForTier(_tier.id, _from, _to);
 
     // Handle any other accounting (ex. account for governance voting units)
-    _afterTokenTransferAccounting(_from, _to, _tokenId, _tier);
+    _afterTokenTransferAccounting(_from, _to, _tier);
 
     super._afterTokenTransfer(_from, _to, _tokenId);
   }
@@ -1173,17 +1173,13 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate {
 
     @param _from The account to transfer voting units from.
     @param _to The account to transfer voting units to.
-    @param _tokenId The ID of the token for which voting units are being transferred.
     @param _tier The tier the token ID is part of.
   */
   function _afterTokenTransferAccounting(
     address _from,
     address _to,
-    uint256 _tokenId,
     JB721Tier memory _tier
   ) internal virtual {
-    _tokenId; // Prevents unused var compiler and natspec complaints.
-
     // Dont transfer on mint since the delegation will be transferred more efficiently in _processPayment.
     if (_from == address(0)) return;
 

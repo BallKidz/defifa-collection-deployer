@@ -153,9 +153,6 @@ contract DefifaTokenUriResolver is IDefifaTokenUriResolver, IJBTokenUriResolver 
     // Get the game ID.
     uint256 _gameId = _delegate.projectId();
 
-    // Keep a reference to the title font size.
-    string memory _titleFontSize;
-
     // Keep a reference to the font size.
     string memory _fontSize;
 
@@ -182,7 +179,7 @@ contract DefifaTokenUriResolver is IDefifaTokenUriResolver, IJBTokenUriResolver 
       JB721Tier memory _tier = _delegate.store().tierOfTokenId(address(_delegate), _tokenId, false);
 
       // Set the tier's name.
-      _tierNameOf[_tier.id];
+      _team = _tierNameOf[_tier.id];
 
       // Check to see if the tier has a URI. Return it if it does.
       if (_tier.encodedIPFSUri != bytes32(0))
@@ -203,8 +200,6 @@ contract DefifaTokenUriResolver is IDefifaTokenUriResolver, IJBTokenUriResolver 
           '.","image":"data:image/svg+xml;base64,'
         )
       );
-      if (bytes(_title).length < 35) _titleFontSize = '24';
-      else _titleFontSize = '20';
 
       if (bytes(_team).length < 3) _fontSize = '240';
       else if (bytes(_team).length < 5) _fontSize = '200';
@@ -272,9 +267,7 @@ contract DefifaTokenUriResolver is IDefifaTokenUriResolver, IJBTokenUriResolver 
         '<text x="10" y="60" style="font-size:16px; font-family: Capsules-300; font-weight:300; fill: #ed017c;">',
         _gamePhaseText,
         '</text>',
-        '<foreignObject width="90%" height="80px" x="10" y="70" ><div xmlns="http://www.w3.org/1999/xhtml" style="font-size:',
-        _titleFontSize,
-        'px; font-family: Capsules-300; font-weight:300; color:#fea282;"><span style="word-wrap: break-word; white-space: pre-line;">',
+        '<foreignObject width="90%" height="80px" x="10" y="70" ><div xmlns="http://www.w3.org/1999/xhtml" style="font-size:22px; font-family: Capsules-300; font-weight:300; color:#fea282;"><span style="word-wrap: break-word; white-space: pre-line;">',
         _title,
         '</span></div></foreignObject>',
         '<text x="10" y="455" style="font-size:16px; font-family: Capsules-300; font-weight:300; fill: #c0b3f1;">TOKEN ID: ',
@@ -285,7 +278,7 @@ contract DefifaTokenUriResolver is IDefifaTokenUriResolver, IJBTokenUriResolver 
         '</text>',
         '<foreignObject width="calc(100% - 20px)" height="50%" x="10" y="25%" ><div xmlns="http://www.w3.org/1999/xhtml" style="font-size:',
         _fontSize,
-        'px; font-family: Capsules-700; font-weight:700; color:#fea282; display: flex; align-items: center; height: 100%; text-align: left;"><span style="word-wrap: break-word; white-space: pre-line;">',
+        'px; font-family: Capsules-700; font-weight:700; color:#fea282; display: flex; align-items: center; height: 100%; text-align: left; letter-spacing: 1px;"><span style="word-wrap: break-word; white-space: pre-line;">',
         _team,
         '</span></div></foreignObject>',
         '</svg>'
