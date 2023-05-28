@@ -7,6 +7,7 @@ import '@jbx-protocol/juice-contracts-v3/contracts/interfaces/IJBTokenUriResolve
 import '@jbx-protocol/juice-delegates-registry/src/interfaces/IJBDelegatesRegistry.sol';
 import '../structs/DefifaLaunchProjectData.sol';
 import '../structs/DefifaTimeData.sol';
+import '../structs/DefifaDistributionOpsData.sol';
 import './IDefifaDelegate.sol';
 import './IDefifaGovernor.sol';
 
@@ -38,17 +39,7 @@ interface IDefifaDeployer {
 
   function timesFor(uint256 _gameId) external view returns (DefifaTimeData memory);
 
-  function mintDurationOf(uint256 _gameId) external view returns (uint256);
-
-  function startOf(uint256 _gameId) external view returns (uint256);
-
-  function refundPeriodDurationOf(uint256 _gameId) external view returns (uint256);
-
-  function terminalOf(uint256 _gameId) external view returns (IJBPaymentTerminal);
-
-  function distributionLimit(uint256 _gameId) external view returns (uint256);
-
-  function currentGamePhaseOf(uint256 _gameId) external view returns (uint256);
+  function distributionOpsOf(uint256 _gameId) external view returns (DefifaDistributionOpsData memory);
 
   function nextPhaseNeedsQueueing(uint256 _gameId) external view returns (bool);
 

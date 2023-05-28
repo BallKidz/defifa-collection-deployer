@@ -156,9 +156,6 @@ contract DefifaTokenUriResolver is IDefifaTokenUriResolver, IJBTokenUriResolver 
     // Keep a reference to the font size.
     string memory _fontSize;
 
-    // Keep a reference to the current game phase.
-    uint256 _gamePhase; 
-
     // Keep a reference to the game phase text.
     string memory _gamePhaseText;
 
@@ -213,19 +210,17 @@ contract DefifaTokenUriResolver is IDefifaTokenUriResolver, IJBTokenUriResolver 
       else _fontSize = '16';
 
       {
-        // No contest.    
-        bool _isNoContest = delegate.noContestReporter().isNoContest(_gameId);
+        // Get a reference to the game phase.
+        DefifaGamePhase _gamePhase = delegate.gamePhaseReporter().currentGamePhaseOf(_gameId);
 
-        // Set the game phase. 
-        _gamePhase = _isNoContest ? 0 : _delegate.fundingCycleStore().currentOf(_gameId).number;
-
-        if (_isNoContest) _gamePhaseText = 'No contest.';
-        else if (_gamePhase == 0) _gamePhaseText = 'Minting starts soon.';
-        else if (_gamePhase == 1) _gamePhaseText = 'Game starts soon, minting and refunds are open.';
-        else if (_gamePhase == 2)
-          _gamePhaseText = 'Game starting, minting closed. last chance for refunds.';
-        else if (_gamePhase == 3 && !_delegate.redemptionWeightIsSet())
-          _gamePhaseText = 'Scorecard awaiting approval.';
+        if (_gamePhase == DefifaGamePhase.NO_CONTEST) _gamePhaseText = 'No contest. Refunds open.';
+        else if (_gamePhase == DefifaGamePhase.NO_CONTEST_INEVITABLE) _gamePhaseText = 'No contest inevitable. Refunds open.';
+        else if (_gamePhase == DefifaGamePhase.COUNTDOWN) _gamePhaseText = 'Minting starts soon.';
+        else if (_gamePhase == DefifaGamePhase.MINT) _gamePhaseText = 'Minting and refunds are open. Game starts soon.';
+        else if (_gamePhase == DefifaGamePhase.REFUND)
+          _gamePhaseText = 'Game starting, minting closed. Last chance for refunds.';
+        else if (_gamePhase == DefifaGamePhase.SCORING && !_delegate.redemptionWeightIsSet())
+          _gamePhaseText = 'Awaiting approved scorecard.';
         else {
           string memory _percentOfPot = DefifaPercentFormatter.getFormattedPercentageOfRedemptionWeight(
             _delegate.redemptionWeightOf(_tokenId),
@@ -233,14 +228,12 @@ contract DefifaTokenUriResolver is IDefifaTokenUriResolver, IJBTokenUriResolver 
             _IMG_DECIMAL_FIDELITY
           );
           _gamePhaseText = string(
-            abi.encodePacked('Scorecard ratified. Redeem for ~', _percentOfPot, ' of pot.')
+            abi.encodePacked('Scorecard approved. Redeem for ~', _percentOfPot, ' of pot.')
           );
         }
-      }
 
-      {
         uint256 _totalMinted = _tier.initialQuantity - _tier.remainingQuantity;
-        if (_gamePhase == 1)
+        if (_gamePhase == DefifaGamePhase.MINT)
           _rarityText = string(abi.encodePacked(_totalMinted.toString(), ' minted so far'));
         else _rarityText = string(abi.encodePacked(_totalMinted.toString(), ' in existence'));
       }
@@ -260,9 +253,6 @@ contract DefifaTokenUriResolver is IDefifaTokenUriResolver, IJBTokenUriResolver 
         '<rect width="100%" height="100%" fill="#181424"/>',
         '<text x="10" y="40" style="font-size:16px; font-family: Capsules-300; font-weight:300; fill: #c0b3f1;">GAME ID: ',
          _gameId.toString(),
-        ' | PHASE ',
-        _gamePhase.toString(),
-        ' OF 4',
         '</text>',
         '<text x="10" y="60" style="font-size:16px; font-family: Capsules-300; font-weight:300; fill: #ed017c;">',
         _gamePhaseText,

@@ -52,7 +52,7 @@ contract DefifaGovernorTest is TestBaseWorkflow {
     );
 
     // Phase 1: Mint
-    vm.warp(defifaData.start - defifaData.mintDuration - defifaData.refundPeriodDuration);
+    vm.warp(defifaData.start - defifaData.mintDuration - defifaData.refundDuration);
     deployer.queueNextPhaseOf(_projectId);
     // User should have no voting power (yet)
     assertEq(_governor.getVotes(_user, block.number - 1), 0);
@@ -99,7 +99,7 @@ contract DefifaGovernorTest is TestBaseWorkflow {
   //   DefifaLaunchProjectData memory defifaData = getBasicDefifaLaunchData(nTiers);
   //   (uint256 _projectId, , ) = createDefifaProject(defifaData);
   //   // Phase 1: Mint
-  //   vm.warp(defifaData.start - defifaData.mintDuration - defifaData.refundPeriodDuration);
+  //   vm.warp(defifaData.start - defifaData.mintDuration - defifaData.refundDuration);
   //   deployer.queueNextPhaseOf(_projectId);
   //   for (uint256 i = 0; i < nTiers; i++) {
   //     // Generate a new address for each tier
@@ -197,7 +197,7 @@ contract DefifaGovernorTest is TestBaseWorkflow {
     DefifaLaunchProjectData memory defifaData = getBasicDefifaLaunchData(nTiers);
     (uint256 _projectId, , ) = createDefifaProject(defifaData);
     // Phase 1: minting
-    vm.warp(defifaData.start - defifaData.mintDuration - defifaData.refundPeriodDuration);
+    vm.warp(defifaData.start - defifaData.mintDuration - defifaData.refundDuration);
     deployer.queueNextPhaseOf(_projectId);
     // Phase 2: Redeem
     vm.warp(block.timestamp + defifaData.mintDuration);
@@ -275,7 +275,7 @@ contract DefifaGovernorTest is TestBaseWorkflow {
   //     getBasicDefifaLaunchData()
   //   );
   //   // Phase 1: minting
-  //   vm.warp(defifaData.start - defifaData.mintDuration - defifaData.refundPeriodDuration);
+  //   vm.warp(defifaData.start - defifaData.mintDuration - defifaData.refundDuration);
   //   for (uint256 i = 0; i < nTiers; i++) {
   //     // Generate a new address for each tier
   //     _users[i] = address(bytes20(keccak256(abi.encode('user', Strings.toString(i)))));
@@ -330,7 +330,7 @@ contract DefifaGovernorTest is TestBaseWorkflow {
       defifaData
     );
     // Phase 1: minting
-    vm.warp(defifaData.start - defifaData.mintDuration - defifaData.refundPeriodDuration);
+    vm.warp(defifaData.start - defifaData.mintDuration - defifaData.refundDuration);
     deployer.queueNextPhaseOf(_projectId);
     for (uint256 i = 0; i < nTiers; i++) {
       // Generate a new address for each tier
@@ -413,7 +413,7 @@ contract DefifaGovernorTest is TestBaseWorkflow {
       defifaData
     );
     // Phase 1: minting
-    vm.warp(defifaData.start - defifaData.mintDuration - defifaData.refundPeriodDuration);
+    vm.warp(defifaData.start - defifaData.mintDuration - defifaData.refundDuration);
     deployer.queueNextPhaseOf(_projectId);
     for (uint256 i = 0; i < nTiers; i++) {
       // Generate a new address for each tier
@@ -506,7 +506,7 @@ contract DefifaGovernorTest is TestBaseWorkflow {
       defifaData
     );
     // Phase 1: minting
-    vm.warp(defifaData.start - defifaData.mintDuration - defifaData.refundPeriodDuration);
+    vm.warp(defifaData.start - defifaData.mintDuration - defifaData.refundDuration);
     deployer.queueNextPhaseOf(_projectId);
     for (uint256 i = 0; i < nTiers; i++) {
       // Generate a new address for each tier
@@ -636,7 +636,7 @@ contract DefifaGovernorTest is TestBaseWorkflow {
       defifaData
     );
     // Phase 1: minting
-    vm.warp(defifaData.start - defifaData.mintDuration - defifaData.refundPeriodDuration);
+    vm.warp(defifaData.start - defifaData.mintDuration - defifaData.refundDuration);
     deployer.queueNextPhaseOf(_projectId);
 
     for (uint256 i = 0; i < nOfOtherTiers + nUsersWithWinningTier; i++) {
@@ -837,7 +837,7 @@ contract DefifaGovernorTest is TestBaseWorkflow {
       token: JBTokens.ETH,
       mintDuration: _mintDuration,
       start: _launchProjectAt + uint48(_mintDuration) + _inBetweenMintAndFifa,
-      refundPeriodDuration: _inBetweenMintAndFifa,
+      refundDuration: _inBetweenMintAndFifa,
       store: new JBTiered721DelegateStore(),
       splits: new JBSplit[](0),
       distributionLimit: 0,
@@ -880,7 +880,7 @@ contract DefifaGovernorTest is TestBaseWorkflow {
       defifaData
     );
     // Phase 1: Mint
-    vm.warp(defifaData.start - defifaData.mintDuration - defifaData.refundPeriodDuration);
+    vm.warp(defifaData.start - defifaData.mintDuration - defifaData.refundDuration);
     deployer.queueNextPhaseOf(_projectId);
 
     // Phase 2: Redeem
@@ -907,7 +907,7 @@ contract DefifaGovernorTest is TestBaseWorkflow {
       defifaData
     );
     // Phase 1: Mint
-    vm.warp(defifaData.start - defifaData.mintDuration - defifaData.refundPeriodDuration);
+    vm.warp(defifaData.start - defifaData.mintDuration - defifaData.refundDuration);
     deployer.queueNextPhaseOf(_projectId);
     for (uint256 i = 0; i < nTiers; i++) {
       // Generate a new address for each tier
@@ -966,7 +966,7 @@ contract DefifaGovernorTest is TestBaseWorkflow {
       defifaData
     );
     // Phase 1: Mint
-    vm.warp(defifaData.start - defifaData.mintDuration - defifaData.refundPeriodDuration);
+    vm.warp(defifaData.start - defifaData.mintDuration - defifaData.refundDuration);
     deployer.queueNextPhaseOf(_projectId);
     for (uint256 i = 0; i < nTiers; i++) {
       // Generate a new address for each tier
@@ -1046,7 +1046,7 @@ contract DefifaGovernorTest is TestBaseWorkflow {
       defifaData
     );
     // Phase 1: Mint
-    vm.warp(defifaData.start - defifaData.mintDuration - defifaData.refundPeriodDuration);
+    vm.warp(defifaData.start - defifaData.mintDuration - defifaData.refundDuration);
     deployer.queueNextPhaseOf(_projectId);
     for (uint256 i = 0; i < nTiers; i++) {
       // Generate a new address for each tier
@@ -1150,7 +1150,7 @@ contract DefifaGovernorTest is TestBaseWorkflow {
         token: JBTokens.ETH,
         mintDuration: 1 days,
         start: uint48(block.timestamp + 3 days),
-        refundPeriodDuration: 1 days,
+        refundDuration: 1 days,
         store: new JBTiered721DelegateStore(),
         splits: new JBSplit[](0),
         distributionLimit: 0,

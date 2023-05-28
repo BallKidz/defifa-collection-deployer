@@ -10,9 +10,10 @@ import '@jbx-protocol/juice-contracts-v3/contracts/libraries/JBTokens.sol';
 import '@jbx-protocol/juice-contracts-v3/contracts/libraries/JBSplitsGroups.sol';
 import '@jbx-protocol/juice-contracts-v3/contracts/structs/JBFundAccessConstraints.sol';
 import '@jbx-protocol/juice-721-delegate/contracts/libraries/JBTiered721FundingCycleMetadataResolver.sol';
+import './enums/DefifaGamePhase.sol';
 import './interfaces/IDefifaDeployer.sol';
-import './interfaces/IDefifaNoContestReporter.sol';
-import './structs/DefifaStoredOpsData.sol';
+import './interfaces/IDefifaGamePhaseReporter.sol';
+import './structs/DefifaDistributionOpsData.sol';
 import './DefifaDelegate.sol';
 import './DefifaGovernor.sol';
 import './DefifaTokenUriResolver.sol';
@@ -28,7 +29,7 @@ import './DefifaTokenUriResolver.sol';
   Adheres to -
   IDefifaDeployer: General interface for the generic controller methods in this contract that interacts with funding cycles and tokens according to the protocol's rules.
 */
-contract DefifaDeployer is IDefifaDeployer, IDefifaNoContestReporter, IERC721Receiver, Ownable {
+contract DefifaDeployer is IDefifaDeployer, IDefifaGamePhaseReporter, IERC721Receiver, Ownable {
   using Strings for uint256;
 
   //*********************************************************************//
@@ -74,7 +75,7 @@ contract DefifaDeployer is IDefifaDeployer, IDefifaNoContestReporter, IERC721Rec
     @dev
     Includes the payment terminal being used, the distribution limit, and wether or not fees should be held.
   */
-  mapping(uint256 => DefifaStoredOpsData) internal _opsFor;
+  mapping(uint256 => DefifaDistributionOpsData) internal _opsOf;
 
   /** 
     @notice 
@@ -171,24 +172,8 @@ contract DefifaDeployer is IDefifaDeployer, IDefifaNoContestReporter, IERC721Rec
     return _timesFor[_gameId];
   }
 
-  function mintDurationOf(uint256 _gameId) external view override returns (uint256) {
-    return _timesFor[_gameId].mintDuration;
-  }
-
-  function refundPeriodDurationOf(uint256 _gameId) external view override returns (uint256) {
-    return _timesFor[_gameId].refundPeriodDuration;
-  }
-
-  function startOf(uint256 _gameId) external view override returns (uint256) {
-    return _timesFor[_gameId].start;
-  }
-
-  function terminalOf(uint256 _gameId) external view override returns (IJBPaymentTerminal) {
-    return _opsFor[_gameId].terminal;
-  }
-
-  function distributionLimit(uint256 _gameId) external view override returns (uint256) {
-    return uint256(_opsFor[_gameId].distributionLimit);
+  function distributionOpsOf(uint256 _gameId) external view override returns (DefifaDistributionOpsData memory) {
+    return _opsOf[_gameId];
   }
 
   /**
@@ -200,14 +185,18 @@ contract DefifaDeployer is IDefifaDeployer, IDefifaNoContestReporter, IERC721Rec
 
     @param _gameId The ID of the game to get the phase number of.
 
-    @return The game phase number.
+    @return The game phase.
   */
-  function currentGamePhaseOf(uint256 _gameId) external view override returns (uint256) {
+  function currentGamePhaseOf(uint256 _gameId) external view override returns (DefifaGamePhase) {
     // Get the project's current funding cycle along with its metadata.
     JBFundingCycle memory _currentFundingCycle = controller.fundingCycleStore().currentOf(_gameId);
 
-    // The phase is the current funding cycle number.
-    return _currentFundingCycle.number;
+    if (_currentFundingCycle.number == 0) return DefifaGamePhase.COUNTDOWN;
+    if (_currentFundingCycle.number == 1) return DefifaGamePhase.MINT;
+    if (_noContestIsSet[_gameId]) return DefifaGamePhase.NO_CONTEST;
+    if (_isNoContest(_gameId, _currentFundingCycle)) return DefifaGamePhase.NO_CONTEST_INEVITABLE;
+    if (_currentFundingCycle.number == 2 && _timesFor[_gameId].refundDuration != 0) return DefifaGamePhase.REFUND;
+    return DefifaGamePhase.SCORING;
   }
 
   /**
@@ -228,32 +217,6 @@ contract DefifaDeployer is IDefifaDeployer, IDefifaNoContestReporter, IERC721Rec
     return
       _currentFundingCycle.duration != 0 &&
       _currentFundingCycle.configuration == _queuedFundingCycle.configuration;
-  }
-
-  //*********************************************************************//
-  // -------------------------- public views --------------------------- //
-  //*********************************************************************//
-
-  /** 
-    @notice
-    Check to see if the game is in no contest, meaning it isn't in a finishable state. 
-
-    @param _gameId The ID of the game being checked for no contest.
-
-    @return flag A flag indicating if the game is in no contest.
-  */
-  function isNoContest(uint256 _gameId) external view override returns (bool) {
-    // If the No Contest phase has already been queued, lettem know.
-    if (_noContestIsSet[_gameId]) return true;
-
-    // Check if the game will be No Contest.
-
-    // Get the project's current funding cycle.
-    (
-      JBFundingCycle memory _currentFundingCycle,
-    ) = controller.currentFundingCycleOf(_gameId);
-
-    return _isNoContest(_gameId, _currentFundingCycle);
   }
 
   //*********************************************************************//
@@ -308,12 +271,12 @@ contract DefifaDeployer is IDefifaDeployer, IDefifaNoContestReporter, IERC721Rec
     DefifaLaunchProjectData memory _launchProjectData
   ) external override returns (uint256 gameId, IDefifaGovernor governor) {
     // Start minting right away if a start time isn't provided.
-    if (_launchProjectData.start == 0) _launchProjectData.start = uint48(block.timestamp);
+    if (_launchProjectData.start == 0) _launchProjectData.start = uint48(block.timestamp + _launchProjectData.mintDuration);
 
     // Make sure the provided gameplay timestamps are sequential.
     if (
       _launchProjectData.start -
-        _launchProjectData.refundPeriodDuration -
+        _launchProjectData.refundDuration -
         _launchProjectData.mintDuration <
       block.timestamp
     ) revert INVALID_GAME_CONFIGURATION();
@@ -325,12 +288,12 @@ contract DefifaDeployer is IDefifaDeployer, IDefifaNoContestReporter, IERC721Rec
       // Store the timestamps that'll define the game phases.
       _timesFor[gameId] = DefifaTimeData({
         mintDuration: _launchProjectData.mintDuration,
-        refundPeriodDuration: _launchProjectData.refundPeriodDuration,
+        refundDuration: _launchProjectData.refundDuration,
         start: _launchProjectData.start
       });
 
       // Store the terminal and distribution limit.
-      _opsFor[gameId] = DefifaStoredOpsData({
+      _opsOf[gameId] = DefifaDistributionOpsData({
         terminal: _launchProjectData.terminal,
         distributionLimit: _launchProjectData.distributionLimit,
         token: _launchProjectData.token
@@ -445,7 +408,7 @@ contract DefifaDeployer is IDefifaDeployer, IDefifaNoContestReporter, IERC721Rec
         lockVotingUnitChanges: false,
         lockManualMintingChanges: false
       }),
-      _noContestReporter: this
+      _gamePhaseReporter: this
   });
 
     // Initialize the fallback default uri resolver if needed.
@@ -459,8 +422,8 @@ contract DefifaDeployer is IDefifaDeployer, IDefifaNoContestReporter, IERC721Rec
     if (!_launchProjectData.terminal.acceptsToken(_launchProjectData.token, gameId))
       revert UNEXPECTED_TERMINAL_CURRENCY();
 
-    // Queue the first phase of the game.
-    _queuePhase1(_launchProjectData, address(_delegate));
+    // Queue the mint phase of the game.
+    _queueMintPhase(_launchProjectData, address(_delegate));
 
     // Clone and initialize the new governor.
     governor = IDefifaGovernor(Clones.clone(governorCodeOrigin));
@@ -512,8 +475,8 @@ contract DefifaDeployer is IDefifaDeployer, IDefifaNoContestReporter, IERC721Rec
       revert PHASE_ALREADY_QUEUED();
 
     // Queue the next phase of the game.
-    if (_currentFundingCycle.number == 1) return _queuePhase2(_gameId, _metadata.dataSource);
-    else return _queuePhase3(_gameId, _metadata.dataSource);
+    if (_currentFundingCycle.number == 1 && _timesFor[_gameId].refundDuration != 0) return _queueRefundPhase(_gameId, _metadata.dataSource);
+    else return _queueGamePhase(_gameId, _metadata.dataSource);
   }
 
   /** 
@@ -575,7 +538,7 @@ contract DefifaDeployer is IDefifaDeployer, IDefifaNoContestReporter, IERC721Rec
     @param _launchProjectData Project data used for launching a Defifa game.
     @param _dataSource The address of the Defifa data source.
   */
-  function _queuePhase1(DefifaLaunchProjectData memory _launchProjectData, address _dataSource)
+  function _queueMintPhase(DefifaLaunchProjectData memory _launchProjectData, address _dataSource)
     internal
   {
     // Initialize the terminal array .
@@ -625,11 +588,11 @@ contract DefifaDeployer is IDefifaDeployer, IDefifaNoContestReporter, IERC721Rec
           })
         )
       }),
-      _launchProjectData.start - _launchProjectData.mintDuration - _launchProjectData.refundPeriodDuration,
+      _launchProjectData.start - _launchProjectData.mintDuration - _launchProjectData.refundDuration,
       new JBGroupedSplits[](0),
       new JBFundAccessConstraints[](0),
       _terminals,
-      'Defifa game phase 1.'
+      'Defifa mint phase.'
     );
   }
 
@@ -645,7 +608,7 @@ contract DefifaDeployer is IDefifaDeployer, IDefifaNoContestReporter, IERC721Rec
 
     @return configuration The configuration of the funding cycle that was successfully reconfigured.
   */
-  function _queuePhase2(uint256 _gameId, address _dataSource)
+  function _queueRefundPhase(uint256 _gameId, address _dataSource)
     internal
     returns (uint256 configuration)
   {
@@ -657,7 +620,7 @@ contract DefifaDeployer is IDefifaDeployer, IDefifaNoContestReporter, IERC721Rec
       controller.reconfigureFundingCyclesOf(
         _gameId,
         JBFundingCycleData ({
-          duration: _times.refundPeriodDuration,
+          duration: _times.refundDuration,
           // Don't mint project tokens.
           weight: 0,
           discountRate: 0,
@@ -699,28 +662,28 @@ contract DefifaDeployer is IDefifaDeployer, IDefifaNoContestReporter, IERC721Rec
         0, // mustStartAtOrAfter should be ASAP
         new JBGroupedSplits[](0),
         new JBFundAccessConstraints[](0),
-        'Defifa game phase 2.'
+        'Defifa refund phase.'
       );
   }
 
   /**
     @notice
-    Gets reconfiguration data for phase 3 of the game.
+    Gets reconfiguration data for the game phase.
 
     @dev
-    Phase 3 freezes the treasury and activates the pre-programmed distribution limit to the specified splits.
+    The game phase freezes the treasury and activates the pre-programmed distribution limit to the specified splits.
 
     @param _gameId The ID of the project that's being reconfigured.
     @param _dataSource The data source to use.
 
     @return configuration The configuration of the funding cycle that was successfully reconfigured.
   */
-  function _queuePhase3(uint256 _gameId, address _dataSource)
+  function _queueGamePhase(uint256 _gameId, address _dataSource)
     internal
     returns (uint256 configuration)
   {
     // Get a reference to the terminal being used by the project.
-    DefifaStoredOpsData memory _ops = _opsFor[_gameId];
+    DefifaDistributionOpsData memory _ops = _opsOf[_gameId];
 
     // Set fund access constraints.
     JBFundAccessConstraints[] memory fundAccessConstraints = new JBFundAccessConstraints[](1);
@@ -747,9 +710,6 @@ contract DefifaDeployer is IDefifaDeployer, IDefifaNoContestReporter, IERC721Rec
     else {
       _groupedSplits = new JBGroupedSplits[](0);
     }
-
-    // Get a reference to the time data.
-    DefifaTimeData memory _times = _timesFor[_gameId];
 
     return
       controller.reconfigureFundingCyclesOf(
@@ -796,7 +756,7 @@ contract DefifaDeployer is IDefifaDeployer, IDefifaNoContestReporter, IERC721Rec
         0, // mustStartAtOrAfter should be ASAP
          _groupedSplits,
         fundAccessConstraints,
-        'Defifa game phase 3.'
+        'Defifa scoring phase.'
       );
   }
 
@@ -817,8 +777,7 @@ contract DefifaDeployer is IDefifaDeployer, IDefifaNoContestReporter, IERC721Rec
     internal
     returns (uint256 configuration)
   {
-    return
-      controller.reconfigureFundingCyclesOf(
+     configuration = controller.reconfigureFundingCyclesOf(
         _gameId,
         JBFundingCycleData ({
           // No duration, lasts indefinately.

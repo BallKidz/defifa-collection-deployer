@@ -10,7 +10,7 @@ import '@jbx-protocol/juice-721-delegate/contracts/structs/JBTiered721MintReserv
 import '@jbx-protocol/juice-721-delegate/contracts/structs/JBTiered721MintForTiersData.sol';
 import '@jbx-protocol/juice-721-delegate/contracts/structs/JB721PricingParams.sol';
 import './../structs/DefifaTierRedemptionWeight.sol';
-import './IDefifaNoContestReporter.sol';
+import './IDefifaGamePhaseReporter.sol';
 
 interface IDefifaDelegate is IJB721Delegate {
   event Mint(
@@ -58,7 +58,7 @@ interface IDefifaDelegate is IJB721Delegate {
 
   function fundingCycleStore() external view returns (IJBFundingCycleStore);
 
-  function noContestReporter() external view returns (IDefifaNoContestReporter);
+  function gamePhaseReporter() external view returns (IDefifaGamePhaseReporter);
 
   function pricingCurrency() external view returns (uint256);
 
@@ -112,6 +112,6 @@ interface IDefifaDelegate is IJB721Delegate {
     uint48 _currency,
     IJBTiered721DelegateStore _store,
     JBTiered721Flags memory _flags,
-    IDefifaNoContestReporter _noContestReporter
+    IDefifaGamePhaseReporter _gamePhaseReporter
   ) external;
 }

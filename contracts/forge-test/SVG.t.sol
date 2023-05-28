@@ -11,14 +11,14 @@ import '@jbx-protocol/juice-contracts-v3/contracts/interfaces/IJBFundingCycleSto
 import '@jbx-protocol/juice-721-delegate/contracts/interfaces/IJBTiered721DelegateStore.sol';
 import '../DefifaDelegate.sol';
 import '../DefifaTokenUriResolver.sol';
-import '../interfaces/IDefifaNoContestReporter.sol';
+import '../interfaces/IDefifaGamePhaseReporter.sol';
 
 // import {CapsulesTypeface} from "../lib/capsules/contracts/CapsulesTypeface.sol";
 
-contract NoContestReporter is IDefifaNoContestReporter {
-  function isNoContest(uint256 _gameId) external pure returns (bool) {
+contract NoContestReporter is IDefifaGamePhaseReporter {
+  function currentGamePhaseOf(uint256 _gameId) external pure returns (DefifaGamePhase) {
     _gameId;
-    return false;
+    return DefifaGamePhase.COUNTDOWN;
   }
 }
 
@@ -45,7 +45,7 @@ contract SVGTest is Test {
     DefifaTokenUriResolver _resolver = DefifaTokenUriResolver(
       Clones.clone(address(new DefifaTokenUriResolver(_typeface)))
     );
-    NoContestReporter _noContestReporter = new NoContestReporter();
+    NoContestReporter _gamePhaseReporter = new NoContestReporter();
 
     JB721TierParams[] memory _tiers = new JB721TierParams[](1);
     _tiers[0] = JB721TierParams({
@@ -79,7 +79,7 @@ contract SVGTest is Test {
         lockManualMintingChanges: false,
         preventOverspending: false
       }),
-      _noContestReporter: _noContestReporter
+      _gamePhaseReporter: _gamePhaseReporter
     });
 
     string[] memory _tierNames = new string[](1);
@@ -101,7 +101,7 @@ contract SVGTest is Test {
     DefifaTokenUriResolver _resolver = DefifaTokenUriResolver(
       Clones.clone(address(new DefifaTokenUriResolver(_typeface)))
     );
-    NoContestReporter _noContestReporter = new NoContestReporter();
+    NoContestReporter _gamePhaseReporter = new NoContestReporter();
 
     JB721TierParams[] memory _tiers = new JB721TierParams[](1);
     _tiers[0] = JB721TierParams({
@@ -135,7 +135,7 @@ contract SVGTest is Test {
         lockManualMintingChanges: false,
         preventOverspending: false
       }),
-      _noContestReporter: _noContestReporter
+      _gamePhaseReporter: _gamePhaseReporter
     });
 
     string[] memory _tierNames = new string[](1);
