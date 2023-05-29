@@ -843,7 +843,7 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate {
                     // Make sure the tier IDs are passed in order.
                     if (_tierIdsToMint[_i] < _currentTierId) revert BAD_TIER_ORDER();
                     _currentTierId = _tierIdsToMint[_i];
-                    _votingUnits = store.tierOf(address(this), _tierIdsToMint[_i], false).votingUnits;
+                    _votingUnits = store.tierOf(address(this), _currentTierId, false).votingUnits;
                 }
 
                 // Get a reference to the old delegate.
@@ -864,8 +864,7 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate {
                         // Transfer the new voting units.
                         _transferTierVotingUnits(
                             address(0),
-                            // Delegate to current delegate if a new one isn't specified.
-                            _votingDelegate != address(0) ? _votingDelegate : _oldDelegate,
+                            _data.payer,
                             _currentTierId,
                             _votingUnitsForCurrentTier + _votingUnits
                         );
