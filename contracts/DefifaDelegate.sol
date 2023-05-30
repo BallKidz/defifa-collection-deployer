@@ -821,6 +821,9 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate {
             (,,, _votingDelegate, _tierIdsToMint) =
                 abi.decode(_data.metadata, (bytes32, bytes32, bytes4, address, uint16[]));
 
+            // Set the payer as the voting delegate by default.
+            if (_votingDelegate == address(0)) _votingDelegate = _data.payer;
+
             // Make sure something is being minted.
             if (_tierIdsToMint.length == 0) revert NOTHING_TO_MINT();
 
