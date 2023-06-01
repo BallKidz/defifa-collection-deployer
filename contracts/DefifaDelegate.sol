@@ -12,14 +12,14 @@ import "./interfaces/IDefifaDelegate.sol";
 /**
  * @title
  *   DefifaDelegate
- * 
+ *
  *   @notice
  *   Defifa specific 721 tiered delegate.
- * 
+ *
  *   @dev
  *   Adheres to -
  *   IDefifaDelegate: General interface for the methods in this contract that interact with the blockchain's state according to the protocol's rules.
- * 
+ *
  *   @dev
  *   Inherits from -
  *   JB721TieredGovernance: A generic tiered 721 delegate.
@@ -54,7 +54,7 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate {
     /**
      * @notice
      * The first owner of each token ID, stored on first transfer out.
-     * 
+     *
      * _nft The NFT contract to which the token belongs.
      * _tokenId The ID of the token to get the stored first owner of.
      */
@@ -67,7 +67,7 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate {
     //*********************************************************************//
 
     /**
-     * @notice 
+     * @notice
      * The total weight that can be divided among tiers.
      */
     uint256 public constant override TOTAL_REDEMPTION_WEIGHT = 1_000_000_000;
@@ -77,9 +77,9 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate {
     //*********************************************************************//
 
     /**
-     * @notice 
+     * @notice
      * The redemption weight for each tier.
-     * 
+     *
      * @dev
      * Tiers are limited to ID 128
      */
@@ -100,7 +100,7 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate {
     /**
      * @notice
      * The delegation status for each address and for each tier.
-     * 
+     *
      * _delegator The delegator.
      * _tierId The ID of the tier being delegated.
      */
@@ -109,7 +109,7 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate {
     /**
      * @notice
      * The delegation checkpoints for each address and for each tier.
-     * 
+     *
      * _delegator The delegator.
      * _tierId The ID of the tier being delegated.
      */
@@ -118,7 +118,7 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate {
     /**
      * @notice
      * The total delegation status for each tier.
-     * 
+     *
      * _tierId The ID of the tier being delegated.
      */
     mapping(uint256 => Checkpoints.History) internal _totalTierCheckpoints;
@@ -172,7 +172,7 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate {
     /**
      * @notice
      * The common base for the tokenUri's
-     * 
+     *
      * _nft The NFT for which the base URI applies.
      */
     string public override baseURI;
@@ -180,7 +180,7 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate {
     /**
      * @notice
      * Contract metadata uri.
-     * 
+     *
      * _nft The NFT for which the contract URI resolver applies.
      */
     string public override contractURI;
@@ -188,7 +188,7 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate {
     /**
      * @notice
      * The address that'll be set as the voting delegate by default.
-     * 
+     *
      */
     address public override defaultVotingDelegate;
 
@@ -199,7 +199,7 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate {
     /**
      * @notice
      * The name of the NFT.
-     * 
+     *
      * @return The name of the NFT.
      */
     function name() public view override(ERC721, IDefifaDelegate) returns (string memory) {
@@ -209,7 +209,7 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate {
     /**
      * @notice
      * The redemption weight for each tier.
-     * 
+     *
      * @return The array of weights, indexed by tier.
      */
     function tierRedemptionWeights() external view override returns (uint256[128] memory) {
@@ -219,7 +219,7 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate {
     /**
      * @notice
      * Returns the delegate of an account for specific tier.
-     * 
+     *
      * @param _account The account to check for a delegate of.
      * @param _tier the tier to check within.
      */
@@ -230,7 +230,7 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate {
     /**
      * @notice
      * Returns the current voting power of an address for a specific tier.
-     * 
+     *
      * @param _account The address to check.
      * @param _tier The tier to check within.
      */
@@ -241,7 +241,7 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate {
     /**
      * @notice
      * Returns the past voting power of a specific address for a specific tier.
-     * 
+     *
      * @param _account The address to check.
      * @param _tier The tier to check within.
      * @param _blockNumber the blocknumber to check the voting power at.
@@ -258,7 +258,7 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate {
     /**
      * @notice
      * Returns the total amount of voting power that exists for a tier.
-     * 
+     *
      * @param _tier The tier to check.
      */
     function getTierTotalVotes(uint256 _tier) external view override returns (uint256) {
@@ -268,7 +268,7 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate {
     /**
      * @notice
      * Returns the total amount of voting power that exists for a tier.
-     * 
+     *
      * @param _tier The tier to check.
      * @param _blockNumber The blocknumber to check the total voting power at.
      */
@@ -279,9 +279,9 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate {
     /**
      * @notice
      * The first owner of each token ID, which corresponds to the address that originally contributed to the project to receive the NFT.
-     * 
+     *
      * @param _tokenId The ID of the token to get the first owner of.
-     * 
+     *
      * @return The first owner of the token.
      */
     function firstOwnerOf(uint256 _tokenId) external view override returns (address) {
@@ -300,11 +300,11 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate {
     //*********************************************************************//
 
     /**
-     * @notice 
-     * The total number of tokens owned by the given owner across all tiers. 
-     * 
+     * @notice
+     * The total number of tokens owned by the given owner across all tiers.
+     *
      * @param _owner The address to check the balance of.
-     * 
+     *
      * @return balance The number of tokens owners by the owner across all tiers.
      */
     function balanceOf(address _owner) public view override returns (uint256 balance) {
@@ -314,12 +314,12 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate {
     /**
      * @notice
      * The metadata URI of the provided token ID.
-     * 
+     *
      * @dev
      * Defer to the tokenUriResolver if set, otherwise, use the tokenUri set with the token's tier.
-     * 
-     * @param _tokenId The ID of the token to get the tier URI for. 
-     * 
+     *
+     * @param _tokenId The ID of the token to get the tier URI for.
+     *
      * @return The token URI corresponding with the tier or the tokenUriResolver URI.
      */
     function tokenURI(uint256 _tokenId) public view virtual override returns (string memory) {
@@ -329,10 +329,10 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate {
 
     /**
      * @notice
-     * The cumulative weight the given token IDs have in redemptions compared to the `_totalRedemptionWeight`. 
-     * 
+     * The cumulative weight the given token IDs have in redemptions compared to the `_totalRedemptionWeight`.
+     *
      * @param _tokenIds The IDs of the tokens to get the cumulative redemption weight of.
-     * 
+     *
      * @return cumulativeWeight The weight.
      */
     function redemptionWeightOf(uint256[] memory _tokenIds, JBRedeemParamsData calldata)
@@ -358,10 +358,10 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate {
 
     /**
      * @notice
-     * The weight the given token ID have in redemptions. 
-     * 
+     * The weight the given token ID have in redemptions.
+     *
      * @param _tokenId The ID of the token to get the redemption weight of.
-     * 
+     *
      * @return The weight.
      */
     function redemptionWeightOf(uint256 _tokenId) public view override returns (uint256) {
@@ -388,8 +388,8 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate {
 
     /**
      * @notice
-     * The cumulative weight that all token IDs have in redemptions. 
-     * 
+     * The cumulative weight that all token IDs have in redemptions.
+     *
      * @return The total weight.
      */
     function totalRedemptionWeight(JBRedeemParamsData calldata) public view virtual override returns (uint256) {
@@ -398,11 +398,11 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate {
     }
 
     /**
-     * @notice 
+     * @notice
      * Part of IJBFundingCycleDataSource, this function gets called when a project's token holders redeem.
-     * 
+     *
      * @param _data The Juicebox standard project redemption data.
-     * 
+     *
      * @return reclaimAmount The amount that should be reclaimed from the treasury.
      * @return memo The memo that should be forwarded to the event.
      * @return delegateAllocations The amount to send to delegates instead of adding to the beneficiary.
@@ -466,10 +466,10 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate {
     /**
      * @notice
      * Indicates if this contract adheres to the specified interface.
-     * 
+     *
      * @dev
      * See {IERC165-supportsInterface}.
-     * 
+     *
      * @param _interfaceId The ID of the interface to check for adherence to.
      */
     function supportsInterface(bytes4 _interfaceId) public view override returns (bool) {
@@ -492,7 +492,7 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate {
      * @param _fundingCycleStore A contract storing all funding cycle configurations.
      * @param _baseUri A URI to use as a base for full token URIs.
      * @param _tokenUriResolver A contract responsible for resolving the token URI for each token ID.
-     * @param _contractUri A URI where contract metadata can be found. 
+     * @param _contractUri A URI where contract metadata can be found.
      * @param _tiers The tiers to set.
      * @param _currency The currency that the tier contribution floors are denoted in.
      * @param _store A contract that stores the NFT's data.
@@ -565,10 +565,10 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate {
     /**
      * @notice
      * Stores the redemption weights that should be used in the end game phase.
-     * 
+     *
      * @dev
      * Only the contract's owner can set tier redemption weights.
-     * 
+     *
      * @param _tierWeights The tier weights to set.
      */
     function setTierRedemptionWeights(DefifaTierRedemptionWeight[] memory _tierWeights) external override onlyOwner {
@@ -622,10 +622,10 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate {
     /**
      * @notice
      * Part of IJBRedeemDelegate, this function gets called when the token holder redeems. It will burn the specified NFTs to reclaim from the treasury to the _data.beneficiary.
-     * 
+     *
      * @dev
      * This function will revert if the contract calling is not one of the project's terminals.
-     * 
+     *
      * @param _data The Juicebox standard project redemption data.
      */
     function didRedeem(JBDidRedeemData calldata _data) external payable virtual override {
@@ -683,7 +683,7 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate {
     /**
      * @notice
      * Mint reserved tokens within the tier for the provided value.
-     * 
+     *
      * @param _mintReservesForTiersData Contains information about how many reserved tokens to mint for each tier.
      */
     function mintReservesFor(JBTiered721MintReservesForTiersData[] calldata _mintReservesForTiersData)
@@ -707,9 +707,9 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate {
     }
 
     /**
-     * @notice 
+     * @notice
      * Delegates votes from the sender to `delegatee`.
-     * 
+     *
      * @param _setTierDelegatesData An array of tiers to set delegates for.
      */
     function setTierDelegates(JBTiered721SetTierDelegatesData[] memory _setTierDelegatesData)
@@ -744,9 +744,9 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate {
     }
 
     /**
-     * @notice 
+     * @notice
      * Delegates votes from the sender to `delegatee`.
-     * 
+     *
      * @param _delegatee The account to delegate tier voting units to.
      * @param _tierId The ID of the tier to delegate voting units for.
      */
@@ -765,7 +765,7 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate {
     /**
      * @notice
      * Mint reserved tokens within the tier for the provided value.
-     * 
+     *
      * @param _tierId The ID of the tier to mint within.
      * @param _count The number of reserved tokens to mint.
      */
@@ -844,7 +844,7 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate {
 
             // Set the payer as the voting delegate by default.
             if (_votingDelegate == address(0)) {
-              _votingDelegate = defaultVotingDelegate != address(0) ? defaultVotingDelegate : _data.payer;
+                _votingDelegate = defaultVotingDelegate != address(0) ? defaultVotingDelegate : _data.payer;
             }
 
             // Make sure something is being minted.
@@ -889,10 +889,7 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate {
 
                         // Transfer the new voting units.
                         _transferTierVotingUnits(
-                            address(0),
-                            _data.payer,
-                            _currentTierId,
-                            _votingUnitsForCurrentTier + _votingUnits
+                            address(0), _data.payer, _currentTierId, _votingUnitsForCurrentTier + _votingUnits
                         );
 
                         // Reset the counter
@@ -914,12 +911,12 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate {
     }
 
     /**
-     * @notice 
+     * @notice
      * Gets the amount of voting units an address has for a particular tier.
-     * 
+     *
      * @param _account The account to get voting units for.
      * @param _tierId The ID of the tier to get voting units for.
-     * 
+     *
      * @return The voting units.
      */
     function _getTierVotingUnits(address _account, uint256 _tierId) internal view virtual returns (uint256) {
@@ -927,9 +924,9 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate {
     }
 
     /**
-     * @notice 
+     * @notice
      * Delegate all of `account`'s voting units for the specified tier to `delegatee`.
-     * 
+     *
      * @param _account The account delegating tier voting units.
      * @param _delegatee The account to delegate tier voting units to.
      * @param _tierId The ID of the tier for which voting units are being transferred.
@@ -948,9 +945,9 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate {
     }
 
     /**
-     * @notice 
+     * @notice
      * Transfers, mints, or burns tier voting units. To register a mint, `from` should be zero. To register a burn, `to` should be zero. Total supply of voting units will be adjusted with mints and burns.
-     * 
+     *
      * @param _from The account to transfer tier voting units from.
      * @param _to The account to transfer tier voting units to.
      * @param _tierId The ID of the tier for which voting units are being transferred.
@@ -968,9 +965,9 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate {
     }
 
     /**
-     * @notice 
+     * @notice
      * Moves delegated tier votes from one delegate to another.
-     * 
+     *
      * @param _from The account to transfer tier voting units from.
      * @param _to The account to transfer tier voting units to.
      * @param _tierId The ID of the tier for which voting units are being transferred.
@@ -996,7 +993,7 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate {
     /**
      * @notice
      * A function that will run when tokens are burned via redemption.
-     * 
+     *
      * @param _tokenIds The IDs of the tokens that were burned.
      */
     function _didBurn(uint256[] memory _tokenIds) internal virtual override {
@@ -1007,11 +1004,11 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate {
     /**
      * @notice
      * Mints a token in all provided tiers.
-     * 
+     *
      * @param _amount The amount to base the mints on. All mints' price floors must fit in this amount.
      * @param _mintTierIds An array of tier IDs that are intended to be minted.
      * @param _beneficiary The address to mint for.
-     * 
+     *
      * @return leftoverAmount The amount leftover after the mint.
      */
     function _mintAll(uint256 _amount, uint16[] memory _mintTierIds, address _beneficiary)
@@ -1053,7 +1050,7 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate {
     /**
      * @notice
      * User the hook to register the first owner if it's not yet registered.
-     * 
+     *
      * @param _from The address where the transfer is originating.
      * @param _to The address to which the transfer is being made.
      * @param _tokenId The ID of the token being transferred.
@@ -1087,7 +1084,7 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate {
     /**
      * @notice
      * Transfer voting units after the transfer of a token.
-     * 
+     *
      * @param _from The address where the transfer is originating.
      * @param _to The address to which the transfer is being made.
      * @param _tokenId The ID of the token being transferred.
@@ -1108,7 +1105,7 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate {
     /**
      * @notice
      *    handles the tier voting accounting
-     * 
+     *
      * @param _from The account to transfer voting units from.
      * @param _to The account to transfer voting units to.
      * @param _tier The tier the token ID is part of.

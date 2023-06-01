@@ -23,15 +23,21 @@ import "./DefifaTokenUriResolver.sol";
 /**
  * @title
  *   DefifaDeployer
- * 
+ *
  *   @notice
  *   Deploys a Defifa game.
- * 
+ *
  *   @dev
  *   Adheres to -
  *   IDefifaDeployer: General interface for the generic controller methods in this contract that interacts with funding cycles and tokens according to the protocol's rules.
  */
-contract DefifaDeployer is IDefifaDeployer, IDefifaGamePhaseReporter, IDefifaGamePotReporter, IERC721Receiver, Ownable {
+contract DefifaDeployer is
+    IDefifaDeployer,
+    IDefifaGamePhaseReporter,
+    IDefifaGamePotReporter,
+    IERC721Receiver,
+    Ownable
+{
     using Strings for uint256;
 
     //*********************************************************************//
@@ -73,14 +79,14 @@ contract DefifaDeployer is IDefifaDeployer, IDefifaGamePhaseReporter, IDefifaGam
     /**
      * @notice
      * Operations variables for a game.
-     * 
+     *
      * @dev
      * Includes the payment terminal being used, the distribution limit, and wether or not fees should be held.
      */
     mapping(uint256 => DefifaDistributionOpsData) internal _opsOf;
 
     /**
-     * @notice 
+     * @notice
      * This contract current nonce, used for the registry initialized at 1 since the first contract deployed is the delegate
      */
     uint256 internal _nonce = 1;
@@ -106,7 +112,7 @@ contract DefifaDeployer is IDefifaDeployer, IDefifaGamePhaseReporter, IDefifaGam
     /**
      * @notice
      * The domain relative to which splits are stored.
-     * 
+     *
      * @dev
      * This could be any fixed number.
      */
@@ -119,26 +125,26 @@ contract DefifaDeployer is IDefifaDeployer, IDefifaGamePhaseReporter, IDefifaGam
     /**
      * @notice
      * The project ID relative to which splits are stored.
-     * 
+     *
      * @dev
      * The owner of this project ID must give this contract operator permissions over the SET_SPLITS operation.
      */
     uint256 public immutable override ballkidzProjectId;
 
     /**
-     * @notice 
+     * @notice
      * The original code for the Defifa delegate to base subsequent instances on.
      */
     address public immutable override delegateCodeOrigin;
 
     /**
-     * @notice 
+     * @notice
      * The original code for the Defifa governor to base subsequent instances on.
      */
     address public immutable override governorCodeOrigin;
 
     /**
-     * @notice 
+     * @notice
      * The original code for the Defifa token URI resolver to base subsequent instances on.
      */
     address public immutable override tokenUriResolverCodeOrigin;
@@ -156,7 +162,7 @@ contract DefifaDeployer is IDefifaDeployer, IDefifaGamePhaseReporter, IDefifaGam
     address public immutable override protocolFeeProjectTokenAccount;
 
     /**
-     * @notice 
+     * @notice
      * The delegates registry.
      */
     IJBDelegatesRegistry public immutable delegatesRegistry;
@@ -167,8 +173,8 @@ contract DefifaDeployer is IDefifaDeployer, IDefifaGamePhaseReporter, IDefifaGam
 
     /**
      * @notice
-     * The divisor that describes the fee that should be taken. 
-     * 
+     * The divisor that describes the fee that should be taken.
+     *
      * @dev
      * This is equal to 100 divided by the fee percent.
      */
@@ -187,23 +193,23 @@ contract DefifaDeployer is IDefifaDeployer, IDefifaGamePhaseReporter, IDefifaGam
     }
 
     function gamePotOf(uint256 _gameId) external view returns (uint256, address, uint256) {
-      // Get a reference to the terminal being used by the project.
-      DefifaDistributionOpsData memory _ops = _opsOf[_gameId];
+        // Get a reference to the terminal being used by the project.
+        DefifaDistributionOpsData memory _ops = _opsOf[_gameId];
 
-      IJBSingleTokenPaymentTerminal _terminal = IJBSingleTokenPaymentTerminal(address(_ops.terminal)); 
+        IJBSingleTokenPaymentTerminal _terminal = IJBSingleTokenPaymentTerminal(address(_ops.terminal));
 
-      return (_gamePotOf[_gameId], _terminal.token(), _terminal.decimals());
+        return (_gamePotOf[_gameId], _terminal.token(), _terminal.decimals());
     }
 
     /**
      * @notice
      * Returns the number of the game phase.
-     * 
+     *
      * @dev
      * The game phase corresponds to the game's current funding cycle number.
-     * 
+     *
      * @param _gameId The ID of the game to get the phase number of.
-     * 
+     *
      * @return The game phase.
      */
     function currentGamePhaseOf(uint256 _gameId) external view override returns (DefifaGamePhase) {
@@ -221,9 +227,9 @@ contract DefifaDeployer is IDefifaDeployer, IDefifaGamePhaseReporter, IDefifaGam
     /**
      * @notice
      * Whether or not the next phase still needs queuing.
-     * 
+     *
      * @param _gameId The ID of the game to get the queue status of.
-     * 
+     *
      * @return Whether or not the next phase still needs queuing.
      */
     function nextPhaseNeedsQueueing(uint256 _gameId) external view override returns (bool) {
@@ -244,10 +250,10 @@ contract DefifaDeployer is IDefifaDeployer, IDefifaGamePhaseReporter, IDefifaGam
     /**
      * @param _delegateCodeOrigin The code of the Defifa delegate.
      * @param _governorCodeOrigin The code of the Defifa governor.
-     * @param _tokenUriResolverCodeOrigin The token URI resolver with which new projects should be deployed. 
+     * @param _tokenUriResolverCodeOrigin The token URI resolver with which new projects should be deployed.
      * @param _controller The controller to use to launch the game from.
      * @param _delegatesRegistry The contract storing references to the deployer of each delegate.
-     * @param _protocolFeeProjectTokenAccount The address that should be forwarded JBX accumulated in this contract from game fund distributions. 
+     * @param _protocolFeeProjectTokenAccount The address that should be forwarded JBX accumulated in this contract from game fund distributions.
      * @param _ballkidzProjectId The ID of the project that should take the fee from the games.
      * @param _owner The address that can change the fees.
      */
@@ -279,9 +285,9 @@ contract DefifaDeployer is IDefifaDeployer, IDefifaGamePhaseReporter, IDefifaGam
     /**
      * @notice
      * Launches a new project with a Defifa data source attached.
-     * 
+     *
      * @param _launchProjectData Data necessary to fulfill the transaction to launch a project.
-     * 
+     *
      * @return gameId The ID of the newly configured game.
      * @return governor The address that governs the game.
      */
@@ -468,9 +474,9 @@ contract DefifaDeployer is IDefifaDeployer, IDefifaGamePhaseReporter, IDefifaGam
     /**
      * @notice
      * Queues the funding cycle that represents the next phase of the game, if it isn't queued already.
-     * 
+     *
      * @param _gameId The ID of the project having funding cycles reconfigured.
-     * 
+     *
      * @return configuration The configuration of the funding cycle that was successfully reconfigured.
      */
     function queueNextPhaseOf(uint256 _gameId) external override returns (uint256 configuration) {
@@ -504,8 +510,8 @@ contract DefifaDeployer is IDefifaDeployer, IDefifaGamePhaseReporter, IDefifaGam
 
     /**
      * @notice
-     * Move accumulated protocol project tokens from paying fees into the recipient. 
-     * 
+     * Move accumulated protocol project tokens from paying fees into the recipient.
+     *
      * @dev
      * This contract accumulated JBX as games distribute payouts.
      */
@@ -523,10 +529,10 @@ contract DefifaDeployer is IDefifaDeployer, IDefifaGamePhaseReporter, IDefifaGam
     /**
      * @notice
      * Allow this contract's owner to change the publishing fee.
-     * 
+     *
      * @dev
      * The max fee is %5.
-     * 
+     *
      * @param _percent The percent fee to charge.
      */
     function changeFee(uint256 _percent) external onlyOwner {
@@ -552,7 +558,7 @@ contract DefifaDeployer is IDefifaDeployer, IDefifaGamePhaseReporter, IDefifaGam
     /**
      * @notice
      * Launches a Defifa project with phase 1 configured.
-     * 
+     *
      * @param _launchProjectData Project data used for launching a Defifa game.
      * @param _dataSource The address of the Defifa data source.
      */
@@ -615,13 +621,13 @@ contract DefifaDeployer is IDefifaDeployer, IDefifaGamePhaseReporter, IDefifaGam
     /**
      * @notice
      * Gets reconfiguration data for phase 2 of the game.
-     * 
+     *
      * @dev
      * Phase 2 freezes mints, but continues to allow refund redemptions.
-     * 
+     *
      * @param _gameId The ID of the project that's being reconfigured.
      * @param _dataSource The data source to use.
-     * 
+     *
      * @return configuration The configuration of the funding cycle that was successfully reconfigured.
      */
     function _queueRefundPhase(uint256 _gameId, address _dataSource) internal returns (uint256 configuration) {
@@ -680,13 +686,13 @@ contract DefifaDeployer is IDefifaDeployer, IDefifaGamePhaseReporter, IDefifaGam
     /**
      * @notice
      * Gets reconfiguration data for the game phase.
-     * 
+     *
      * @dev
      * The game phase freezes the treasury and activates the pre-programmed distribution limit to the specified splits.
-     * 
+     *
      * @param _gameId The ID of the project that's being reconfigured.
      * @param _dataSource The data source to use.
-     * 
+     *
      * @return configuration The configuration of the funding cycle that was successfully reconfigured.
      */
     function _queueGamePhase(uint256 _gameId, address _dataSource) internal returns (uint256 configuration) {
@@ -763,20 +769,23 @@ contract DefifaDeployer is IDefifaDeployer, IDefifaGamePhaseReporter, IDefifaGam
         );
 
         // Store the game pot.
-        _gamePotOf[_gameId] = IJBPayoutRedemptionPaymentTerminal3_1(address(_ops.terminal)).store().balanceOf(IJBSingleTokenPaymentTerminal(address(_ops.terminal)), _gameId) - _ops.distributionLimit;
+        uint256 _balance = IJBPayoutRedemptionPaymentTerminal3_1(address(_ops.terminal)).store().balanceOf(
+            IJBSingleTokenPaymentTerminal(address(_ops.terminal)), _gameId
+        );
+        _gamePotOf[_gameId] = _balance > _ops.distributionLimit ? _balance - _ops.distributionLimit : 0;
     }
 
     /**
      * @notice
      * Gets reconfiguration data for if the game resolves in no contest.
-     * 
+     *
      * @dev
-     * 
+     *
      * If the game resolves in no contest, funds are made available to minters at the same price that was initially paid.
-     * 
+     *
      * @param _gameId The ID of the project that's being reconfigured.
      * @param _dataSource The data source to use.
-     * 
+     *
      * @return configuration The configuration of the funding cycle that was successfully reconfigured.
      */
     function _queueNoContest(uint256 _gameId, address _dataSource) internal returns (uint256 configuration) {
@@ -836,10 +845,10 @@ contract DefifaDeployer is IDefifaDeployer, IDefifaGamePhaseReporter, IDefifaGam
     /**
      * @notice
      * Given a current funding cycle, determine if the game is in no contest.
-     * 
+     *
      * @param _gameId The ID of the game to check for no contest for.
      * @param _currentFundingCycle The cycle to check for no contest against.
-     * 
+     *
      * @return A flag indicating if a game with the current funding cycle is in no contest.
      */
     function _isNoContest(uint256 _gameId, JBFundingCycle memory _currentFundingCycle) internal view returns (bool) {

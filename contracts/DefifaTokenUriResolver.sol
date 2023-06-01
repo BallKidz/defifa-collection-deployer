@@ -17,10 +17,10 @@ import "./libraries/DefifaPercentFormatter.sol";
 /**
  * @title
  *   DefifaDelegate
- * 
+ *
  *   @notice
  *   Defifa default 721 token URI resolver.
- * 
+ *
  *   @dev
  *   Adheres to -
  *   IDefifaTokenUriResolver: General interface for the methods in this contract that interact with the blockchain's state according to the protocol's rules.
@@ -47,7 +47,7 @@ contract DefifaTokenUriResolver is IDefifaTokenUriResolver, IJBTokenUriResolver 
     /**
      * @notice
      * The names of each tier.
-     * 
+     *
      * @dev _tierId The ID of the tier to get a name for.
      */
     mapping(uint256 => string) private _tierNameOf;
@@ -85,9 +85,9 @@ contract DefifaTokenUriResolver is IDefifaTokenUriResolver, IJBTokenUriResolver 
     /**
      * @notice
      * The name of the tier with the specified ID.
-     * 
+     *
      * @param _tierId The ID of the tier to get the name of.
-     * 
+     *
      * @return The tier's name.
      */
     function tierNameOf(uint256 _tierId) external view override returns (string memory) {
@@ -110,7 +110,7 @@ contract DefifaTokenUriResolver is IDefifaTokenUriResolver, IJBTokenUriResolver 
     /**
      * @notice
      * Initializes the contract.
-     * 
+     *
      * @param _delegate The Defifa delegate contract that this contract is showing.
      * @param _tierNames The names of each tier.
      */
@@ -140,12 +140,12 @@ contract DefifaTokenUriResolver is IDefifaTokenUriResolver, IJBTokenUriResolver 
     /**
      * @notice
      * The metadata URI of the provided token ID.
-     * 
+     *
      * @dev
      * Defer to the token's tier IPFS URI if set.
-     * 
+     *
      * @param _tokenId The ID of the token to get the tier URI for.
-     * 
+     *
      * @return The token URI corresponding with the tier.
      */
     function getUri(uint256 _tokenId) external view override returns (string memory) {
@@ -203,8 +203,9 @@ contract DefifaTokenUriResolver is IDefifaTokenUriResolver, IJBTokenUriResolver 
                 DefifaGamePhase _gamePhase = delegate.gamePhaseReporter().currentGamePhaseOf(_gameId);
 
                 // Keep a reference to the game pot.
-                (uint256 _gamePot, address _gamePotToken, uint256 _gamePotDecimals) = _delegate.gamePotReporter().gamePotOf(_gameId);
-                
+                (uint256 _gamePot, address _gamePotToken, uint256 _gamePotDecimals) =
+                    _delegate.gamePotReporter().gamePotOf(_gameId);
+
                 if (_gamePhase == DefifaGamePhase.NO_CONTEST) {
                     _gamePhaseText = "No contest. Refunds open.";
                 } else if (_gamePhase == DefifaGamePhase.NO_CONTEST_INEVITABLE) {
@@ -216,9 +217,21 @@ contract DefifaTokenUriResolver is IDefifaTokenUriResolver, IJBTokenUriResolver 
                 } else if (_gamePhase == DefifaGamePhase.REFUND) {
                     _gamePhaseText = "Game starting, minting closed. Last chance for refunds.";
                 } else if (_gamePhase == DefifaGamePhase.SCORING && !_delegate.redemptionWeightIsSet()) {
-                    _gamePhaseText = string(abi.encodePacked("Awaiting scorecard. Game pot is ", _formatBalance(_gamePot, _gamePotToken, _gamePotDecimals, _IMG_DECIMAL_FIDELITY), "."));
+                    _gamePhaseText = string(
+                        abi.encodePacked(
+                            "Awaiting scorecard. Game pot is ",
+                            _formatBalance(_gamePot, _gamePotToken, _gamePotDecimals, _IMG_DECIMAL_FIDELITY),
+                            "."
+                        )
+                    );
                 } else {
-                    _gamePhaseText = string(abi.encodePacked("Scorecard approved. Total awards of ", _formatBalance(_gamePot, _gamePotToken, _gamePotDecimals, _IMG_DECIMAL_FIDELITY), "."));
+                    _gamePhaseText = string(
+                        abi.encodePacked(
+                            "Scorecard approved. Total awards of ",
+                            _formatBalance(_gamePot, _gamePotToken, _gamePotDecimals, _IMG_DECIMAL_FIDELITY),
+                            "."
+                        )
+                    );
                 }
 
                 // Keep a reference to the number of tokens outstanding from this tier.
@@ -229,11 +242,16 @@ contract DefifaTokenUriResolver is IDefifaTokenUriResolver, IJBTokenUriResolver 
                 } else if (_gamePhase == DefifaGamePhase.SCORING && _delegate.redemptionWeightIsSet()) {
                     // Get a reference to the pot portion this token can be redeemed for.
                     uint256 _potPortion = PRBMath.mulDiv(
-                        _gamePot, 
-                        _delegate.redemptionWeightOf(_tokenId),
-                        _delegate.TOTAL_REDEMPTION_WEIGHT()
+                        _gamePot, _delegate.redemptionWeightOf(_tokenId), _delegate.TOTAL_REDEMPTION_WEIGHT()
                     );
-                    _rarityText = string(abi.encodePacked(_totalMinted.toString(), " in existence worth ~", _formatBalance(_potPortion, _gamePotToken, _gamePotDecimals, _IMG_DECIMAL_FIDELITY) ," each"));
+                    _rarityText = string(
+                        abi.encodePacked(
+                            _totalMinted.toString(),
+                            " in existence worth ~",
+                            _formatBalance(_potPortion, _gamePotToken, _gamePotDecimals, _IMG_DECIMAL_FIDELITY),
+                            " each"
+                        )
+                    );
                 } else {
                     _rarityText = string(abi.encodePacked(_totalMinted.toString(), " in existence"));
                 }
@@ -266,13 +284,21 @@ contract DefifaTokenUriResolver is IDefifaTokenUriResolver, IJBTokenUriResolver 
                 _getSubstring(_title, 60, 90),
                 "</text>",
                 '<text x="10" y="230" style="font-size:80px; font-family: Capsules-700; font-weight:700; fill: #fea282;">',
-                bytes(_getSubstring(_team, 20, 30)).length != 0 && bytes(_getSubstring(_team, 10, 20)).length != 0 ? _getSubstring(_team, 0, 10) : "",
+                bytes(_getSubstring(_team, 20, 30)).length != 0 && bytes(_getSubstring(_team, 10, 20)).length != 0
+                    ? _getSubstring(_team, 0, 10)
+                    : "",
                 "</text>",
                 '<text x="10" y="320" style="font-size:80px; font-family: Capsules-700; font-weight:700; fill: #fea282;">',
-                bytes(_getSubstring(_team, 20, 30)).length != 0 ? _getSubstring(_team, 10, 20) : bytes(_getSubstring(_team, 10, 20)).length != 0 ? _getSubstring(_team, 0, 10) : "",
+                bytes(_getSubstring(_team, 20, 30)).length != 0
+                    ? _getSubstring(_team, 10, 20)
+                    : bytes(_getSubstring(_team, 10, 20)).length != 0 ? _getSubstring(_team, 0, 10) : "",
                 "</text>",
                 '<text x="10" y="410" style="font-size:80px; font-family: Capsules-700; font-weight:700; fill: #fea282;">',
-                bytes(_getSubstring(_team, 20, 30)).length != 0 ? _getSubstring(_team, 20, 30) : bytes(_getSubstring(_team, 10, 20)).length != 0 ? _getSubstring(_team, 10, 20) : _getSubstring(_team, 0, 10),
+                bytes(_getSubstring(_team, 20, 30)).length != 0
+                    ? _getSubstring(_team, 20, 30)
+                    : bytes(_getSubstring(_team, 10, 20)).length != 0
+                        ? _getSubstring(_team, 10, 20)
+                        : _getSubstring(_team, 0, 10),
                 "</text>",
                 '<text x="10" y="455" style="font-size:16px; font-family: Capsules-500; font-weight:500; fill: #c0b3f1;">TOKEN ID: ',
                 _tokenId.toString(),
@@ -288,46 +314,54 @@ contract DefifaTokenUriResolver is IDefifaTokenUriResolver, IJBTokenUriResolver 
     }
 
     /**
-      @notice
-      Gets a substring. 
-
-      @dev
-      If the first character is a space, it is not included.
-
-      @param _str The string to get a substring of.
-      @param _startIndex The first index of the substring from within the string.
-      @param _endIndex The last index of the string from within the string.
-
-      @return The substring.
-     */  
-    function _getSubstring(string memory _str, uint256 _startIndex, uint256 _endIndex) internal pure returns (string memory substring) {
+     * @notice
+     *   Gets a substring. 
+     * 
+     *   @dev
+     *   If the first character is a space, it is not included.
+     * 
+     *   @param _str The string to get a substring of.
+     *   @param _startIndex The first index of the substring from within the string.
+     *   @param _endIndex The last index of the string from within the string.
+     * 
+     *   @return substring The substring.
+     */
+    function _getSubstring(string memory _str, uint256 _startIndex, uint256 _endIndex)
+        internal
+        pure
+        returns (string memory substring)
+    {
         bytes memory _strBytes = bytes(_str);
         _startIndex = _strBytes[_startIndex] == bytes1(0x20) ? _startIndex + 1 : _startIndex;
-        if(_startIndex >= _strBytes.length) return "";
-        if(_endIndex > _strBytes.length) _endIndex = _strBytes.length;
-        if(_startIndex >= _endIndex) return "";
+        if (_startIndex >= _strBytes.length) return "";
+        if (_endIndex > _strBytes.length) _endIndex = _strBytes.length;
+        if (_startIndex >= _endIndex) return "";
         bytes memory _result = new bytes(_endIndex-_startIndex);
-        for(uint256 _i = _startIndex; _i < _endIndex;) {
-            _result[_i-_startIndex] = _strBytes[_i];
+        for (uint256 _i = _startIndex; _i < _endIndex;) {
+            _result[_i - _startIndex] = _strBytes[_i];
             unchecked {
-              ++_i;
+                ++_i;
             }
         }
         return string(_result);
     }
 
     /**
-      @notice
-      Formats a balance from a fixed point number to a string.
-
-      @param _amount The fixed point amount.
-      @param _token The token the amount is in.
-      @param _decimals The number of decimals in the fixed point amount.
-      @param _fidelity The number of decimals that should be returned in the formatted string.
-
-      @return The formatted balance.
-     */  
-    function _formatBalance(uint256 _amount, address _token, uint256 _decimals, uint256 _fidelity) internal view returns (string memory) {
+     * @notice
+     *   Formats a balance from a fixed point number to a string.
+     * 
+     *   @param _amount The fixed point amount.
+     *   @param _token The token the amount is in.
+     *   @param _decimals The number of decimals in the fixed point amount.
+     *   @param _fidelity The number of decimals that should be returned in the formatted string.
+     * 
+     *   @return The formatted balance.
+     */
+    function _formatBalance(uint256 _amount, address _token, uint256 _decimals, uint256 _fidelity)
+        internal
+        view
+        returns (string memory)
+    {
         bool _isEth = _token == JBTokens.ETH;
 
         uint256 _fixedPoint = 10 ** _decimals;
@@ -337,6 +371,8 @@ contract DefifaTokenUriResolver is IDefifaTokenUriResolver, IJBTokenUriResolver 
         string memory _decimalPart = _amount.mod(_fixedPoint).div(_fixedPoint.div(10 ** _fidelity)).toString();
 
         // Concatenate the strings
-        return _isEth ? string(abi.encodePacked("\u039E", _integerPart, ".", _decimalPart)) : string(abi.encodePacked(_integerPart, ".", _decimalPart, " ", IERC20Metadata(_token).symbol()));
+        return _isEth
+            ? string(abi.encodePacked("\u039E", _integerPart, ".", _decimalPart))
+            : string(abi.encodePacked(_integerPart, ".", _decimalPart, " ", IERC20Metadata(_token).symbol()));
     }
 }

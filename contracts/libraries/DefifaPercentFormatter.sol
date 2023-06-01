@@ -9,9 +9,9 @@ library DefifaPercentFormatter {
     /**
      * @notice
      * A string representation of the percent of the given value to the total redemption weight.
-     * 
+     *
      * @param _value The value to convert into a percentage of the total redemption weight.
-     * 
+     *
      * @return The formatted percent string.
      */
     function getFormattedPercentageOfRedemptionWeight(uint256 _value, uint256 _total, uint256 _decimalFidelity)
@@ -32,9 +32,9 @@ library DefifaPercentFormatter {
     /**
      * @notice
      * A formatted decimal component to a number.
-     * 
+     *
      * @param _value The decimal value to format.
-     * 
+     *
      * @return strValue The formatted string.
      */
     function _formatDecimalPart(uint256 _value, uint256 _decimalFidelity)

@@ -6,10 +6,7 @@ import "./IDefifaDelegate.sol";
 
 interface IDefifaGovernor {
     event ScorecardSubmitted(
-      uint256 proposalId,
-      DefifaTierRedemptionWeight[] tierWeights,
-      bool isDefaultVotingDelegate,
-      address caller
+        uint256 proposalId, DefifaTierRedemptionWeight[] tierWeights, bool isDefaultVotingDelegate, address caller
     );
 
     function MAX_VOTING_POWER_TIER() external view returns (uint256);

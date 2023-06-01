@@ -11,14 +11,14 @@ import "./DefifaDelegate.sol";
 /**
  * @title
  *   DefifaGovernor
- * 
+ *
  *   @notice
  *   Governs a Defifa game.
- * 
+ *
  *   @dev
  *   Adheres to -
  *   IDefifaGovernor: General interface for the generic controller methods in this contract that interacts with funding cycles and tokens according to the protocol's rules.
- * 
+ *
  *   @dev
  *   Inherits from -
  *   Governor: Standard OZ governor.
@@ -108,7 +108,7 @@ contract DefifaGovernor is Governor, GovernorCountingSimple, IDefifaGovernor {
     /**
      * @notice
      * Initializes the contract.
-     * 
+     *
      * @param _delegate The Defifa delegate contract that this contract is Governing.
      * @param _votingStartTime Voting start time.
      * @param _votingPeriod The time the vote will be active for once it has started, measured in blocks. This is two weeks by default.
@@ -133,12 +133,16 @@ contract DefifaGovernor is Governor, GovernorCountingSimple, IDefifaGovernor {
     /**
      * @notice
      * Submits a scorecard to be voted on.
-     * 
+     *
      * @param _tierWeights The weights of each tier in the scorecard.
-     * 
+     *
      * @return proposalId The proposal ID.
      */
-    function submitScorecard(DefifaTierRedemptionWeight[] calldata _tierWeights) external override returns (uint256 proposalId) {
+    function submitScorecard(DefifaTierRedemptionWeight[] calldata _tierWeights)
+        external
+        override
+        returns (uint256 proposalId)
+    {
         // Make sure no weight is assigned to an unowned tier.
         uint256 _numberOfTierWeights = _tierWeights.length;
 
@@ -162,13 +166,13 @@ contract DefifaGovernor is Governor, GovernorCountingSimple, IDefifaGovernor {
 
         // Submit the proposal.
         proposalId = this.propose(_targets, _values, _calldatas, "");
-        
+
         // Keep a reference to the default voting delegate.
-        address _defaultVotingDelegate = delegate.defaultVotingDelegate(); 
+        address _defaultVotingDelegate = delegate.defaultVotingDelegate();
 
         // If the scorecard is being sent from the default voting delegate, store it.
         if (msg.sender == _defaultVotingDelegate) {
-          defaultVotingDelegateProposal = proposalId;
+            defaultVotingDelegateProposal = proposalId;
         }
 
         emit ScorecardSubmitted(proposalId, _tierWeights, msg.sender == _defaultVotingDelegate, msg.sender);
@@ -177,7 +181,7 @@ contract DefifaGovernor is Governor, GovernorCountingSimple, IDefifaGovernor {
     /**
      * @notice
      * Attests to a scorecard.
-     * 
+     *
      * @param _scorecardId The scorecard ID.
      */
     function attestToScorecard(uint256 _scorecardId) external override {
@@ -188,7 +192,7 @@ contract DefifaGovernor is Governor, GovernorCountingSimple, IDefifaGovernor {
     /**
      * @notice
      * Attests to a scorecard with the set of ordered tier id's.
-     * 
+     *
      * @param _scorecardId The scorecard ID.
      */
     function attestToScorecardWithReasonAndParams(uint256 _scorecardId, bytes memory params) external override {
@@ -199,9 +203,9 @@ contract DefifaGovernor is Governor, GovernorCountingSimple, IDefifaGovernor {
     /**
      * @notice
      * Ratifies a scorecard that has been approved.
-     * 
+     *
      * @param _tierWeights The weights of each tier in the approved scorecard.
-     * 
+     *
      * @return The proposal ID.
      */
     function ratifyScorecard(DefifaTierRedemptionWeight[] calldata _tierWeights) external override returns (uint256) {
@@ -219,10 +223,10 @@ contract DefifaGovernor is Governor, GovernorCountingSimple, IDefifaGovernor {
 
     /**
      * @notice
-     * Build the calldata normalized such that the Governor contract accepts. 
-     * 
+     * Build the calldata normalized such that the Governor contract accepts.
+     *
      * @param _tierWeights The weights of each tier in the scorecard data.
-     * 
+     *
      * @return The targets to send transactions to.
      * @return The values to send allongside the transactions.
      * @return The calldata to send allongside the transactions.
@@ -253,11 +257,11 @@ contract DefifaGovernor is Governor, GovernorCountingSimple, IDefifaGovernor {
     /**
      * @notice
      * Gets an account's voting power given a number of tiers to look through.
-     * 
+     *
      * @param _account The account to get votes for.
      * @param _blockNumber The block number to measure votes from.
      * @param _params The params to decode tier ID's from.
-     * 
+     *
      * @return votingPower The amount of voting power.
      */
     function _getVotes(address _account, uint256 _blockNumber, bytes memory _params)
@@ -310,7 +314,7 @@ contract DefifaGovernor is Governor, GovernorCountingSimple, IDefifaGovernor {
     /**
      * @notice
      * By default, look for voting power within all tiers.
-     * 
+     *
      * @return votingPower The amount of voting power.
      */
     function _defaultParams() internal view virtual override returns (bytes memory) {
@@ -337,11 +341,11 @@ contract DefifaGovernor is Governor, GovernorCountingSimple, IDefifaGovernor {
     /**
      * @notice
      * Calculating the voting delay based on the votingStartTime configured in the constructor.
-     * 
+     *
      * @dev
      * Delay, in number of block, between when the proposal is created and the vote starts. This can be increassed to
      * leave time for users to buy voting power, or delegate it, before the voting of a proposal starts.
-     * 
+     *
      * @return The delay in number of blocks.
      */
     function votingDelay() public view override(IGovernor) returns (uint256) {

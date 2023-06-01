@@ -107,6 +107,7 @@ contract SVGTest is Test {
     }
 
     event K(bytes4 k);
+
     function testWithOutTierImage() public {
         DefifaDelegate _delegate = DefifaDelegate(Clones.clone(address(new DefifaDelegate())));
         DefifaTokenUriResolver _resolver =

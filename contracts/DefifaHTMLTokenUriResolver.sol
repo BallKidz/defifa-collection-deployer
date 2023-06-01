@@ -18,10 +18,10 @@ import {
 /**
  * @title
  *   DefifaDelegate
- * 
+ *
  *   @notice
  *   Defifa default 721 token URI resolver.
- * 
+ *
  *   @dev
  *   Adheres to -
  *   IDefifaTokenUriResolver: General interface for the methods in this contract that interact with the blockchain's state according to the protocol's rules.
@@ -60,7 +60,7 @@ contract DefifaHTMLTokenUriResolver is IDefifaTokenUriResolver, IJBTokenUriResol
     /**
      * @notice
      * The names of each tier.
-     * 
+     *
      * @dev _tierId The ID of the tier to get a name for.
      */
     mapping(uint256 => string) private _tierNameOf;
@@ -90,9 +90,9 @@ contract DefifaHTMLTokenUriResolver is IDefifaTokenUriResolver, IJBTokenUriResol
     /**
      * @notice
      * The name of the tier with the specified ID.
-     * 
+     *
      * @param _tierId The ID of the tier to get the name of.
-     * 
+     *
      * @return The tier's name.
      */
     function tierNameOf(uint256 _tierId) external view override returns (string memory) {
@@ -102,7 +102,7 @@ contract DefifaHTMLTokenUriResolver is IDefifaTokenUriResolver, IJBTokenUriResol
     /**
      * @notice
      * Helper functions for parsing tokenUri to get image ipfs hash. Currently unused.
-     * 
+     *
      * @dev TODO If parsing in sol js must be changed too
      */
 
@@ -136,7 +136,7 @@ contract DefifaHTMLTokenUriResolver is IDefifaTokenUriResolver, IJBTokenUriResol
     /**
      * @notice
      * Initializes the contract.
-     * 
+     *
      * @param _delegate The Defifa delegate contract that this contract is Governing.
      */
     function initialize(IDefifaDelegate _delegate, string[] memory _tierNames) public virtual override {
@@ -165,12 +165,12 @@ contract DefifaHTMLTokenUriResolver is IDefifaTokenUriResolver, IJBTokenUriResol
     /**
      * @notice
      * The metadata URI of the provided token ID.
-     * 
+     *
      * @dev
      * Defer to the token's tier IPFS URI if set.
-     * 
+     *
      * @param _tokenId The ID of the token to get the tier URI for.
-     * 
+     *
      * @return The token URI corresponding with the tier.
      */
     function getUri(uint256 _tokenId) external view override returns (string memory) {
