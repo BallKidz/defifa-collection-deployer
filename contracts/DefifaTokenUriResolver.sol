@@ -215,6 +215,7 @@ contract DefifaTokenUriResolver is IDefifaTokenUriResolver, IJBTokenUriResolver 
                         _delegate.TOTAL_REDEMPTION_WEIGHT(),
                         _IMG_DECIMAL_FIDELITY
                     );
+                    
                     _gamePhaseText =
                         string(abi.encodePacked("Scorecard approved. Redeem for ~", _percentOfPot, " of pot."));
                 }
@@ -245,22 +246,22 @@ contract DefifaTokenUriResolver is IDefifaTokenUriResolver, IJBTokenUriResolver 
                 _gamePhaseText,
                 "</text>",
                 '<text x="10" y="80" style="font-size:26px; font-family: Capsules-500; font-weight:500; fill: #c0b3f1;">',
-                _getSubstring(_title, 0, 29),
+                _getSubstring(_title, 0, 30),
                 "</text>",
                 '<text x="10" y="115" style="font-size:26px; font-family: Capsules-500; font-weight:500; fill: #c0b3f1;">',
-                _getSubstring(_title, 30, 59),
+                _getSubstring(_title, 30, 60),
                 "</text>",
                 '<text x="10" y="150" style="font-size:26px; font-family: Capsules-500; font-weight:500; fill: #c0b3f1;">',
-                _getSubstring(_title, 60, 89),
+                _getSubstring(_title, 60, 90),
                 "</text>",
                 '<text x="10" y="230" style="font-size:80px; font-family: Capsules-700; font-weight:700; fill: #fea282;">',
-                bytes(_getSubstring(_team, 20, 29)).length != 0 && bytes(_getSubstring(_team, 10, 19)).length != 0 ? _getSubstring(_team, 0, 9) : "",
+                bytes(_getSubstring(_team, 20, 30)).length != 0 && bytes(_getSubstring(_team, 10, 20)).length != 0 ? _getSubstring(_team, 0, 10) : "",
                 "</text>",
                 '<text x="10" y="320" style="font-size:80px; font-family: Capsules-700; font-weight:700; fill: #fea282;">',
-                bytes(_getSubstring(_team, 20, 29)).length != 0 ? _getSubstring(_team, 10, 19) : bytes(_getSubstring(_team, 10, 19)).length != 0 ? _getSubstring(_team, 0, 9) : "",
+                bytes(_getSubstring(_team, 20, 30)).length != 0 ? _getSubstring(_team, 10, 20) : bytes(_getSubstring(_team, 10, 20)).length != 0 ? _getSubstring(_team, 0, 10) : "",
                 "</text>",
                 '<text x="10" y="410" style="font-size:80px; font-family: Capsules-700; font-weight:700; fill: #fea282;">',
-                bytes(_getSubstring(_team, 20, 29)).length != 0 ? _getSubstring(_team, 20, 29) : bytes(_getSubstring(_team, 10, 19)).length != 0 ? _getSubstring(_team, 10, 19) : _getSubstring(_team, 0, 9),
+                bytes(_getSubstring(_team, 20, 30)).length != 0 ? _getSubstring(_team, 20, 30) : bytes(_getSubstring(_team, 10, 20)).length != 0 ? _getSubstring(_team, 10, 20) : _getSubstring(_team, 0, 10),
                 "</text>",
                 '<text x="10" y="455" style="font-size:16px; font-family: Capsules-500; font-weight:500; fill: #c0b3f1;">TOKEN ID: ',
                 _tokenId.toString(),
@@ -277,26 +278,13 @@ contract DefifaTokenUriResolver is IDefifaTokenUriResolver, IJBTokenUriResolver 
 
     function _getSubstring(string memory _str, uint256 _startIndex, uint256 _endIndex) internal pure returns (string memory substring) {
         bytes memory _strBytes = bytes(_str);
+        _startIndex = _strBytes[_startIndex] == bytes1(0x20) ? _startIndex + 1 : _startIndex;
         if(_startIndex >= _strBytes.length) return "";
         if(_endIndex > _strBytes.length) _endIndex = _strBytes.length;
         if(_startIndex >= _endIndex) return "";
         bytes memory _result = new bytes(_endIndex-_startIndex);
         for(uint256 _i = _startIndex; _i < _endIndex;) {
             _result[_i-_startIndex] = _strBytes[_i];
-            unchecked {
-              ++_i;
-            }
-        }
-        return _removeLeadingSpace(_result);
-    }
-
-    function _removeLeadingSpace(bytes memory _strBytes) internal pure returns (string memory) {
-        if (_strBytes.length == 0 || _strBytes[0] != bytes1(0x20)) {
-            return string(_strBytes);
-        }
-        bytes memory _result = new bytes(_strBytes.length - 1);
-        for (uint _i = 1; _i < _strBytes.length;) {
-            _result[_i - 1] = _strBytes[_i];
             unchecked {
               ++_i;
             }
