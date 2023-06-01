@@ -71,15 +71,15 @@ contract DeployGoerli is Script {
 
         // Deploy the deployer.
         DefifaDeployer _defifaDeployer = new DefifaDeployer(
-      address(_defifaDelegateCodeOrigin),
-      address(_defifaGovernorCodeOrigin),
-      address(_defifaTokenUriResolverCodeOrigin),
-      controller,
-      _delegateRegistry,
-      _defifaBallkidz,
-      _ballkidzProjectId,
-      _defifaBallkidz
-    );
+          address(_defifaDelegateCodeOrigin),
+          address(_defifaGovernorCodeOrigin),
+          address(_defifaTokenUriResolverCodeOrigin),
+          controller,
+          _delegateRegistry,
+          _defifaBallkidz,
+          _ballkidzProjectId,
+          _defifaBallkidz
+        );
 
         console.log(address(_defifaDeployer));
     }

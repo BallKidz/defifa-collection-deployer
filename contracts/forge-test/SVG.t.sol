@@ -15,10 +15,17 @@ import "../interfaces/IDefifaGamePhaseReporter.sol";
 
 // import {CapsulesTypeface} from "../lib/capsules/contracts/CapsulesTypeface.sol";
 
-contract NoContestReporter is IDefifaGamePhaseReporter {
+contract GamePhaseReporter is IDefifaGamePhaseReporter {
     function currentGamePhaseOf(uint256 _gameId) external pure returns (DefifaGamePhase) {
         _gameId;
         return DefifaGamePhase.COUNTDOWN;
+    }
+}
+
+contract GamePotReporter is IDefifaGamePotReporter {
+    function gamePotOf(uint256 _gameId) external pure returns (uint256, address, uint256) {
+        _gameId;
+        return (696900000000000000, JBTokens.ETH, 18);
     }
 }
 
@@ -45,7 +52,8 @@ contract SVGTest is Test {
         DefifaDelegate _delegate = DefifaDelegate(Clones.clone(address(new DefifaDelegate())));
         DefifaTokenUriResolver _resolver =
             DefifaTokenUriResolver(Clones.clone(address(new DefifaTokenUriResolver(_typeface))));
-        NoContestReporter _gamePhaseReporter = new NoContestReporter();
+        GamePhaseReporter _gamePhaseReporter = new GamePhaseReporter();
+        GamePotReporter _gamePotReporter = new GamePotReporter();
 
         JB721TierParams[] memory _tiers = new JB721TierParams[](1);
         _tiers[0] = JB721TierParams({
@@ -80,6 +88,7 @@ contract SVGTest is Test {
                 preventOverspending: false
             }),
             _gamePhaseReporter: _gamePhaseReporter,
+            _gamePotReporter: _gamePotReporter,
             _defaultVotingDelegate: address(0)
         });
 
@@ -97,11 +106,13 @@ contract SVGTest is Test {
         vm.ffi(inputs);
     }
 
+    event K(bytes4 k);
     function testWithOutTierImage() public {
         DefifaDelegate _delegate = DefifaDelegate(Clones.clone(address(new DefifaDelegate())));
         DefifaTokenUriResolver _resolver =
             DefifaTokenUriResolver(Clones.clone(address(new DefifaTokenUriResolver(_typeface))));
-        NoContestReporter _gamePhaseReporter = new NoContestReporter();
+        GamePhaseReporter _gamePhaseReporter = new GamePhaseReporter();
+        GamePotReporter _gamePotReporter = new GamePotReporter();
 
         JB721TierParams[] memory _tiers = new JB721TierParams[](1);
         _tiers[0] = JB721TierParams({
@@ -136,6 +147,7 @@ contract SVGTest is Test {
                 preventOverspending: false
             }),
             _gamePhaseReporter: _gamePhaseReporter,
+            _gamePotReporter: _gamePotReporter,
             _defaultVotingDelegate: address(0)
         });
 
@@ -147,9 +159,11 @@ contract SVGTest is Test {
         string[] memory inputs = new string[](3);
         inputs[0] = "node";
         inputs[1] = "./open.js";
-        inputs[2] = _resolver.getUri(1000000001);
+        inputs[2] = _resolver.getUri(1000000000);
         bytes memory res = vm.ffi(inputs);
         res;
         vm.ffi(inputs);
+
+        emit K(type(IDefifaDelegate).interfaceId);
     }
 }

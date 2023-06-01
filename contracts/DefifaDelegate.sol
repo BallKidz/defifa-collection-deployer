@@ -153,6 +153,12 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate {
 
     /**
      * @notice
+     * The contract reporting game pot.
+     */
+    IDefifaGamePotReporter public override gamePotReporter;
+
+    /**
+     * @notice
      * The currency that is accepted when minting tier NFTs.
      */
     uint256 public override pricingCurrency;
@@ -492,6 +498,7 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate {
      * @param _store A contract that stores the NFT's data.
      * @param _flags A set of flags that help define how this contract works.
      * @param _gamePhaseReporter The contract that reports the game phase.
+     * @param _gamePotReporter The contract that reports the game's pot.
      * @param _defaultVotingDelegate The address that'll be set as the voting delegate by default.
      */
     function initialize(
@@ -508,6 +515,7 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate {
         IJBTiered721DelegateStore _store,
         JBTiered721Flags memory _flags,
         IDefifaGamePhaseReporter _gamePhaseReporter,
+        IDefifaGamePotReporter _gamePotReporter,
         address _defaultVotingDelegate
     ) public override {
         // Make the original un-initializable.
@@ -523,6 +531,7 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate {
         store = _store;
         pricingCurrency = _currency;
         gamePhaseReporter = _gamePhaseReporter;
+        gamePotReporter = _gamePotReporter;
         defaultVotingDelegate = _defaultVotingDelegate;
 
         // Store the base URI if provided.

@@ -11,6 +11,7 @@ import "@jbx-protocol/juice-721-delegate/contracts/structs/JBTiered721MintForTie
 import "@jbx-protocol/juice-721-delegate/contracts/structs/JB721PricingParams.sol";
 import "./../structs/DefifaTierRedemptionWeight.sol";
 import "./IDefifaGamePhaseReporter.sol";
+import "./IDefifaGamePotReporter.sol";
 
 interface IDefifaDelegate is IJB721Delegate {
     event Mint(
@@ -48,6 +49,8 @@ interface IDefifaDelegate is IJB721Delegate {
     function fundingCycleStore() external view returns (IJBFundingCycleStore);
 
     function gamePhaseReporter() external view returns (IDefifaGamePhaseReporter);
+
+    function gamePotReporter() external view returns (IDefifaGamePotReporter);
 
     function pricingCurrency() external view returns (uint256);
 
@@ -93,6 +96,7 @@ interface IDefifaDelegate is IJB721Delegate {
         IJBTiered721DelegateStore _store,
         JBTiered721Flags memory _flags,
         IDefifaGamePhaseReporter _gamePhaseReporter,
+        IDefifaGamePotReporter _gamePotReporter,
         address _defaultVotingDelegate
     ) external;
 }

@@ -9,10 +9,12 @@ import "@jbx-protocol/juice-contracts-v3/contracts/libraries/JBConstants.sol";
 import "@jbx-protocol/juice-contracts-v3/contracts/libraries/JBTokens.sol";
 import "@jbx-protocol/juice-contracts-v3/contracts/libraries/JBSplitsGroups.sol";
 import "@jbx-protocol/juice-contracts-v3/contracts/structs/JBFundAccessConstraints.sol";
+import "@jbx-protocol/juice-contracts-v3/contracts/interfaces/IJBPayoutRedemptionPaymentTerminal3_1.sol";
 import "@jbx-protocol/juice-721-delegate/contracts/libraries/JBTiered721FundingCycleMetadataResolver.sol";
 import "./enums/DefifaGamePhase.sol";
 import "./interfaces/IDefifaDeployer.sol";
 import "./interfaces/IDefifaGamePhaseReporter.sol";
+import "./interfaces/IDefifaGamePotReporter.sol";
 import "./structs/DefifaDistributionOpsData.sol";
 import "./DefifaDelegate.sol";
 import "./DefifaGovernor.sol";
@@ -29,7 +31,7 @@ import "./DefifaTokenUriResolver.sol";
  *   Adheres to -
  *   IDefifaDeployer: General interface for the generic controller methods in this contract that interacts with funding cycles and tokens according to the protocol's rules.
  */
-contract DefifaDeployer is IDefifaDeployer, IDefifaGamePhaseReporter, IERC721Receiver, Ownable {
+contract DefifaDeployer is IDefifaDeployer, IDefifaGamePhaseReporter, IDefifaGamePotReporter, IERC721Receiver, Ownable {
     using Strings for uint256;
 
     //*********************************************************************//
@@ -88,6 +90,14 @@ contract DefifaDeployer is IDefifaDeployer, IDefifaGamePhaseReporter, IERC721Rec
      * If each game has been set to no contest.
      */
     mapping(uint256 => bool) internal _noContestIsSet;
+
+    /**
+     * @notice
+     * The total amount the game is being played with.
+     *
+     * _gameId The ID of the game to get the pot of.
+     */
+    mapping(uint256 => uint256) internal _gamePotOf;
 
     //*********************************************************************//
     // ------------------------ public constants ------------------------- //
@@ -162,7 +172,7 @@ contract DefifaDeployer is IDefifaDeployer, IDefifaGamePhaseReporter, IERC721Rec
      * @dev
      * This is equal to 100 divided by the fee percent.
      */
-    uint256 public feeDivisor = 20;
+    uint256 public override feeDivisor = 20;
 
     //*********************************************************************//
     // ------------------------- external views -------------------------- //
@@ -174,6 +184,15 @@ contract DefifaDeployer is IDefifaDeployer, IDefifaGamePhaseReporter, IERC721Rec
 
     function distributionOpsOf(uint256 _gameId) external view override returns (DefifaDistributionOpsData memory) {
         return _opsOf[_gameId];
+    }
+
+    function gamePotOf(uint256 _gameId) external view returns (uint256, address, uint256) {
+      // Get a reference to the terminal being used by the project.
+      DefifaDistributionOpsData memory _ops = _opsOf[_gameId];
+
+      IJBSingleTokenPaymentTerminal _terminal = IJBSingleTokenPaymentTerminal(address(_ops.terminal)); 
+
+      return (_gamePotOf[_gameId], _terminal.token(), _terminal.decimals());
     }
 
     /**
@@ -409,6 +428,7 @@ contract DefifaDeployer is IDefifaDeployer, IDefifaGamePhaseReporter, IERC721Rec
                 lockManualMintingChanges: false
             }),
             _gamePhaseReporter: this,
+            _gamePotReporter: this,
             _defaultVotingDelegate: _launchProjectData.defaultVotingDelegate
         });
 
@@ -698,7 +718,7 @@ contract DefifaDeployer is IDefifaDeployer, IDefifaGamePhaseReporter, IERC721Rec
             _groupedSplits = new JBGroupedSplits[](0);
         }
 
-        return controller.reconfigureFundingCyclesOf(
+        configuration = controller.reconfigureFundingCyclesOf(
             _gameId,
             JBFundingCycleData({
                 duration: 0,
@@ -741,6 +761,9 @@ contract DefifaDeployer is IDefifaDeployer, IDefifaGamePhaseReporter, IERC721Rec
             fundAccessConstraints,
             "Defifa scoring phase."
         );
+
+        // Store the game pot.
+        _gamePotOf[_gameId] = IJBPayoutRedemptionPaymentTerminal3_1(address(_ops.terminal)).store().balanceOf(IJBSingleTokenPaymentTerminal(address(_ops.terminal)), _gameId) - _ops.distributionLimit;
     }
 
     /**

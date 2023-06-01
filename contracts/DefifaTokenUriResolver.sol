@@ -1,8 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.16;
 
+import "@paulrberg/contracts/math/PRBMath.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
+import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
+import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "@jbx-protocol/juice-contracts-v3/contracts/interfaces/IJBTokenUriResolver.sol";
+import "@jbx-protocol/juice-contracts-v3/contracts/libraries/JBTokens.sol";
 import "@jbx-protocol/juice-721-delegate/contracts/libraries/JBIpfsDecoder.sol";
 import "lib/base64/base64.sol";
 import "./interfaces/IDefifaDelegate.sol";
@@ -24,6 +28,7 @@ import "./libraries/DefifaPercentFormatter.sol";
  */
 contract DefifaTokenUriResolver is IDefifaTokenUriResolver, IJBTokenUriResolver {
     using Strings for uint256;
+    using SafeMath for uint256;
 
     //*********************************************************************//
     // -------------------- private constant properties ------------------ //
@@ -197,6 +202,9 @@ contract DefifaTokenUriResolver is IDefifaTokenUriResolver, IJBTokenUriResolver 
                 // Get a reference to the game phase.
                 DefifaGamePhase _gamePhase = delegate.gamePhaseReporter().currentGamePhaseOf(_gameId);
 
+                // Keep a reference to the game pot.
+                (uint256 _gamePot, address _gamePotToken, uint256 _gamePotDecimals) = _delegate.gamePotReporter().gamePotOf(_gameId);
+                
                 if (_gamePhase == DefifaGamePhase.NO_CONTEST) {
                     _gamePhaseText = "No contest. Refunds open.";
                 } else if (_gamePhase == DefifaGamePhase.NO_CONTEST_INEVITABLE) {
@@ -208,21 +216,24 @@ contract DefifaTokenUriResolver is IDefifaTokenUriResolver, IJBTokenUriResolver 
                 } else if (_gamePhase == DefifaGamePhase.REFUND) {
                     _gamePhaseText = "Game starting, minting closed. Last chance for refunds.";
                 } else if (_gamePhase == DefifaGamePhase.SCORING && !_delegate.redemptionWeightIsSet()) {
-                    _gamePhaseText = "Awaiting approved scorecard.";
+                    _gamePhaseText = string(abi.encodePacked("Awaiting scorecard. Game pot is ", _formatBalance(_gamePot, _gamePotToken, _gamePotDecimals, _IMG_DECIMAL_FIDELITY), "."));
                 } else {
-                    string memory _percentOfPot = DefifaPercentFormatter.getFormattedPercentageOfRedemptionWeight(
-                        _delegate.redemptionWeightOf(_tokenId),
-                        _delegate.TOTAL_REDEMPTION_WEIGHT(),
-                        _IMG_DECIMAL_FIDELITY
-                    );
-                    
-                    _gamePhaseText =
-                        string(abi.encodePacked("Scorecard approved. Redeem for ~", _percentOfPot, " of pot."));
+                    _gamePhaseText = string(abi.encodePacked("Scorecard approved. Total awards of ", _formatBalance(_gamePot, _gamePotToken, _gamePotDecimals, _IMG_DECIMAL_FIDELITY), "."));
                 }
 
+                // Keep a reference to the number of tokens outstanding from this tier.
                 uint256 _totalMinted = _tier.initialQuantity - _tier.remainingQuantity;
+
                 if (_gamePhase == DefifaGamePhase.MINT) {
                     _rarityText = string(abi.encodePacked(_totalMinted.toString(), " minted so far"));
+                } else if (_gamePhase == DefifaGamePhase.SCORING && _delegate.redemptionWeightIsSet()) {
+                    // Get a reference to the pot portion this token can be redeemed for.
+                    uint256 _potPortion = PRBMath.mulDiv(
+                        _gamePot, 
+                        _delegate.redemptionWeightOf(_tokenId),
+                        _delegate.TOTAL_REDEMPTION_WEIGHT()
+                    );
+                    _rarityText = string(abi.encodePacked(_totalMinted.toString(), " in existence worth ~", _formatBalance(_potPortion, _gamePotToken, _gamePotDecimals, _IMG_DECIMAL_FIDELITY) ," each"));
                 } else {
                     _rarityText = string(abi.encodePacked(_totalMinted.toString(), " in existence"));
                 }
@@ -276,6 +287,19 @@ contract DefifaTokenUriResolver is IDefifaTokenUriResolver, IJBTokenUriResolver 
         return string.concat(parts[0], Base64.encode(abi.encodePacked(parts[1], parts[2], parts[3])));
     }
 
+    /**
+      @notice
+      Gets a substring. 
+
+      @dev
+      If the first character is a space, it is not included.
+
+      @param _str The string to get a substring of.
+      @param _startIndex The first index of the substring from within the string.
+      @param _endIndex The last index of the string from within the string.
+
+      @return The substring.
+     */  
     function _getSubstring(string memory _str, uint256 _startIndex, uint256 _endIndex) internal pure returns (string memory substring) {
         bytes memory _strBytes = bytes(_str);
         _startIndex = _strBytes[_startIndex] == bytes1(0x20) ? _startIndex + 1 : _startIndex;
@@ -290,5 +314,29 @@ contract DefifaTokenUriResolver is IDefifaTokenUriResolver, IJBTokenUriResolver 
             }
         }
         return string(_result);
+    }
+
+    /**
+      @notice
+      Formats a balance from a fixed point number to a string.
+
+      @param _amount The fixed point amount.
+      @param _token The token the amount is in.
+      @param _decimals The number of decimals in the fixed point amount.
+      @param _fidelity The number of decimals that should be returned in the formatted string.
+
+      @return The formatted balance.
+     */  
+    function _formatBalance(uint256 _amount, address _token, uint256 _decimals, uint256 _fidelity) internal view returns (string memory) {
+        bool _isEth = _token == JBTokens.ETH;
+
+        uint256 _fixedPoint = 10 ** _decimals;
+
+        // Convert amount to a decimal format
+        string memory _integerPart = _amount.div(_fixedPoint).toString();
+        string memory _decimalPart = _amount.mod(_fixedPoint).div(_fixedPoint.div(10 ** _fidelity)).toString();
+
+        // Concatenate the strings
+        return _isEth ? string(abi.encodePacked("\u039E", _integerPart, ".", _decimalPart)) : string(abi.encodePacked(_integerPart, ".", _decimalPart, " ", IERC20Metadata(_token).symbol()));
     }
 }

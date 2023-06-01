@@ -36,6 +36,8 @@ interface IDefifaDeployer {
 
     function delegatesRegistry() external view returns (IJBDelegatesRegistry);
 
+    function feeDivisor() external view returns (uint256);
+
     function timesFor(uint256 _gameId) external view returns (DefifaTimeData memory);
 
     function distributionOpsOf(uint256 _gameId) external view returns (DefifaDistributionOpsData memory);
