@@ -196,16 +196,12 @@ contract DefifaTokenUriResolver is IDefifaTokenUriResolver, IJBTokenUriResolver 
                 )
             );
 
-            if (bytes(_team).length < 3) _fontSize = "240";
-            else if (bytes(_team).length < 5) _fontSize = "200";
-            else if (bytes(_team).length < 8) _fontSize = "120";
-            else if (bytes(_team).length < 10) _fontSize = "90";
-            else if (bytes(_team).length < 12) _fontSize = "85";
-            else if (bytes(_team).length < 16) _fontSize = "80";
-            else if (bytes(_team).length < 23) _fontSize = "70";
-            else if (bytes(_team).length < 30) _fontSize = "50";
-            else if (bytes(_team).length < 35) _fontSize = "40";
-            else _fontSize = "16";
+            if (bytes(_team).length < 4) _fontSize = "10";
+            else if (bytes(_team).length < 5) _fontSize = "8";
+            else if (bytes(_team).length < 8) _fontSize = "6";
+            else if (bytes(_team).length < 12) _fontSize = "5";
+            else if (bytes(_team).length < 14) _fontSize = "4";
+            else _fontSize = "3";
 
             {
                 // Get a reference to the game phase.
@@ -245,7 +241,7 @@ contract DefifaTokenUriResolver is IDefifaTokenUriResolver, IJBTokenUriResolver 
         parts[2] = Base64.encode(
             abi.encodePacked(
                 '<svg width="500" height="500" viewBox="0 0 100% 100%" xmlns="http://www.w3.org/2000/svg">',
-                '<style>@font-face{font-family:"Capsules-300";src:url(data:font/truetype;charset=utf-8;base64,',
+                '<style>@font-face{font-family:"Capsules-500";src:url(data:font/truetype;charset=utf-8;base64,',
                 DefifaFontImporter.getSkinnyFontSource(typeface),
                 ');format("opentype");}',
                 '@font-face{font-family:"Capsules-700";src:url(data:font/truetype;charset=utf-8;base64,',
@@ -253,24 +249,24 @@ contract DefifaTokenUriResolver is IDefifaTokenUriResolver, IJBTokenUriResolver 
                 ');format("opentype");}',
                 "text{white-space:pre-wrap; width:100%; }</style>",
                 '<rect width="100%" height="100%" fill="#181424"/>',
-                '<text x="10" y="40" style="font-size:16px; font-family: Capsules-300; font-weight:300; fill: #c0b3f1;">GAME ID: ',
+                '<text x="10" y="40" style="font-size:16px; font-family: Capsules-500; font-weight:500; fill: #c0b3f1;">GAME ID: ',
                 _gameId.toString(),
                 "</text>",
-                '<text x="10" y="60" style="font-size:16px; font-family: Capsules-300; font-weight:300; fill: #ed017c;">',
+                '<text x="10" y="60" style="font-size:16px; font-family: Capsules-500; font-weight:500; fill: #ed017c;">',
                 _gamePhaseText,
                 "</text>",
-                '<foreignObject width="90%" height="80px" x="10" y="70" ><div xmlns="http://www.w3.org/1999/xhtml" style="font-size:22px; font-family: Capsules-300; font-weight:300; color:#fea282; position: fixed;"><span style="word-wrap: break-word; white-space: pre-line;">',
+                '<foreignObject width="calc(100% - 20px)" height="22%" x="10" y="70" ><div xmlns="http://www.w3.org/1999/xhtml" style="position: fixed;"><span style="font-family: Capsules-500; font-weight:500; color:#c0b3f1; font-size:1.8em; line-height: 1.2em; overflow: hidden; max-height: 3.6em; word-wrap: break-word; white-space: pre-line;">',
                 _title,
                 "</span></div></foreignObject>",
-                '<text x="10" y="455" style="font-size:16px; font-family: Capsules-300; font-weight:300; fill: #c0b3f1;">TOKEN ID: ',
+                '<text x="10" y="455" style="font-size:16px; font-family: Capsules-500; font-weight:500; fill: #c0b3f1;">TOKEN ID: ',
                 _tokenId.toString(),
                 "</text>",
-                '<text x="10" y="480" style="font-size:16px; font-family: Capsules-300; font-weight:300; fill: #c0b3f1;">RARITY: ',
+                '<text x="10" y="480" style="font-size:16px; font-family: Capsules-500; font-weight:500; fill: #c0b3f1;">RARITY: ',
                 _rarityText,
                 "</text>",
-                '<foreignObject width="calc(100% - 20px)" height="50%" x="10" y="25%" ><div xmlns="http://www.w3.org/1999/xhtml" style="font-size:',
+                '<foreignObject width="calc(100% - 20px)" height="48%" x="10" y="35%" ><div xmlns="http://www.w3.org/1999/xhtml" style="position: fixed; height: 100%; width: 100%; text-align: left; "><span style="font-size:',
                 _fontSize,
-                'px; font-family: Capsules-700; font-weight:700; color:#fea282; position: fixed; display: flex; align-items: center; height: 100%; text-align: left; letter-spacing: 1px;"><span style="word-wrap: break-word; white-space: pre-line;">',
+                'em; font-family: Capsules-700; letter-spacing: 1px; font-weight:700; color:#fea282; overflow: hidden; word-wrap: break-word; white-space: pre-line; position: absolute; bottom: 0;">',
                 _team,
                 "</span></div></foreignObject>",
                 "</svg>"
