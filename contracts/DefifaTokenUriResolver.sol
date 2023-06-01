@@ -150,9 +150,6 @@ contract DefifaTokenUriResolver is IDefifaTokenUriResolver, IJBTokenUriResolver 
         // Get the game ID.
         uint256 _gameId = _delegate.projectId();
 
-        // Keep a reference to the font size.
-        string memory _fontSize;
-
         // Keep a reference to the game phase text.
         string memory _gamePhaseText;
 
@@ -196,13 +193,6 @@ contract DefifaTokenUriResolver is IDefifaTokenUriResolver, IJBTokenUriResolver 
                 )
             );
 
-            if (bytes(_team).length < 4) _fontSize = "10";
-            else if (bytes(_team).length < 5) _fontSize = "8";
-            else if (bytes(_team).length < 8) _fontSize = "6";
-            else if (bytes(_team).length < 12) _fontSize = "5";
-            else if (bytes(_team).length < 14) _fontSize = "4";
-            else _fontSize = "3";
-
             {
                 // Get a reference to the game phase.
                 DefifaGamePhase _gamePhase = delegate.gamePhaseReporter().currentGamePhaseOf(_gameId);
@@ -237,10 +227,9 @@ contract DefifaTokenUriResolver is IDefifaTokenUriResolver, IJBTokenUriResolver 
                 }
             }
         }
-
         parts[2] = Base64.encode(
             abi.encodePacked(
-                '<svg width="500" height="500" viewBox="0 0 100% 100%" xmlns="http://www.w3.org/2000/svg">',
+                '<svg viewBox="0 0 500 500" xmlns="http://www.w3.org/2000/svg">',
                 '<style>@font-face{font-family:"Capsules-500";src:url(data:font/truetype;charset=utf-8;base64,',
                 DefifaFontImporter.getSkinnyFontSource(typeface),
                 ');format("opentype");}',
@@ -249,30 +238,69 @@ contract DefifaTokenUriResolver is IDefifaTokenUriResolver, IJBTokenUriResolver 
                 ');format("opentype");}',
                 "text{white-space:pre-wrap; width:100%; }</style>",
                 '<rect width="100%" height="100%" fill="#181424"/>',
-                '<text x="10" y="40" style="font-size:16px; font-family: Capsules-500; font-weight:500; fill: #c0b3f1;">GAME ID: ',
+                '<text x="10" y="30" style="font-size:16px; font-family: Capsules-500; font-weight:500; fill: #c0b3f1;">GAME ID: ',
                 _gameId.toString(),
                 "</text>",
-                '<text x="10" y="60" style="font-size:16px; font-family: Capsules-500; font-weight:500; fill: #ed017c;">',
+                '<text x="10" y="50" style="font-size:16px; font-family: Capsules-500; font-weight:500; fill: #ed017c;">',
                 _gamePhaseText,
                 "</text>",
-                '<foreignObject width="calc(100% - 20px)" height="22%" x="10" y="70" ><div xmlns="http://www.w3.org/1999/xhtml" style="position: fixed;"><span style="font-family: Capsules-500; font-weight:500; color:#c0b3f1; font-size:1.8em; line-height: 1.2em; overflow: hidden; max-height: 3.6em; word-wrap: break-word; white-space: pre-line;">',
-                _title,
-                "</span></div></foreignObject>",
+                '<text x="10" y="80" style="font-size:26px; font-family: Capsules-500; font-weight:500; fill: #c0b3f1;">',
+                _getSubstring(_title, 0, 29),
+                "</text>",
+                '<text x="10" y="115" style="font-size:26px; font-family: Capsules-500; font-weight:500; fill: #c0b3f1;">',
+                _getSubstring(_title, 30, 59),
+                "</text>",
+                '<text x="10" y="150" style="font-size:26px; font-family: Capsules-500; font-weight:500; fill: #c0b3f1;">',
+                _getSubstring(_title, 60, 89),
+                "</text>",
+                '<text x="10" y="230" style="font-size:80px; font-family: Capsules-700; font-weight:700; fill: #fea282;">',
+                bytes(_getSubstring(_team, 20, 29)).length != 0 && bytes(_getSubstring(_team, 10, 19)).length != 0 ? _getSubstring(_team, 0, 9) : "",
+                "</text>",
+                '<text x="10" y="320" style="font-size:80px; font-family: Capsules-700; font-weight:700; fill: #fea282;">',
+                bytes(_getSubstring(_team, 20, 29)).length != 0 ? _getSubstring(_team, 10, 19) : bytes(_getSubstring(_team, 10, 19)).length != 0 ? _getSubstring(_team, 0, 9) : "",
+                "</text>",
+                '<text x="10" y="410" style="font-size:80px; font-family: Capsules-700; font-weight:700; fill: #fea282;">',
+                bytes(_getSubstring(_team, 20, 29)).length != 0 ? _getSubstring(_team, 20, 29) : bytes(_getSubstring(_team, 10, 19)).length != 0 ? _getSubstring(_team, 10, 19) : _getSubstring(_team, 0, 9),
+                "</text>",
                 '<text x="10" y="455" style="font-size:16px; font-family: Capsules-500; font-weight:500; fill: #c0b3f1;">TOKEN ID: ',
                 _tokenId.toString(),
                 "</text>",
                 '<text x="10" y="480" style="font-size:16px; font-family: Capsules-500; font-weight:500; fill: #c0b3f1;">RARITY: ',
                 _rarityText,
                 "</text>",
-                '<foreignObject width="calc(100% - 20px)" height="48%" x="10" y="35%" ><div xmlns="http://www.w3.org/1999/xhtml" style="position: fixed; height: 100%; width: 100%; text-align: left; "><span style="font-size:',
-                _fontSize,
-                'em; font-family: Capsules-700; letter-spacing: 1px; font-weight:700; color:#fea282; overflow: hidden; word-wrap: break-word; white-space: pre-line; position: absolute; bottom: 0;">',
-                _team,
-                "</span></div></foreignObject>",
                 "</svg>"
             )
         );
         parts[3] = string('"}');
         return string.concat(parts[0], Base64.encode(abi.encodePacked(parts[1], parts[2], parts[3])));
+    }
+
+    function _getSubstring(string memory _str, uint256 _startIndex, uint256 _endIndex) internal pure returns (string memory substring) {
+        bytes memory _strBytes = bytes(_str);
+        if(_startIndex >= _strBytes.length) return "";
+        if(_endIndex > _strBytes.length) _endIndex = _strBytes.length;
+        if(_startIndex >= _endIndex) return "";
+        bytes memory _result = new bytes(_endIndex-_startIndex);
+        for(uint256 _i = _startIndex; _i < _endIndex;) {
+            _result[_i-_startIndex] = _strBytes[_i];
+            unchecked {
+              ++_i;
+            }
+        }
+        return _removeLeadingSpace(_result);
+    }
+
+    function _removeLeadingSpace(bytes memory _strBytes) internal pure returns (string memory) {
+        if (_strBytes.length == 0 || _strBytes[0] != bytes1(0x20)) {
+            return string(_strBytes);
+        }
+        bytes memory _result = new bytes(_strBytes.length - 1);
+        for (uint _i = 1; _i < _strBytes.length;) {
+            _result[_i - 1] = _strBytes[_i];
+            unchecked {
+              ++_i;
+            }
+        }
+        return string(_result);
     }
 }

@@ -120,7 +120,7 @@ contract SVGTest is Test {
         _delegate.initialize({
             _gameId: 123,
             _directory: _directory,
-            _name: "Example collection: Who will win the premier league 2023-2024?",
+            _name: "Example collection: Who will win the 2023-2024 premier league?",
             _symbol: "DEFIFA: EXAMPLE",
             _fundingCycleStore: _fundingCycleStore,
             _baseUri: "",
@@ -140,7 +140,7 @@ contract SVGTest is Test {
         });
 
         string[] memory _tierNames = new string[](1);
-        _tierNames[0] = "liverpool wins by 2";
+        _tierNames[0] = "liverpool wins by 10 points";
 
         _resolver.initialize(_delegate, _tierNames);
 

@@ -32,18 +32,16 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate {
     //*********************************************************************//
 
     error BAD_TIER_ORDER();
-    error BLOCK_NOT_YET_MINED();
     error DELEGATE_ADDRESS_ZERO();
+    error DELEGATE_CHANGES_UNAVAILABLE_IN_THIS_PHASE();
     error GAME_ISNT_SCORING_YET();
     error INVALID_TIER_ID();
     error INVALID_REDEMPTION_WEIGHTS();
     error NOTHING_TO_CLAIM();
     error NOTHING_TO_MINT();
     error WRONG_CURRENCY();
-    error NOT_AVAILABLE();
     error NO_CONTEST();
     error OVERSPENDING();
-    error PRICING_RESOLVER_CHANGES_PAUSED();
     error REDEMPTION_WEIGHTS_ALREADY_SET();
     error RESERVED_TOKEN_MINTING_PAUSED();
     error TRANSFERS_PAUSED();
