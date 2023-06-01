@@ -181,6 +181,13 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate {
      */
     string public override contractURI;
 
+    /**
+     * @notice
+     * The address that'll be set as the voting delegate by default.
+     * 
+     */
+    address public override defaultVotingDelegate;
+
     //*********************************************************************//
     // ------------------------- external views -------------------------- //
     //*********************************************************************//
@@ -487,6 +494,7 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate {
      * @param _store A contract that stores the NFT's data.
      * @param _flags A set of flags that help define how this contract works.
      * @param _gamePhaseReporter The contract that reports the game phase.
+     * @param _defaultVotingDelegate The address that'll be set as the voting delegate by default.
      */
     function initialize(
         uint256 _gameId,
@@ -501,7 +509,8 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate {
         uint48 _currency,
         IJBTiered721DelegateStore _store,
         JBTiered721Flags memory _flags,
-        IDefifaGamePhaseReporter _gamePhaseReporter
+        IDefifaGamePhaseReporter _gamePhaseReporter,
+        address _defaultVotingDelegate
     ) public override {
         // Make the original un-initializable.
         if (address(this) == codeOrigin) revert();
@@ -516,6 +525,7 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate {
         store = _store;
         pricingCurrency = _currency;
         gamePhaseReporter = _gamePhaseReporter;
+        defaultVotingDelegate = _defaultVotingDelegate;
 
         // Store the base URI if provided.
         if (bytes(_baseUri).length != 0) baseURI = _baseUri;
@@ -762,8 +772,7 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate {
 
         // Set the delegate as the beneficiary if the beneficiary hasn't already set a delegate.
         if (_oldDelegate == address(0)) {
-            _tierDelegation[_reservedTokenBeneficiary][_tierId] = _reservedTokenBeneficiary;
-            emit DelegateChanged(_reservedTokenBeneficiary, address(0), _reservedTokenBeneficiary);
+            _delegateTier(_reservedTokenBeneficiary, defaultVotingDelegate, _tierId);
         }
 
         // Record the minted reserves for the tier.
@@ -786,16 +795,12 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate {
             }
         }
 
-        // Keep a reference to the tier.
-        JB721Tier memory _tier = store.tierOf(address(this), _tierId, false);
-
         // Transfer the voting units to the delegate.
         _transferTierVotingUnits(
             address(0),
-            // Use the old delegate if there is one.
-            _oldDelegate != address(0) ? _oldDelegate : _reservedTokenBeneficiary,
+            _reservedTokenBeneficiary,
             _tierId,
-            _tier.price * _tokenIds.length
+            store.tierOf(address(this), _tierId, false).votingUnits * _tokenIds.length
         );
     }
 
@@ -822,7 +827,9 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate {
                 abi.decode(_data.metadata, (bytes32, bytes32, bytes4, address, uint16[]));
 
             // Set the payer as the voting delegate by default.
-            if (_votingDelegate == address(0)) _votingDelegate = _data.payer;
+            if (_votingDelegate == address(0)) {
+              _votingDelegate = defaultVotingDelegate != address(0) ? defaultVotingDelegate : _data.payer;
+            }
 
             // Make sure something is being minted.
             if (_tierIdsToMint.length == 0) revert NOTHING_TO_MINT();

@@ -49,7 +49,7 @@ contract DefifaGovernor is Governor, GovernorCountingSimple, IDefifaGovernor {
      * @notice
      * The time the vote will be active for once it has started, measured in blocks.
      */
-    uint256 private __votingPeriod;
+    uint256 internal __votingPeriod;
 
     //*********************************************************************//
     // ------------------------ public constants ------------------------- //
@@ -86,6 +86,12 @@ contract DefifaGovernor is Governor, GovernorCountingSimple, IDefifaGovernor {
      * Voting start timestamp after which voting can begin.
      */
     uint256 public override votingStartTime;
+
+    /**
+     * @notice
+     * The latest proposal submitted by the default voting delegate.
+     */
+    uint256 public override defaultVotingDelegateProposal;
 
     //*********************************************************************//
     // -------------------------- constructor ---------------------------- //
@@ -130,9 +136,9 @@ contract DefifaGovernor is Governor, GovernorCountingSimple, IDefifaGovernor {
      * 
      * @param _tierWeights The weights of each tier in the scorecard.
      * 
-     * @return The proposal ID.
+     * @return proposalId The proposal ID.
      */
-    function submitScorecard(DefifaTierRedemptionWeight[] calldata _tierWeights) external override returns (uint256) {
+    function submitScorecard(DefifaTierRedemptionWeight[] calldata _tierWeights) external override returns (uint256 proposalId) {
         // Make sure no weight is assigned to an unowned tier.
         uint256 _numberOfTierWeights = _tierWeights.length;
 
@@ -155,7 +161,17 @@ contract DefifaGovernor is Governor, GovernorCountingSimple, IDefifaGovernor {
             _buildScorecardCalldata(_tierWeights);
 
         // Submit the proposal.
-        return this.propose(_targets, _values, _calldatas, "");
+        proposalId = this.propose(_targets, _values, _calldatas, "");
+        
+        // Keep a reference to the default voting delegate.
+        address _defaultVotingDelegate = delegate.defaultVotingDelegate(); 
+
+        // If the scorecard is being sent from the default voting delegate, store it.
+        if (msg.sender == _defaultVotingDelegate) {
+          defaultVotingDelegateProposal = proposalId;
+        }
+
+        emit ScorecardSubmitted(proposalId, _tierWeights, msg.sender == _defaultVotingDelegate, msg.sender);
     }
 
     /**

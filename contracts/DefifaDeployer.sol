@@ -408,7 +408,8 @@ contract DefifaDeployer is IDefifaDeployer, IDefifaGamePhaseReporter, IERC721Rec
                 lockVotingUnitChanges: false,
                 lockManualMintingChanges: false
             }),
-            _gamePhaseReporter: this
+            _gamePhaseReporter: this,
+            _defaultVotingDelegate: _launchProjectData.defaultVotingDelegate
         });
 
         // Initialize the fallback default uri resolver if needed.

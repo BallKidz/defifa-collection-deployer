@@ -79,7 +79,8 @@ contract SVGTest is Test {
                 lockManualMintingChanges: false,
                 preventOverspending: false
             }),
-            _gamePhaseReporter: _gamePhaseReporter
+            _gamePhaseReporter: _gamePhaseReporter,
+            _defaultVotingDelegate: address(0)
         });
 
         string[] memory _tierNames = new string[](1);
@@ -134,7 +135,8 @@ contract SVGTest is Test {
                 lockManualMintingChanges: false,
                 preventOverspending: false
             }),
-            _gamePhaseReporter: _gamePhaseReporter
+            _gamePhaseReporter: _gamePhaseReporter,
+            _defaultVotingDelegate: address(0)
         });
 
         string[] memory _tierNames = new string[](1);

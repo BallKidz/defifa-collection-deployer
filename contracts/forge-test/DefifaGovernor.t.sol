@@ -704,7 +704,8 @@ contract DefifaGovernorTest is TestBaseWorkflow {
             tiers: tierParams,
             ballkidzFeeProjectTokenAccount: payable(0x1000000000000000000000000000000000000000),
             defaultTokenUriResolver: IJBTokenUriResolver(address(0)),
-            terminal: _jbETHPaymentTerminal
+            terminal: _jbETHPaymentTerminal,
+            defaultVotingDelegate: address(0)
         });
         (uint256 _projectId, DefifaDelegate _nft,) = createDefifaProject(_launchData);
         // Wait until the phase 1 start
@@ -957,7 +958,8 @@ contract DefifaGovernorTest is TestBaseWorkflow {
             tiers: tierParams,
             defaultTokenUriResolver: IJBTokenUriResolver(address(0)),
             ballkidzFeeProjectTokenAccount: payable(0x1000000000000000000000000000000000000000),
-            terminal: _jbETHPaymentTerminal
+            terminal: _jbETHPaymentTerminal,
+            defaultVotingDelegate: address(0)
         });
     }
 

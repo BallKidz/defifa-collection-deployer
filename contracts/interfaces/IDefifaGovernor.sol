@@ -5,6 +5,13 @@ import "../structs/DefifaTierRedemptionWeight.sol";
 import "./IDefifaDelegate.sol";
 
 interface IDefifaGovernor {
+    event ScorecardSubmitted(
+      uint256 proposalId,
+      DefifaTierRedemptionWeight[] tierWeights,
+      bool isDefaultVotingDelegate,
+      address caller
+    );
+
     function MAX_VOTING_POWER_TIER() external view returns (uint256);
 
     function codeOrigin() external view returns (address);
@@ -12,6 +19,8 @@ interface IDefifaGovernor {
     function delegate() external view returns (IDefifaDelegate);
 
     function votingStartTime() external view returns (uint256);
+
+    function defaultVotingDelegateProposal() external view returns (uint256);
 
     function initialize(IDefifaDelegate _delegate, uint256 _votingStartTime, uint256 _votingPeriod) external;
 

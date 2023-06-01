@@ -20,6 +20,7 @@ import "./DefifaTimeData.sol";
  *   @member ballkidzFeeProjectTokenAccount The address that should be sent Defifa Ballkidz tokens that are minted from paying the fee.
  *   @member votingStartTime The time the vote will start for all submitted proposals.
  *   @member votingPeriod The time the vote will be active for once it has started, measured in blocks.
+ *   @member defaultVotingDelegate The address that'll be set as the voting delegate by default.
  *   @member defaultTokenUriResolver The contract used to resolve token URIs if not provided by a tier specifically.
  *   @member terminal A payment terminal to add for the project.
  *   @member store A contract to store standard 721 data in.
@@ -39,6 +40,7 @@ struct DefifaLaunchProjectData {
     address payable ballkidzFeeProjectTokenAccount;
     uint256 votingStartTime;
     uint256 votingPeriod;
+    address defaultVotingDelegate;
     IJBTokenUriResolver defaultTokenUriResolver;
     IJBPaymentTerminal terminal;
     IJBTiered721DelegateStore store;

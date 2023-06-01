@@ -57,6 +57,8 @@ interface IDefifaDelegate is IJB721Delegate {
 
     function contractURI() external view returns (string memory);
 
+    function defaultVotingDelegate() external view returns (address);
+
     function getTierDelegate(address _account, uint256 _tier) external view returns (address);
 
     function getTierVotes(address _account, uint256 _tier) external view returns (uint256);
@@ -90,6 +92,7 @@ interface IDefifaDelegate is IJB721Delegate {
         uint48 _currency,
         IJBTiered721DelegateStore _store,
         JBTiered721Flags memory _flags,
-        IDefifaGamePhaseReporter _gamePhaseReporter
+        IDefifaGamePhaseReporter _gamePhaseReporter,
+        address _defaultVotingDelegate
     ) external;
 }
