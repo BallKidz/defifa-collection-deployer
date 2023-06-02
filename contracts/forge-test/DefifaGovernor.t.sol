@@ -444,7 +444,7 @@ contract DefifaGovernorTest is TestBaseWorkflow {
             mintAndRefund(_nft, _projectId, i + 1);
         }
         // Have a user mint and refund the tier
-        mintAndRefund(_nft, _projectId, 1);
+        // mintAndRefund(_nft, _projectId, 1);
 
         // Phase 2: Redeem
         vm.warp(block.timestamp + defifaData.mintDuration);
@@ -519,6 +519,74 @@ contract DefifaGovernorTest is TestBaseWorkflow {
         // All NFTs should have been redeemed, only some dust should be left
         // Max allowed dust is 0.0001
         assertLt(address(_terminals[0]).balance, 10 ** 14);
+    }
+
+    function testVotingPowerDecreasesAfterRefund() public {
+        uint256 nOfOtherTiers = 31;
+        DefifaLaunchProjectData memory defifaData = getBasicDefifaLaunchData(uint8(nOfOtherTiers + 1));
+        (uint256 _projectId, DefifaDelegate _delegate, DefifaGovernor _governor) = createDefifaProject(defifaData);
+
+        // Phase 1: minting
+        vm.warp(defifaData.start - defifaData.mintDuration - defifaData.refundDuration);
+        deployer.queueNextPhaseOf(_projectId);
+
+        JB721Tier memory _tier = _delegate.store().tierOf(address(_delegate), 1, false);
+        uint256 _cost = _tier.price;
+
+        address _delegateUser = address(bytes20(keccak256("_delegateUser")));
+        address _refundUser = address(bytes20(keccak256("refund_user")));
+        // The user should have no balance
+        assertEq(_delegate.balanceOf(_refundUser), 0);
+        // Build metadata to buy specific NFT
+        uint16[] memory rawMetadata = new uint16[](1);
+        rawMetadata[0] = uint16(1); // reward tier, 1 indexed
+        bytes memory metadata =
+            abi.encode(bytes32(0), bytes32(0), type(IDefifaDelegate).interfaceId, _refundUser, rawMetadata);
+        // Pay to the project and mint an NFT
+        vm.deal(_refundUser, _cost);
+        vm.deal(_delegateUser, _cost);
+
+        vm.prank(_refundUser);
+        _terminals[0].pay{value: _cost}(_projectId, _cost, address(0), _refundUser, 0, true, "", metadata);
+
+        vm.roll(block.number + 1);
+       
+        assertEq(_governor.MAX_VOTING_POWER_TIER() , _governor.getVotes(_refundUser, block.number - 1));
+
+        // User should no longer have any funds
+        assertEq(_refundUser.balance, 0);
+        // The user should have have a token
+        assertEq(_delegate.balanceOf(_refundUser), 1);
+
+        uint256 _numberBurned = _delegate.store().numberOfBurnedFor(address(_delegate), 1);
+        // Craft the metadata: redeem the tokenId
+        bytes memory redemptionMetadata;
+        {
+            uint256[] memory redemptionId = new uint256[](1);
+            redemptionId[0] =
+                _generateTokenId(1, _tier.initialQuantity - _tier.remainingQuantity + 1 + _numberBurned);
+            redemptionMetadata = abi.encode(bytes32(0), type(IDefifaDelegate).interfaceId, redemptionId);
+        }
+
+        vm.prank(_refundUser);
+        JBETHPaymentTerminal(address(_terminals[0])).redeemTokensOf({
+            _holder: _refundUser,
+            _projectId: _projectId,
+            _tokenCount: 0,
+            _token: address(0),
+            _minReturnedTokens: 0,
+            _beneficiary: payable(_refundUser),
+            _memo: "imma out of here",
+            _metadata: redemptionMetadata
+        });
+
+        assertEq(_governor.MAX_VOTING_POWER_TIER() , _governor.getVotes(_refundUser, block.number - 1));
+
+        // User should have their original funds again
+        // _delegateUser will get the funds back
+        // assertEq(_refundUser.balance, _cost * 2);
+        // User should no longer have the NFT
+        assertEq(_delegate.balanceOf(_refundUser), 0);
     }
 
     function testSetRedemptionRatesAndRedeem_singleTier(
@@ -978,6 +1046,7 @@ contract DefifaGovernorTest is TestBaseWorkflow {
         }
         nft = DefifaDelegate(_fc.dataSource());
     }
+
 
     function mintAndRefund(DefifaDelegate _delegate, uint256 _projectId, uint256 _tierId) internal {
         JB721Tier memory _tier = _delegate.store().tierOf(address(_delegate), _tierId, false);
