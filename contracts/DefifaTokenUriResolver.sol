@@ -12,7 +12,6 @@ import "lib/base64/base64.sol";
 import "./interfaces/IDefifaDelegate.sol";
 import "./interfaces/IDefifaTokenUriResolver.sol";
 import "./libraries/DefifaFontImporter.sol";
-import "./libraries/DefifaPercentFormatter.sol";
 
 /**
  * @title
@@ -274,13 +273,13 @@ contract DefifaTokenUriResolver is IDefifaTokenUriResolver, IJBTokenUriResolver 
                 '<text x="10" y="50" style="font-size:16px; font-family: Capsules-500; font-weight:500; fill: #ed017c;">',
                 _gamePhaseText,
                 "</text>",
-                '<text x="10" y="80" style="font-size:26px; font-family: Capsules-500; font-weight:500; fill: #c0b3f1;">',
+                '<text x="10" y="85" style="font-size:26px; font-family: Capsules-500; font-weight:500; fill: #c0b3f1;">',
                 _getSubstring(_title, 0, 30),
                 "</text>",
-                '<text x="10" y="115" style="font-size:26px; font-family: Capsules-500; font-weight:500; fill: #c0b3f1;">',
+                '<text x="10" y="120" style="font-size:26px; font-family: Capsules-500; font-weight:500; fill: #c0b3f1;">',
                 _getSubstring(_title, 30, 60),
                 "</text>",
-                '<text x="10" y="150" style="font-size:26px; font-family: Capsules-500; font-weight:500; fill: #c0b3f1;">',
+                '<text x="10" y="155" style="font-size:26px; font-family: Capsules-500; font-weight:500; fill: #c0b3f1;">',
                 _getSubstring(_title, 60, 90),
                 "</text>",
                 '<text x="10" y="230" style="font-size:80px; font-family: Capsules-700; font-weight:700; fill: #fea282;">',
@@ -332,9 +331,9 @@ contract DefifaTokenUriResolver is IDefifaTokenUriResolver, IJBTokenUriResolver 
         returns (string memory substring)
     {
         bytes memory _strBytes = bytes(_str);
-        _startIndex = _strBytes[_startIndex] == bytes1(0x20) ? _startIndex + 1 : _startIndex;
         if (_startIndex >= _strBytes.length) return "";
         if (_endIndex > _strBytes.length) _endIndex = _strBytes.length;
+        _startIndex = _strBytes[_startIndex] == bytes1(0x20) ? _startIndex + 1 : _startIndex;
         if (_startIndex >= _endIndex) return "";
         bytes memory _result = new bytes(_endIndex-_startIndex);
         for (uint256 _i = _startIndex; _i < _endIndex;) {
