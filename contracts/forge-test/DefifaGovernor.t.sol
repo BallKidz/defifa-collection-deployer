@@ -444,7 +444,7 @@ contract DefifaGovernorTest is TestBaseWorkflow {
             mintAndRefund(_nft, _projectId, i + 1);
         }
         // Have a user mint and refund the tier
-        // mintAndRefund(_nft, _projectId, 1);
+        mintAndRefund(_nft, _projectId, 1);
 
         // Phase 2: Redeem
         vm.warp(block.timestamp + defifaData.mintDuration);
@@ -544,7 +544,6 @@ contract DefifaGovernorTest is TestBaseWorkflow {
             abi.encode(bytes32(0), bytes32(0), type(IDefifaDelegate).interfaceId, _refundUser, rawMetadata);
         // Pay to the project and mint an NFT
         vm.deal(_refundUser, _cost);
-        vm.deal(_delegateUser, _cost);
 
         vm.prank(_refundUser);
         _terminals[0].pay{value: _cost}(_projectId, _cost, address(0), _refundUser, 0, true, "", metadata);
@@ -578,15 +577,73 @@ contract DefifaGovernorTest is TestBaseWorkflow {
             _beneficiary: payable(_refundUser),
             _memo: "imma out of here",
             _metadata: redemptionMetadata
-        });
-
-        assertEq(_governor.MAX_VOTING_POWER_TIER() , _governor.getVotes(_refundUser, block.number - 1));
-
-        // User should have their original funds again
-        // _delegateUser will get the funds back
-        // assertEq(_refundUser.balance, _cost * 2);
-        // User should no longer have the NFT
+        });     
+        vm.roll(block.number + 1);
+   
+        assertEq(_refundUser.balance, _cost);
         assertEq(_delegate.balanceOf(_refundUser), 0);
+
+        assertEq(0 , _governor.getVotes(_refundUser, block.number - 1));
+    }
+
+    function testRevertsIfDelegationisDoneAfterMintPhase(
+        uint8 nUsersWithWinningTier,
+        uint8 winningTierExtraWeight,
+        uint8 baseRedemptionWeight
+    ) public  {
+        uint256 nOfOtherTiers = 31;
+        vm.assume(nUsersWithWinningTier > 1 && nUsersWithWinningTier < 100);
+        uint256 totalWeight = baseRedemptionWeight * (nOfOtherTiers + 1) + winningTierExtraWeight;
+        vm.assume(totalWeight > 1);
+
+        address[] memory _users = new address[](nOfOtherTiers + nUsersWithWinningTier);
+        DefifaLaunchProjectData memory defifaData = getBasicDefifaLaunchData(uint8(nOfOtherTiers + 1));
+        (uint256 _projectId, DefifaDelegate _nft, DefifaGovernor _governor) = createDefifaProject(defifaData);
+        // Phase 1: minting
+        vm.warp(defifaData.start - defifaData.mintDuration - defifaData.refundDuration);
+        deployer.queueNextPhaseOf(_projectId);
+
+        for (uint256 i = 0; i < nOfOtherTiers + nUsersWithWinningTier; i++) {
+            // Generate a new address for each tier
+            _users[i] = address(bytes20(keccak256(abi.encode("user", Strings.toString(i)))));
+            // fund user
+            vm.deal(_users[i], 1 ether);
+            if (i < nOfOtherTiers) {
+                // Build metadata to buy specific NFT
+                uint16[] memory rawMetadata = new uint16[](1);
+                rawMetadata[0] = uint16(i + 1); // reward tier, 1 indexed
+                bytes memory metadata =
+                    abi.encode(bytes32(0), bytes32(0), type(IDefifaDelegate).interfaceId, _users[i], rawMetadata);
+                // Pay to the project and mint an NFT
+                vm.prank(_users[i]);
+                _terminals[0].pay{value: 1 ether}(_projectId, 1 ether, address(0), _users[i], 0, true, "", metadata);
+                // Forward 1 block, user should receive all the voting power of the tier, as its the only NFT
+                vm.roll(block.number + 1);
+                assertEq(_governor.MAX_VOTING_POWER_TIER(), _governor.getVotes(_users[i], block.number - 1));
+            } else {
+                // Build metadata to buy specific NFT
+                uint16[] memory rawMetadata = new uint16[](1);
+                rawMetadata[0] = uint16(nOfOtherTiers + 1); // reward tier, 1 indexed
+                bytes memory metadata =
+                    abi.encode(bytes32(0), bytes32(0), type(IDefifaDelegate).interfaceId, _users[i], rawMetadata);
+                // Pay to the project and mint an NFT
+                vm.prank(_users[i]);
+                _terminals[0].pay{value: 1 ether}(_projectId, 1 ether, address(0), _users[i], 0, true, "", metadata);
+                // Forward 1 block, user should have a part of the voting power of their tier
+                vm.roll(block.number + 1);
+                assertEq(
+                    _governor.MAX_VOTING_POWER_TIER() / (i - nOfOtherTiers + 1),
+                    _governor.getVotes(_users[i], block.number - 1)
+                );
+            }
+        }
+        // Phase 2: Redeem
+        vm.warp(block.timestamp + defifaData.mintDuration);
+        deployer.queueNextPhaseOf(_projectId);
+
+        vm.prank(_users[0]);
+        vm.expectRevert(abi.encodeWithSignature("DELEGATE_CHANGES_UNAVAILABLE_IN_THIS_PHASE()"));
+        _nft.setTierDelegate(_users[1], 1);
     }
 
     function testSetRedemptionRatesAndRedeem_singleTier(
