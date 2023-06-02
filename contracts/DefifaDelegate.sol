@@ -305,7 +305,7 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate {
      *
      * @param _owner The address to check the balance of.
      *
-     * @return balance The number of tokens owners by the owner across all tiers.
+     * @return balance The number of tokens owned by the owner across all tiers.
      */
     function balanceOf(address _owner) public view override returns (uint256 balance) {
         return store.balanceOf(address(this), _owner);

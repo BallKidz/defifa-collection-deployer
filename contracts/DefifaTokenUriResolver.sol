@@ -37,7 +37,7 @@ contract DefifaTokenUriResolver is IDefifaTokenUriResolver, IJBTokenUriResolver 
      * @notice
      * The fidelity of the decimal returned in the NFT image.
      */
-    uint256 private constant _IMG_DECIMAL_FIDELITY = 5;
+    uint256 private constant _IMG_DECIMAL_FIDELITY = 3;
 
     //*********************************************************************//
     // --------------------- private stored properties ------------------- //
@@ -160,6 +160,9 @@ contract DefifaTokenUriResolver is IDefifaTokenUriResolver, IJBTokenUriResolver 
         // Keep a reference to the rarity text;
         string memory _rarityText;
 
+        // Keep a reference to the rarity text;
+        string memory _valueText;
+
         // Keep a reference to the game's name.
         string memory _title = _delegate.name();
 
@@ -169,8 +172,11 @@ contract DefifaTokenUriResolver is IDefifaTokenUriResolver, IJBTokenUriResolver 
         // Keep a reference to the SVG parts.
         string[] memory parts = new string[](4);
 
+        // Keep a reference to the pot.
+        string memory _potText;
+
         {
-            // Get a reference to the tier.
+           // Get a reference to the tier.
             JB721Tier memory _tier = _delegate.store().tierOfTokenId(address(_delegate), _tokenId, false);
 
             // Set the tier's name.
@@ -205,6 +211,9 @@ contract DefifaTokenUriResolver is IDefifaTokenUriResolver, IJBTokenUriResolver 
                 (uint256 _gamePot, address _gamePotToken, uint256 _gamePotDecimals) =
                     _delegate.gamePotReporter().gamePotOf(_gameId);
 
+                // Set the pot text. 
+                _potText = _formatBalance(_gamePot, _gamePotToken, _gamePotDecimals, _IMG_DECIMAL_FIDELITY);
+
                 if (_gamePhase == DefifaGamePhase.NO_CONTEST) {
                     _gamePhaseText = "No contest. Refunds open.";
                 } else if (_gamePhase == DefifaGamePhase.NO_CONTEST_INEVITABLE) {
@@ -212,25 +221,13 @@ contract DefifaTokenUriResolver is IDefifaTokenUriResolver, IJBTokenUriResolver 
                 } else if (_gamePhase == DefifaGamePhase.COUNTDOWN) {
                     _gamePhaseText = "Minting starts soon.";
                 } else if (_gamePhase == DefifaGamePhase.MINT) {
-                    _gamePhaseText = "Minting and refunds are open. Game starts soon.";
+                    _gamePhaseText = "Minting and refunds are open.";
                 } else if (_gamePhase == DefifaGamePhase.REFUND) {
-                    _gamePhaseText = "Game starting, minting closed. Last chance for refunds.";
+                    _gamePhaseText = "Minting is over. Refunds are ending.";
                 } else if (_gamePhase == DefifaGamePhase.SCORING && !_delegate.redemptionWeightIsSet()) {
-                    _gamePhaseText = string(
-                        abi.encodePacked(
-                            "Awaiting scorecard. Game pot is ",
-                            _formatBalance(_gamePot, _gamePotToken, _gamePotDecimals, _IMG_DECIMAL_FIDELITY),
-                            "."
-                        )
-                    );
+                    _gamePhaseText = "Awaiting scorecard approval.";
                 } else {
-                    _gamePhaseText = string(
-                        abi.encodePacked(
-                            "Scorecard approved. Total awards of ",
-                            _formatBalance(_gamePot, _gamePotToken, _gamePotDecimals, _IMG_DECIMAL_FIDELITY),
-                            "."
-                        )
-                    );
+                    _gamePhaseText = "Scorecard approved. Claims open.";
                 }
 
                 // Keep a reference to the number of tokens outstanding from this tier.
@@ -240,19 +237,18 @@ contract DefifaTokenUriResolver is IDefifaTokenUriResolver, IJBTokenUriResolver 
                     _rarityText = string(abi.encodePacked(_totalMinted.toString(), " minted so far"));
                 } else if (_gamePhase == DefifaGamePhase.SCORING && _delegate.redemptionWeightIsSet()) {
                     // Get a reference to the pot portion this token can be redeemed for.
-                    uint256 _potPortion = PRBMath.mulDiv(
-                        _gamePot, _delegate.redemptionWeightOf(_tokenId), _delegate.TOTAL_REDEMPTION_WEIGHT()
-                    );
-                    _rarityText = string(
-                        abi.encodePacked(
-                            _totalMinted.toString(),
-                            " in existence worth ~",
-                            _formatBalance(_potPortion, _gamePotToken, _gamePotDecimals, _IMG_DECIMAL_FIDELITY),
-                            " each"
-                        )
-                    );
+                    _rarityText = string(abi.encodePacked(_totalMinted.toString(), " in existence"));
                 } else {
                     _rarityText = string(abi.encodePacked(_totalMinted.toString(), " in existence"));
+                }
+
+                if (_gamePhase == DefifaGamePhase.SCORING) {
+                  uint256 _potPortion = PRBMath.mulDiv(
+                      _gamePot, _delegate.redemptionWeightOf(_tokenId), _delegate.TOTAL_REDEMPTION_WEIGHT()
+                  );
+                  _valueText =  !_delegate.redemptionWeightIsSet() ? "Awaiting scorecard..." : _formatBalance(_potPortion, _gamePotToken, _gamePotDecimals, _IMG_DECIMAL_FIDELITY);
+                } else {
+                  _valueText = _formatBalance(_tier.price, _gamePotToken, _gamePotDecimals, _IMG_DECIMAL_FIDELITY);
                 }
             }
         }
@@ -269,6 +265,10 @@ contract DefifaTokenUriResolver is IDefifaTokenUriResolver, IJBTokenUriResolver 
                 '<rect width="100%" height="100%" fill="#181424"/>',
                 '<text x="10" y="30" style="font-size:16px; font-family: Capsules-500; font-weight:500; fill: #c0b3f1;">GAME ID: ',
                 _gameId.toString(),
+                ' | POT: ',
+                _potText,
+                ' | PLAYERS: ',
+                _delegate.store().totalSupply(address(_delegate)).toString(),
                 "</text>",
                 '<text x="10" y="50" style="font-size:16px; font-family: Capsules-500; font-weight:500; fill: #ed017c;">',
                 _gamePhaseText,
@@ -279,31 +279,31 @@ contract DefifaTokenUriResolver is IDefifaTokenUriResolver, IJBTokenUriResolver 
                 '<text x="10" y="120" style="font-size:26px; font-family: Capsules-500; font-weight:500; fill: #c0b3f1;">',
                 _getSubstring(_title, 30, 60),
                 "</text>",
-                '<text x="10" y="155" style="font-size:26px; font-family: Capsules-500; font-weight:500; fill: #c0b3f1;">',
-                _getSubstring(_title, 60, 90),
-                "</text>",
-                '<text x="10" y="230" style="font-size:80px; font-family: Capsules-700; font-weight:700; fill: #fea282;">',
+                '<text x="10" y="205" style="font-size:80px; font-family: Capsules-700; font-weight:700; fill: #fea282;">',
                 bytes(_getSubstring(_team, 20, 30)).length != 0 && bytes(_getSubstring(_team, 10, 20)).length != 0
                     ? _getSubstring(_team, 0, 10)
                     : "",
                 "</text>",
-                '<text x="10" y="320" style="font-size:80px; font-family: Capsules-700; font-weight:700; fill: #fea282;">',
+                '<text x="10" y="295" style="font-size:80px; font-family: Capsules-700; font-weight:700; fill: #fea282;">',
                 bytes(_getSubstring(_team, 20, 30)).length != 0
                     ? _getSubstring(_team, 10, 20)
                     : bytes(_getSubstring(_team, 10, 20)).length != 0 ? _getSubstring(_team, 0, 10) : "",
                 "</text>",
-                '<text x="10" y="410" style="font-size:80px; font-family: Capsules-700; font-weight:700; fill: #fea282;">',
+                '<text x="10" y="385" style="font-size:80px; font-family: Capsules-700; font-weight:700; fill: #fea282;">',
                 bytes(_getSubstring(_team, 20, 30)).length != 0
                     ? _getSubstring(_team, 20, 30)
                     : bytes(_getSubstring(_team, 10, 20)).length != 0
                         ? _getSubstring(_team, 10, 20)
                         : _getSubstring(_team, 0, 10),
                 "</text>",
-                '<text x="10" y="455" style="font-size:16px; font-family: Capsules-500; font-weight:500; fill: #c0b3f1;">TOKEN ID: ',
+                '<text x="10" y="430" style="font-size:16px; font-family: Capsules-500; font-weight:500; fill: #c0b3f1;">TOKEN ID: ',
                 _tokenId.toString(),
                 "</text>",
-                '<text x="10" y="480" style="font-size:16px; font-family: Capsules-500; font-weight:500; fill: #c0b3f1;">RARITY: ',
+                '<text x="10" y="455" style="font-size:16px; font-family: Capsules-500; font-weight:500; fill: #c0b3f1;">RARITY: ',
                 _rarityText,
+                "</text>",
+                '<text x="10" y="480" style="font-size:16px; font-family: Capsules-500; font-weight:500; fill: #c0b3f1;">VALUE: ',
+                _valueText,
                 "</text>",
                 "</svg>"
             )
