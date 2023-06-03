@@ -33,16 +33,17 @@ contract DefifaGovernor is Governor, GovernorCountingSimple, IDefifaGovernor {
     error DISABLED();
 
     //*********************************************************************//
-    // -------------------- private constant properties ------------------ //
+    // ---------------- immutable internal stored properties ------------- //
     //*********************************************************************//
+
     /**
      * @notice
      * The duration of one block.
      */
-    uint256 internal constant _BLOCKTIME_SECONDS = 12;
+    uint256 internal immutable _blockTime;
 
     //*********************************************************************//
-    // --------------------- private stored properties ------------------- //
+    // --------------------- internal stored properties ------------------ //
     //*********************************************************************//
 
     /**
@@ -97,8 +98,9 @@ contract DefifaGovernor is Governor, GovernorCountingSimple, IDefifaGovernor {
     // -------------------------- constructor ---------------------------- //
     //*********************************************************************//
 
-    constructor() Governor("DefifaGovernor") {
+    constructor(uint256 __blockTime) Governor("DefifaGovernor") {
         codeOrigin = address(this);
+        _blockTime = __blockTime;
     }
 
     //*********************************************************************//
@@ -111,7 +113,7 @@ contract DefifaGovernor is Governor, GovernorCountingSimple, IDefifaGovernor {
      *
      * @param _delegate The Defifa delegate contract that this contract is Governing.
      * @param _votingStartTime Voting start time.
-     * @param _votingPeriod The time the vote will be active for once it has started, measured in blocks. This is two weeks by default.
+     * @param _votingPeriod The time the vote will be active for once it has started. This is one weeks by default.
      */
     function initialize(IDefifaDelegate _delegate, uint256 _votingStartTime, uint256 _votingPeriod)
         public
@@ -126,8 +128,8 @@ contract DefifaGovernor is Governor, GovernorCountingSimple, IDefifaGovernor {
 
         delegate = _delegate;
         votingStartTime = _votingStartTime;
-        // one weeks by default.
-        __votingPeriod = _votingPeriod == 0 ? 50191 : _votingPeriod;
+        // one week by default.
+        __votingPeriod = _votingPeriod == 0 ? 604800 : _votingPeriod;
     }
 
     /**
@@ -349,7 +351,7 @@ contract DefifaGovernor is Governor, GovernorCountingSimple, IDefifaGovernor {
      * @return The delay in number of blocks.
      */
     function votingDelay() public view override(IGovernor) returns (uint256) {
-        return votingStartTime > block.timestamp ? (votingStartTime - block.timestamp) / _BLOCKTIME_SECONDS : 0;
+        return votingStartTime > block.timestamp ? (votingStartTime - block.timestamp) / _blockTime : 0;
     }
 
     /**
@@ -357,7 +359,7 @@ contract DefifaGovernor is Governor, GovernorCountingSimple, IDefifaGovernor {
      * The amount of time that must go by for voting on a proposal to no longer be allowed.
      */
     function votingPeriod() public view override(IGovernor) returns (uint256) {
-        return __votingPeriod;
+        return __votingPeriod / _blockTime;
     }
 
     /**

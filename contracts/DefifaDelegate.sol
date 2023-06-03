@@ -60,8 +60,6 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate {
      */
     mapping(uint256 => address) internal _firstOwnerOf;
 
-    bool internal _isNoContest;
-
     //*********************************************************************//
     // --------------------- public constant properties ------------------ //
     //*********************************************************************//
@@ -70,7 +68,7 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate {
      * @notice
      * The total weight that can be divided among tiers.
      */
-    uint256 public constant override TOTAL_REDEMPTION_WEIGHT = 1_000_000_000;
+    uint256 public constant override TOTAL_REDEMPTION_WEIGHT = 1_000_000_000_000_000_000;
 
     //*********************************************************************//
     // -------------------- internal stored properties ------------------- //
@@ -84,18 +82,6 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate {
      * Tiers are limited to ID 128
      */
     uint256[128] internal _tierRedemptionWeights;
-
-    /**
-     * @notice
-     * The amount that has been redeemed.
-     */
-    uint256 internal _amountRedeemed;
-
-    /**
-     * @notice
-     * The amount of tokens that have been redeemed from a tier, refunds are not counted
-     */
-    mapping(uint256 => uint256) internal _redeemedFromTier;
 
     /**
      * @notice
@@ -191,6 +177,18 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate {
      *
      */
     address public override defaultVotingDelegate;
+
+    /**
+     * @notice
+     * The amount that has been redeemed from ths game, refunds are not counted.
+     */
+    uint256 public override amountRedeemed;
+
+    /**
+     * @notice
+     * The amount of tokens that have been redeemed from a tier, refunds are not counted
+     */
+    mapping(uint256 => uint256) public override tokensRedeemedFrom;
 
     //*********************************************************************//
     // ------------------------- external views -------------------------- //
@@ -383,7 +381,7 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate {
         // Calculate what percentage of the tier redemption amount a single token counts for.
         return
         // Tier's are 1 indexed and are stored 0 indexed.
-        _weight / (_tier.initialQuantity - _tier.remainingQuantity + _redeemedFromTier[_tierId]);
+        _weight / (_tier.initialQuantity - _tier.remainingQuantity + tokensRedeemedFrom[_tierId]);
     }
 
     /**
@@ -454,9 +452,7 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate {
         // Return the weighted overflow, and this contract as the delegate so that tokens can be deleted.
         return (
             PRBMath.mulDiv(
-                _data.overflow + _amountRedeemed,
-                redemptionWeightOf(_decodedTokenIds, _data),
-                totalRedemptionWeight(_data)
+                _data.overflow + amountRedeemed, redemptionWeightOf(_decodedTokenIds, _data), TOTAL_REDEMPTION_WEIGHT
                 ),
             _data.memo,
             delegateAllocations
@@ -668,7 +664,7 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate {
             _burn(_tokenId);
 
             unchecked {
-                if (_isScoring) ++_redeemedFromTier[store.tierIdOfToken(_tokenId)];
+                if (_isScoring) ++tokensRedeemedFrom[store.tierIdOfToken(_tokenId)];
                 ++_i;
             }
         }
@@ -677,7 +673,7 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate {
         _didBurn(_decodedTokenIds);
 
         // Increment the amount redeemed if this is the scoring phase.
-        if (_isScoring) _amountRedeemed += _data.reclaimedAmount.value;
+        if (_isScoring) amountRedeemed += _data.reclaimedAmount.value;
     }
 
     /**

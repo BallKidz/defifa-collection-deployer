@@ -52,6 +52,10 @@ interface IDefifaDelegate is IJB721Delegate {
 
     function gamePotReporter() external view returns (IDefifaGamePotReporter);
 
+    function amountRedeemed() external view returns (uint256);
+
+    function tokensRedeemedFrom(uint256 _tierId) external view returns (uint256);
+
     function pricingCurrency() external view returns (uint256);
 
     function firstOwnerOf(uint256 _tokenId) external view returns (address);

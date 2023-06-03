@@ -23,8 +23,9 @@ contract DefifaGovernorTest is TestBaseWorkflow {
 
     function setUp() public virtual override {
         super.setUp();
+        uint256 blockSeconds = 12;
         DefifaDelegate _delegate = new DefifaDelegate();
-        DefifaGovernor _governer = new DefifaGovernor();
+        DefifaGovernor _governer = new DefifaGovernor(blockSeconds);
         JBDelegatesRegistry _registry = new JBDelegatesRegistry();
         DefifaTokenUriResolver _tokenURIResolver = new DefifaTokenUriResolver(ITypeface(address(0)));
         address _protocolFeeProjectTokenAccount = 0x1000000000000000000000000000000000000000;

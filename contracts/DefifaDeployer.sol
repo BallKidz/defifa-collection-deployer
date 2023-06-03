@@ -83,7 +83,7 @@ contract DefifaDeployer is
      * @dev
      * Includes the payment terminal being used, the distribution limit, and wether or not fees should be held.
      */
-    mapping(uint256 => DefifaDistributionOpsData) internal _opsOf;
+    mapping(uint256 => DefifaDistributionOpsData) internal _distributionOpsOf;
 
     /**
      * @notice
@@ -96,14 +96,6 @@ contract DefifaDeployer is
      * If each game has been set to no contest.
      */
     mapping(uint256 => bool) internal _noContestIsSet;
-
-    /**
-     * @notice
-     * The total amount the game is being played with.
-     *
-     * _gameId The ID of the game to get the pot of.
-     */
-    mapping(uint256 => uint256) internal _gamePotOf;
 
     //*********************************************************************//
     // ------------------------ public constants ------------------------- //
@@ -189,16 +181,24 @@ contract DefifaDeployer is
     }
 
     function distributionOpsOf(uint256 _gameId) external view override returns (DefifaDistributionOpsData memory) {
-        return _opsOf[_gameId];
+        return _distributionOpsOf[_gameId];
     }
 
-    function gamePotOf(uint256 _gameId) external view returns (uint256, address, uint256) {
-        // Get a reference to the terminal being used by the project.
-        DefifaDistributionOpsData memory _ops = _opsOf[_gameId];
+    function currentGamePotOf(uint256 _gameId) external view returns (uint256, address, uint256) {
+        // Get a reference to the distribution ops being used by the project.
+        DefifaDistributionOpsData memory _ops = _distributionOpsOf[_gameId];
 
-        IJBSingleTokenPaymentTerminal _terminal = IJBSingleTokenPaymentTerminal(address(_ops.terminal));
+        // Get a reference to the terminal.
+        address _terminal = address(_ops.terminal);
 
-        return (_gamePotOf[_gameId], _terminal.token(), _terminal.decimals());
+        // Get the current balance.
+        uint256 _pot = IJBPayoutRedemptionPaymentTerminal3_1(_terminal).store().currentOverflowOf(
+            IJBSingleTokenPaymentTerminal(_terminal), _gameId
+        );
+
+        return (
+            _pot, IJBSingleTokenPaymentTerminal(_terminal).token(), IJBSingleTokenPaymentTerminal(_terminal).decimals()
+        );
     }
 
     /**
@@ -214,13 +214,15 @@ contract DefifaDeployer is
      */
     function currentGamePhaseOf(uint256 _gameId) external view override returns (DefifaGamePhase) {
         // Get the project's current funding cycle along with its metadata.
-        JBFundingCycle memory _currentFundingCycle = controller.fundingCycleStore().currentOf(_gameId);
+        (JBFundingCycle memory _currentFundingCycle, JBFundingCycleMetadata memory _metadata) =
+            controller.currentFundingCycleOf(_gameId);
 
         if (_currentFundingCycle.number == 0) return DefifaGamePhase.COUNTDOWN;
         if (_currentFundingCycle.number == 1) return DefifaGamePhase.MINT;
         if (_noContestIsSet[_gameId]) return DefifaGamePhase.NO_CONTEST;
-        if (_isNoContest(_gameId, _currentFundingCycle)) return DefifaGamePhase.NO_CONTEST_INEVITABLE;
+        if (_noContestInevitable(_gameId, _currentFundingCycle)) return DefifaGamePhase.NO_CONTEST_INEVITABLE;
         if (_currentFundingCycle.number == 2 && _timesFor[_gameId].refundDuration != 0) return DefifaGamePhase.REFUND;
+        if (IDefifaDelegate(_metadata.dataSource).redemptionWeightIsSet()) return DefifaGamePhase.COMPLETE;
         return DefifaGamePhase.SCORING;
     }
 
@@ -319,7 +321,7 @@ contract DefifaDeployer is
             });
 
             // Store the terminal and distribution limit.
-            _opsOf[gameId] = DefifaDistributionOpsData({
+            _distributionOpsOf[gameId] = DefifaDistributionOpsData({
                 terminal: _launchProjectData.terminal,
                 distributionLimit: _launchProjectData.distributionLimit,
                 token: _launchProjectData.token
@@ -371,8 +373,8 @@ contract DefifaDeployer is
 
         // Create the standard tiers struct that will be populated from the defifa tiers.
         JB721TierParams[] memory _delegateTiers = new JB721TierParams[](
-      _launchProjectData.tiers.length
-    );
+          _launchProjectData.tiers.length
+        );
 
         // Group all the tier names together.
         string[] memory _tierNames = new string[](_launchProjectData.tiers.length);
@@ -488,7 +490,7 @@ contract DefifaDeployer is
         if (_noContestIsSet[_gameId] || _currentFundingCycle.duration == 0) revert GAME_OVER();
 
         // Check for no contest.
-        if (_isNoContest(_gameId, _currentFundingCycle)) {
+        if (_noContestInevitable(_gameId, _currentFundingCycle)) {
             return _queueNoContest(_gameId, _metadata.dataSource);
         }
 
@@ -697,7 +699,7 @@ contract DefifaDeployer is
      */
     function _queueGamePhase(uint256 _gameId, address _dataSource) internal returns (uint256 configuration) {
         // Get a reference to the terminal being used by the project.
-        DefifaDistributionOpsData memory _ops = _opsOf[_gameId];
+        DefifaDistributionOpsData memory _ops = _distributionOpsOf[_gameId];
 
         // Set fund access constraints.
         JBFundAccessConstraints[] memory fundAccessConstraints = new JBFundAccessConstraints[](1);
@@ -767,12 +769,6 @@ contract DefifaDeployer is
             fundAccessConstraints,
             "Defifa scoring phase."
         );
-
-        // Store the game pot.
-        uint256 _balance = IJBPayoutRedemptionPaymentTerminal3_1(address(_ops.terminal)).store().balanceOf(
-            IJBSingleTokenPaymentTerminal(address(_ops.terminal)), _gameId
-        );
-        _gamePotOf[_gameId] = _balance > _ops.distributionLimit ? _balance - _ops.distributionLimit : 0;
     }
 
     /**
@@ -851,7 +847,11 @@ contract DefifaDeployer is
      *
      * @return A flag indicating if a game with the current funding cycle is in no contest.
      */
-    function _isNoContest(uint256 _gameId, JBFundingCycle memory _currentFundingCycle) internal view returns (bool) {
+    function _noContestInevitable(uint256 _gameId, JBFundingCycle memory _currentFundingCycle)
+        internal
+        view
+        returns (bool)
+    {
         // Get the project's previously configured funding cycle.
         (JBFundingCycle memory _previouslyConfiguredFundingCycle,) =
             controller.getFundingCycleOf(_gameId, _currentFundingCycle.basedOn);

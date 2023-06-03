@@ -19,6 +19,8 @@ contract DeployMainnet is Script {
 
     uint256 _ballkidzProjectId = 369;
 
+    uint256 _blockTime = 12;
+
     function run() external {
         vm.startBroadcast();
 
@@ -26,7 +28,7 @@ contract DeployMainnet is Script {
         DefifaDelegate _defifaDelegateCodeOrigin = new DefifaDelegate();
 
         // Deploy the codeOrigin for the governor.
-        DefifaGovernor _defifaGovernorCodeOrigin = new DefifaGovernor();
+        DefifaGovernor _defifaGovernorCodeOrigin = new DefifaGovernor(_blockTime);
 
         // Deploy the codeOrigin for the token uri resolver.
         DefifaTokenUriResolver _defifaTokenUriResolverCodeOrigin = new DefifaTokenUriResolver(_typeface);
@@ -57,6 +59,8 @@ contract DeployGoerli is Script {
 
     uint256 _ballkidzProjectId = 1;
 
+    uint256 _blockTime = 12;
+
     function run() external {
         vm.startBroadcast();
 
@@ -64,7 +68,7 @@ contract DeployGoerli is Script {
         DefifaDelegate _defifaDelegateCodeOrigin = new DefifaDelegate();
 
         // Deploy the codeOrigin for the governor.
-        DefifaGovernor _defifaGovernorCodeOrigin = new DefifaGovernor();
+        DefifaGovernor _defifaGovernorCodeOrigin = new DefifaGovernor(_blockTime);
 
         // Deploy the codeOrigin for the token uri resolver.
         DefifaTokenUriResolver _defifaTokenUriResolverCodeOrigin = new DefifaTokenUriResolver(_typeface);

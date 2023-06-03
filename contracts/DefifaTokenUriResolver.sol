@@ -176,7 +176,7 @@ contract DefifaTokenUriResolver is IDefifaTokenUriResolver, IJBTokenUriResolver 
         string memory _potText;
 
         {
-           // Get a reference to the tier.
+            // Get a reference to the tier.
             JB721Tier memory _tier = _delegate.store().tierOfTokenId(address(_delegate), _tokenId, false);
 
             // Set the tier's name.
@@ -209,9 +209,12 @@ contract DefifaTokenUriResolver is IDefifaTokenUriResolver, IJBTokenUriResolver 
 
                 // Keep a reference to the game pot.
                 (uint256 _gamePot, address _gamePotToken, uint256 _gamePotDecimals) =
-                    _delegate.gamePotReporter().gamePotOf(_gameId);
+                    _delegate.gamePotReporter().currentGamePotOf(_gameId);
 
-                // Set the pot text. 
+                // Include the amount redeemed.
+                _gamePot = _gamePot + delegate.amountRedeemed();
+
+                // Set the pot text.
                 _potText = _formatBalance(_gamePot, _gamePotToken, _gamePotDecimals, _IMG_DECIMAL_FIDELITY);
 
                 if (_gamePhase == DefifaGamePhase.NO_CONTEST) {
@@ -224,9 +227,9 @@ contract DefifaTokenUriResolver is IDefifaTokenUriResolver, IJBTokenUriResolver 
                     _gamePhaseText = "Minting and refunds are open.";
                 } else if (_gamePhase == DefifaGamePhase.REFUND) {
                     _gamePhaseText = "Minting is over. Refunds are ending.";
-                } else if (_gamePhase == DefifaGamePhase.SCORING && !_delegate.redemptionWeightIsSet()) {
+                } else if (_gamePhase == DefifaGamePhase.SCORING) {
                     _gamePhaseText = "Awaiting scorecard approval.";
-                } else {
+                } else if (_gamePhase == DefifaGamePhase.COMPLETE) {
                     _gamePhaseText = "Scorecard approved. Claims open.";
                 }
 
@@ -243,12 +246,14 @@ contract DefifaTokenUriResolver is IDefifaTokenUriResolver, IJBTokenUriResolver 
                 }
 
                 if (_gamePhase == DefifaGamePhase.SCORING) {
-                  uint256 _potPortion = PRBMath.mulDiv(
-                      _gamePot, _delegate.redemptionWeightOf(_tokenId), _delegate.TOTAL_REDEMPTION_WEIGHT()
-                  );
-                  _valueText =  !_delegate.redemptionWeightIsSet() ? "Awaiting scorecard..." : _formatBalance(_potPortion, _gamePotToken, _gamePotDecimals, _IMG_DECIMAL_FIDELITY);
+                    uint256 _potPortion = PRBMath.mulDiv(
+                        _gamePot, _delegate.redemptionWeightOf(_tokenId), _delegate.TOTAL_REDEMPTION_WEIGHT()
+                    );
+                    _valueText = !_delegate.redemptionWeightIsSet()
+                        ? "Awaiting scorecard..."
+                        : _formatBalance(_potPortion, _gamePotToken, _gamePotDecimals, _IMG_DECIMAL_FIDELITY);
                 } else {
-                  _valueText = _formatBalance(_tier.price, _gamePotToken, _gamePotDecimals, _IMG_DECIMAL_FIDELITY);
+                    _valueText = _formatBalance(_tier.price, _gamePotToken, _gamePotDecimals, _IMG_DECIMAL_FIDELITY);
                 }
             }
         }
@@ -263,11 +268,11 @@ contract DefifaTokenUriResolver is IDefifaTokenUriResolver, IJBTokenUriResolver 
                 ');format("opentype");}',
                 "text{white-space:pre-wrap; width:100%; }</style>",
                 '<rect width="100%" height="100%" fill="#181424"/>',
-                '<text x="10" y="30" style="font-size:16px; font-family: Capsules-500; font-weight:500; fill: #c0b3f1;">GAME ID: ',
+                '<text x="10" y="30" style="font-size:16px; font-family: Capsules-500; font-weight:500; fill: #c0b3f1;">GAME: ',
                 _gameId.toString(),
-                ' | POT: ',
+                " | POT: ",
                 _potText,
-                ' | PLAYERS: ',
+                " | PLAYERS: ",
                 _delegate.store().totalSupply(address(_delegate)).toString(),
                 "</text>",
                 '<text x="10" y="50" style="font-size:16px; font-family: Capsules-500; font-weight:500; fill: #ed017c;">',
@@ -314,15 +319,15 @@ contract DefifaTokenUriResolver is IDefifaTokenUriResolver, IJBTokenUriResolver 
 
     /**
      * @notice
-     *   Gets a substring. 
-     * 
+     *   Gets a substring.
+     *
      *   @dev
      *   If the first character is a space, it is not included.
-     * 
+     *
      *   @param _str The string to get a substring of.
      *   @param _startIndex The first index of the substring from within the string.
      *   @param _endIndex The last index of the string from within the string.
-     * 
+     *
      *   @return substring The substring.
      */
     function _getSubstring(string memory _str, uint256 _startIndex, uint256 _endIndex)
@@ -348,12 +353,12 @@ contract DefifaTokenUriResolver is IDefifaTokenUriResolver, IJBTokenUriResolver 
     /**
      * @notice
      *   Formats a balance from a fixed point number to a string.
-     * 
+     *
      *   @param _amount The fixed point amount.
      *   @param _token The token the amount is in.
      *   @param _decimals The number of decimals in the fixed point amount.
      *   @param _fidelity The number of decimals that should be returned in the formatted string.
-     * 
+     *
      *   @return The formatted balance.
      */
     function _formatBalance(uint256 _amount, address _token, uint256 _decimals, uint256 _fidelity)

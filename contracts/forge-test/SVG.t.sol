@@ -23,7 +23,7 @@ contract GamePhaseReporter is IDefifaGamePhaseReporter {
 }
 
 contract GamePotReporter is IDefifaGamePotReporter {
-    function gamePotOf(uint256 _gameId) external pure returns (uint256, address, uint256) {
+    function currentGamePotOf(uint256 _gameId) external pure returns (uint256, address, uint256) {
         _gameId;
         return (696900000000000000, JBTokens.ETH, 18);
     }
