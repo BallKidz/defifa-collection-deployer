@@ -230,7 +230,7 @@ contract DefifaTokenUriResolver is IDefifaTokenUriResolver, IJBTokenUriResolver 
                 } else if (_gamePhase == DefifaGamePhase.SCORING) {
                     _gamePhaseText = "Awaiting scorecard approval.";
                 } else if (_gamePhase == DefifaGamePhase.COMPLETE) {
-                    _gamePhaseText = "Scorecard approved. Claims open.";
+                    _gamePhaseText = "Scorecard approved. Burn to claim reward.";
                 }
 
                 // Keep a reference to the number of tokens outstanding from this tier.
@@ -238,9 +238,6 @@ contract DefifaTokenUriResolver is IDefifaTokenUriResolver, IJBTokenUriResolver 
 
                 if (_gamePhase == DefifaGamePhase.MINT) {
                     _rarityText = string(abi.encodePacked(_totalMinted.toString(), " minted so far"));
-                } else if (_gamePhase == DefifaGamePhase.SCORING && _delegate.redemptionWeightIsSet()) {
-                    // Get a reference to the pot portion this token can be redeemed for.
-                    _rarityText = string(abi.encodePacked(_totalMinted.toString(), " in existence"));
                 } else {
                     _rarityText = string(abi.encodePacked(_totalMinted.toString(), " in existence"));
                 }
