@@ -19,6 +19,8 @@ interface IDefifaGovernor {
 
     function defaultVotingDelegateProposal() external view returns (uint256);
 
+    function ratifiedProposal() external view returns (uint256);
+
     function initialize(IDefifaDelegate _delegate, uint256 _votingStartTime, uint256 _votingPeriod) external;
 
     function submitScorecard(DefifaTierRedemptionWeight[] calldata _tierWeights) external returns (uint256);

@@ -28,6 +28,7 @@ contract DefifaGovernor is Governor, GovernorCountingSimple, IDefifaGovernor {
     //*********************************************************************//
     // --------------------------- custom errors ------------------------- //
     //*********************************************************************//
+    error ALREADY_RATIFIED();
     error INCORRECT_TIER_ORDER();
     error UNOWNED_PROPOSED_REDEMPTION_VALUE();
     error DISABLED();
@@ -94,6 +95,12 @@ contract DefifaGovernor is Governor, GovernorCountingSimple, IDefifaGovernor {
      */
     uint256 public override defaultVotingDelegateProposal;
 
+    /** 
+    * @notice 
+    * The proposal that has been ratified.
+    */
+    uint256 public override ratifiedProposal;
+
     //*********************************************************************//
     // -------------------------- constructor ---------------------------- //
     //*********************************************************************//
@@ -128,8 +135,7 @@ contract DefifaGovernor is Governor, GovernorCountingSimple, IDefifaGovernor {
 
         delegate = _delegate;
         votingStartTime = _votingStartTime;
-        // one week by default.
-        __votingPeriod = _votingPeriod == 0 ? 604800 : _votingPeriod;
+        __votingPeriod = _votingPeriod;
     }
 
     /**
@@ -208,15 +214,32 @@ contract DefifaGovernor is Governor, GovernorCountingSimple, IDefifaGovernor {
      *
      * @param _tierWeights The weights of each tier in the approved scorecard.
      *
-     * @return The proposal ID.
+     * @return proposalId The proposal ID.
      */
-    function ratifyScorecard(DefifaTierRedemptionWeight[] calldata _tierWeights) external override returns (uint256) {
+    function ratifyScorecard(DefifaTierRedemptionWeight[] calldata _tierWeights) external override returns (uint256 proposalId) {
         // Build the calldata to the delegate
         (address[] memory _targets, uint256[] memory _values, bytes[] memory _calldatas) =
             _buildScorecardCalldata(_tierWeights);
 
+        if (ratifiedProposal != 0) revert ALREADY_RATIFIED();
+
         // Attempt to execute the proposal.
-        return execute(_targets, _values, _calldatas, keccak256(""));
+        proposalId = this.execute(_targets, _values, _calldatas, keccak256(""));
+
+        // Set the ratifies proposal.
+        ratifiedProposal = proposalId;
+    }
+
+    function execute(
+        address[] memory _targets,
+        uint256[] memory _values,
+        bytes[] memory _calldatas,
+        bytes32 _descriptionHash
+    ) public payable virtual override returns (uint256) {
+      // We don't allow executing proposals other than scorecards
+      if (_msgSender() != address(this)) revert DISABLED();
+
+      super.execute(_targets, _values, _calldatas, _descriptionHash);
     }
 
     //*********************************************************************//
@@ -341,6 +364,37 @@ contract DefifaGovernor is Governor, GovernorCountingSimple, IDefifaGovernor {
     }
 
     /**
+     * @dev See {IGovernor-state}.
+     */
+    function state(uint256 _proposalId) public view virtual override returns (ProposalState) {
+        if (ratifiedProposal != 0) {
+          return ratifiedProposal == _proposalId ? ProposalState.Succeeded : ProposalState.Defeated;
+        }
+
+        uint256 _snapshot = proposalSnapshot(_proposalId);
+
+        if (_snapshot == 0) {
+            revert("Governor: unknown proposal id");
+        }
+
+        if (_snapshot >= block.number) {
+            return ProposalState.Pending;
+        }
+
+        uint256 deadline = proposalDeadline(_proposalId);
+
+        if (deadline >= block.number) {
+            return ProposalState.Active;
+        }
+
+        if (_quorumReached(_proposalId) && _voteSucceeded(_proposalId)) {
+            return ProposalState.Succeeded;
+        } else {
+            return ProposalState.Active;
+        }
+    }
+
+    /**
      * @notice
      * Calculating the voting delay based on the votingStartTime configured in the constructor.
      *
@@ -371,21 +425,16 @@ contract DefifaGovernor is Governor, GovernorCountingSimple, IDefifaGovernor {
     }
 
     // Required override.
-    function state(uint256 proposalId) public view override(Governor) returns (ProposalState) {
-        return super.state(proposalId);
-    }
-
-    // Required override.
     function propose(
-        address[] memory targets,
-        uint256[] memory values,
-        bytes[] memory calldatas,
-        string memory description
+        address[] memory _targets,
+        uint256[] memory _values,
+        bytes[] memory _calldatas,
+        string memory _description
     ) public override(Governor) returns (uint256) {
         // We don't allow submitting proposals other than scorecards
         if (_msgSender() != address(this)) revert DISABLED();
 
-        return super.propose(targets, values, calldatas, description);
+        return super.propose(_targets, _values, _calldatas, _description);
     }
 
     // Required override.
@@ -406,12 +455,12 @@ contract DefifaGovernor is Governor, GovernorCountingSimple, IDefifaGovernor {
 
     // Required override.
     function _cancel(
-        address[] memory targets,
-        uint256[] memory values,
-        bytes[] memory calldatas,
-        bytes32 descriptionHash
+        address[] memory _targets,
+        uint256[] memory _values,
+        bytes[] memory _calldatas,
+        bytes32 _descriptionHash
     ) internal override(Governor) returns (uint256) {
-        return super._cancel(targets, values, calldatas, descriptionHash);
+      revert DISABLED();
     }
 
     // Required override.
