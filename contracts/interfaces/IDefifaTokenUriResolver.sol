@@ -12,7 +12,5 @@ interface IDefifaTokenUriResolver {
 
     function delegate() external view returns (IDefifaDelegate);
 
-    function tierNameOf(uint256 _tierId) external view returns (string memory);
-
-    function initialize(IDefifaDelegate _delegate, string[] memory _tierNames) external;
+    function initialize(IDefifaDelegate _delegate) external;
 }

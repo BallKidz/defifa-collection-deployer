@@ -22,11 +22,11 @@ import "./DefifaTokenUriResolver.sol";
 /// @title DefifaDeployer
 /// @notice Deploys and manages Defifa games.
 contract DefifaDeployer is
+    Ownable,
     IDefifaDeployer,
     IDefifaGamePhaseReporter,
     IDefifaGamePotReporter,
-    IERC721Receiver,
-    Ownable
+    IERC721Receiver
 {
     using Strings for uint256;
 
@@ -371,12 +371,13 @@ contract DefifaDeployer is
             _store: _launchProjectData.store,
             _gamePhaseReporter: this,
             _gamePotReporter: this,
-            _defaultVotingDelegate: _launchProjectData.defaultVotingDelegate
+            _defaultVotingDelegate: _launchProjectData.defaultVotingDelegate,
+            _tierNames: _tierNames
         });
 
         // Initialize the fallback default uri resolver if needed.
         if (_launchProjectData.defaultTokenUriResolver == IJBTokenUriResolver(address(0))) {
-            DefifaTokenUriResolver(address(_uriResolver)).initialize({_delegate: _delegate, _tierNames: _tierNames});
+            DefifaTokenUriResolver(address(_uriResolver)).initialize({_delegate: _delegate});
         }
 
         // Make sure the provided terminal accepts the same currency as this game is being played in.
@@ -389,10 +390,10 @@ contract DefifaDeployer is
 
         // Clone and initialize the new governor.
         governor = IDefifaGovernor(Clones.clone(governorCodeOrigin));
-        governor.initialize({
-            _delegate: _delegate,
-            _votingStartTime: _launchProjectData.votingStartTime,
-            _votingPeriod: _launchProjectData.votingPeriod
+        governor.initializeGame({
+            _gameId: gameId,
+            _attestationStartTime: uint256(_launchProjectData.votingStartTime),
+            _attestationGracePeriod: uint256(_launchProjectData.votingPeriod)
         });
 
         // Transfer ownership to the specified owner.

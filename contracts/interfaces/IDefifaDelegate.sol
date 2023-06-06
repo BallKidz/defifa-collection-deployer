@@ -54,6 +54,8 @@ interface IDefifaDelegate is IJB721Delegate {
 
     function amountRedeemed() external view returns (uint256);
 
+    function tierNameOf(uint256 _tierId) external view returns (string memory);
+
     function tokensRedeemedFrom(uint256 _tierId) external view returns (uint256);
 
     function pricingCurrency() external view returns (uint256);
@@ -100,6 +102,7 @@ interface IDefifaDelegate is IJB721Delegate {
         IJBTiered721DelegateStore _store,
         IDefifaGamePhaseReporter _gamePhaseReporter,
         IDefifaGamePotReporter _gamePotReporter,
-        address _defaultVotingDelegate
+        address _defaultVotingDelegate,
+        string[] memory _tierNames
     ) external;
 }

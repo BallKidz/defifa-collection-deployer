@@ -69,6 +69,9 @@ contract SVGTest is Test {
             transfersPausable: false,
             useVotingUnits: true
         });
+        string[] memory _tierNames = new string[](1);
+        _tierNames[0] = "lakers win. no one scores over 40pts.";
+
         _delegate.initialize({
             _gameId: 12345,
             _directory: _directory,
@@ -83,13 +86,11 @@ contract SVGTest is Test {
             _store: _store,
             _gamePhaseReporter: _gamePhaseReporter,
             _gamePotReporter: _gamePotReporter,
-            _defaultVotingDelegate: address(0)
+            _defaultVotingDelegate: address(0),
+            _tierNames: _tierNames
         });
 
-        string[] memory _tierNames = new string[](1);
-        _tierNames[0] = "lakers win. no one scores over 40pts.";
-
-        _resolver.initialize(_delegate, _tierNames);
+        _resolver.initialize(_delegate);
 
         string[] memory inputs = new string[](3);
         inputs[0] = "node";
@@ -123,6 +124,10 @@ contract SVGTest is Test {
             transfersPausable: false,
             useVotingUnits: true
         });
+
+        string[] memory _tierNames = new string[](1);
+        _tierNames[0] = "D in 4";
+
         _delegate.initialize({
             _gameId: 123,
             _directory: _directory,
@@ -137,13 +142,11 @@ contract SVGTest is Test {
             _store: _store,
             _gamePhaseReporter: _gamePhaseReporter,
             _gamePotReporter: _gamePotReporter,
-            _defaultVotingDelegate: address(0)
+            _defaultVotingDelegate: address(0),
+            _tierNames: _tierNames
         });
 
-        string[] memory _tierNames = new string[](1);
-        _tierNames[0] = "D in 4";
-
-        _resolver.initialize(_delegate, _tierNames);
+        _resolver.initialize(_delegate);
 
         string[] memory inputs = new string[](3);
         inputs[0] = "node";

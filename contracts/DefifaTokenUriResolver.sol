@@ -27,14 +27,6 @@ contract DefifaTokenUriResolver is IDefifaTokenUriResolver, IJBTokenUriResolver 
     uint256 private constant _IMG_DECIMAL_FIDELITY = 3;
 
     //*********************************************************************//
-    // --------------------- private stored properties ------------------- //
-    //*********************************************************************//
-
-    /// @notice The names of each tier.
-    /// @dev _tierId The ID of the tier to get a name for.
-    mapping(uint256 => string) private _tierNameOf;
-
-    //*********************************************************************//
     // --------------- public immutable stored properties ---------------- //
     //*********************************************************************//
 
@@ -52,15 +44,6 @@ contract DefifaTokenUriResolver is IDefifaTokenUriResolver, IJBTokenUriResolver 
     IDefifaDelegate public override delegate;
 
     //*********************************************************************//
-    // ------------------------- external views -------------------------- //
-    //*********************************************************************//
-
-    /// @notice The name of the tier with the specified ID.
-    function tierNameOf(uint256 _tierId) external view override returns (string memory) {
-        return _tierNameOf[_tierId];
-    }
-
-    //*********************************************************************//
     // -------------------------- constructor ---------------------------- //
     //*********************************************************************//
 
@@ -75,8 +58,7 @@ contract DefifaTokenUriResolver is IDefifaTokenUriResolver, IJBTokenUriResolver 
 
     /// @notice Initializes the contract.
     /// @param _delegate The Defifa delegate contract that this contract is showing.
-    /// @param _tierNames The names of each tier.
-    function initialize(IDefifaDelegate _delegate, string[] memory _tierNames) public virtual override {
+    function initialize(IDefifaDelegate _delegate) public virtual override {
         // Make the original un-initializable.
         if (address(this) == codeOrigin) revert();
 
@@ -84,19 +66,6 @@ contract DefifaTokenUriResolver is IDefifaTokenUriResolver, IJBTokenUriResolver 
         if (address(delegate) != address(0)) revert();
 
         delegate = _delegate;
-
-        // Keep a reference to the number of tier names.
-        uint256 _numberOfTierNames = _tierNames.length;
-
-        // Set the name for each tier.
-        for (uint256 _i; _i < _numberOfTierNames;) {
-            // Set the tier name.
-            _tierNameOf[_i + 1] = _tierNames[_i];
-
-            unchecked {
-                ++_i;
-            }
-        }
     }
 
     /// @notice The metadata URI of the provided token ID.
@@ -136,7 +105,7 @@ contract DefifaTokenUriResolver is IDefifaTokenUriResolver, IJBTokenUriResolver 
             JB721Tier memory _tier = _delegate.store().tierOfTokenId(address(_delegate), _tokenId, false);
 
             // Set the tier's name.
-            _team = _tierNameOf[_tier.id];
+            _team = delegate.tierNameOf(_tier.id);
 
             // Check to see if the tier has a URI. Return it if it does.
             if (_tier.encodedIPFSUri != bytes32(0)) {

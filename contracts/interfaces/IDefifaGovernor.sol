@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
+import "@jbx-protocol/juice-contracts-v3/contracts/interfaces/IJBController3_1.sol";
+import "../enums/DefifaScorecardState.sol";
 import "../structs/DefifaTierRedemptionWeight.sol";
 import "./IDefifaDelegate.sol";
 
@@ -11,23 +13,30 @@ interface IDefifaGovernor {
 
     function MAX_VOTING_POWER_TIER() external view returns (uint256);
 
-    function codeOrigin() external view returns (address);
+    function controller() external view returns (IJBController3_1);
 
-    function delegate() external view returns (IDefifaDelegate);
+    function defaultAttestationDelegateProposalOf(uint256 _gameId) external view returns (uint256);
 
-    function votingStartTime() external view returns (uint256);
+    function ratifiedScorecardIdOf(uint256 _gameId) external view returns (uint256);
 
-    function defaultVotingDelegateProposal() external view returns (uint256);
+    function hashScorecard(
+        address _game,
+        bytes memory _calldata
+    ) external returns (uint256);
 
-    function ratifiedProposal() external view returns (uint256);
+    function stateOf(uint256 _gameId, uint256 _scorecardId) external view returns (DefifaScorecardState);
 
-    function initialize(IDefifaDelegate _delegate, uint256 _votingStartTime, uint256 _votingPeriod) external;
+    function attestationStartTimeOf(uint256 _gameId) external view returns (uint256);
 
-    function submitScorecard(DefifaTierRedemptionWeight[] calldata _tierWeights) external returns (uint256);
+    function attestationGracePeriodOf(uint256 _gameId) external view returns (uint256);
 
-    function attestToScorecard(uint256 _scorecardId) external;
+    function quorum(uint256 _gameId) external view returns (uint256);
 
-    function attestToScorecardWithReasonAndParams(uint256 _scorecardId, bytes memory params) external;
+    function initializeGame(uint256 _gameId, uint256 _attestationStartTime, uint256 _attestationGracePeriod) external;
 
-    function ratifyScorecard(DefifaTierRedemptionWeight[] calldata _tierWeights) external returns (uint256);
+    function submitScorecardFor(uint256 _gameId, DefifaTierRedemptionWeight[] calldata _tierWeights) external returns (uint256);
+
+    function attestToScorecardFrom(uint256 _gameId, uint256 _scorecardId) external returns (uint256 weight);
+
+    function ratifyScorecardFrom(uint256 _gameId, DefifaTierRedemptionWeight[] calldata _tierWeights) external returns (uint256);
 }

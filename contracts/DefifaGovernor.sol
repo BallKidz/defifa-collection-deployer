@@ -2,21 +2,26 @@
 pragma solidity ^0.8.16;
 
 import "@paulrberg/contracts/math/PRBMath.sol";
-import "@openzeppelin/contracts/governance/Governor.sol";
-import "@openzeppelin/contracts/governance/extensions/GovernorCountingSimple.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/utils/Address.sol";
 import "./interfaces/IDefifaGovernor.sol";
+import "./structs/DefifaScorecard.sol";
+import "./structs/DefifaAttestations.sol";
 import "./DefifaDelegate.sol";
 
 /// @title DefifaGovernor
 /// @notice Manages the ratification of Defifa scorecards.
-contract DefifaGovernor is Governor, GovernorCountingSimple, IDefifaGovernor {
+contract DefifaGovernor is Ownable, IDefifaGovernor {
     //*********************************************************************//
     // --------------------------- custom errors ------------------------- //
     //*********************************************************************//
+    error ALREADY_ATTESTED();
     error ALREADY_RATIFIED();
+    error NOT_ALLOWED();
+    error DUPLICATE_SCORECARD();
     error INCORRECT_TIER_ORDER();
+    error UNKNOWN_PROPOSAL();
     error UNOWNED_PROPOSED_REDEMPTION_VALUE();
-    error DISABLED();
 
     //*********************************************************************//
     // ---------------- immutable internal stored properties ------------- //
@@ -25,12 +30,23 @@ contract DefifaGovernor is Governor, GovernorCountingSimple, IDefifaGovernor {
     /// @notice The duration of one block.
     uint256 internal immutable _blockTime;
 
+    /// @notice The scorecards.
+    /// _gameId The ID of the game for which the scorecard affects.
+    /// _scorecardId The ID of the scorecard to retrieve.
+    mapping(uint256 => mapping(uint256 => DefifaScorecard)) internal _scorecardOf;
+
+    /// @notice The attestations to a scorecard
+    /// _gameId The ID of the game for which the scorecard affects.
+    /// _scorecardId The ID of the scorecard that has been attested to.
+    mapping(uint256 => mapping(uint256 => DefifaAttestations)) internal _scorecardAttestationsOf;
+
     //*********************************************************************//
     // --------------------- internal stored properties ------------------ //
     //*********************************************************************//
 
     /// @notice The time the vote will be active for once it has started, measured in seconds.
-    uint256 internal __votingPeriod;
+    /// _gameId The ID of the game for which the voting period applies.
+    mapping(uint256 => uint256) internal _packedScorecardInfoOf;
 
     //*********************************************************************//
     // ------------------------ public constants ------------------------- //
@@ -43,96 +59,103 @@ contract DefifaGovernor is Governor, GovernorCountingSimple, IDefifaGovernor {
     // --------------- public immutable stored properties ---------------- //
     //*********************************************************************//
 
-    /// @notice The address of the origin 'DefifaGovernor', used to check in the init if the contract is the original or not
-    address public immutable override codeOrigin;
+    /// @notice The controller with which new projects should be deployed.
+    IJBController3_1 public immutable override controller;
 
     //*********************************************************************//
     // -------------------- public stored properties --------------------- //
     //*********************************************************************//
 
-    /// @notice The Defifa delegate contract that this contract is Governing.
-    IDefifaDelegate public override delegate;
-
-    /// @notice Voting start timestamp after which voting can begin.
-    uint256 public override votingStartTime;
-
     /// @notice The latest proposal submitted by the default voting delegate.
-    uint256 public override defaultVotingDelegateProposal;
+    /// _gameId The ID of the game of the default voting delegate proposal.
+    mapping(uint256 => uint256) public override defaultAttestationDelegateProposalOf;
 
-    /// @notice The proposal that has been ratified.
-    uint256 public override ratifiedProposal;
+    /// @notice The scorecard that has been ratified.
+    /// _gameId The ID of the game of the ratified scorecard.
+    mapping(uint256 => uint256) public override ratifiedScorecardIdOf;
 
     //*********************************************************************//
     // -------------------------- public views --------------------------- //
     //*********************************************************************//
 
-    /// @notice The state of a proposal.
-    /// @return The state.
-    function state(uint256 _proposalId) public view virtual override returns (ProposalState) {
-        if (ratifiedProposal != 0) {
-            return ratifiedProposal == _proposalId ? ProposalState.Succeeded : ProposalState.Defeated;
-        }
-
-        uint256 _snapshot = proposalSnapshot(_proposalId);
-
-        if (_snapshot == 0) {
-            revert("Governor: unknown proposal id");
-        }
-
-        if (_snapshot >= block.number) {
-            return ProposalState.Pending;
-        }
-
-        uint256 deadline = proposalDeadline(_proposalId);
-
-        if (deadline >= block.number) {
-            return ProposalState.Active;
-        }
-
-        if (_quorumReached(_proposalId) && _voteSucceeded(_proposalId)) {
-            return ProposalState.Succeeded;
-        } else {
-            return ProposalState.Active;
-        }
+    /// @notice A value representing the contents of a scorecard.
+    /// @param _game The address where the game is being played. 
+    function hashScorecard(
+        address _game,
+        bytes memory _calldata
+    ) public pure virtual override returns (uint256) {
+        return uint256(keccak256(abi.encode(_game, _calldata)));
     }
 
-    /// @notice The amount of time between a scorecard being submitted and attestations to it being enabled, measured in blocks.
-    /// @dev This can be increassed to leave time for users to buy voting power, or delegate it, before the voting of a proposal starts.
-    /// @return The delay in number of blocks.
-    function votingDelay() public view override(IGovernor) returns (uint256) {
-        return votingStartTime > block.timestamp ? (votingStartTime - block.timestamp) / _blockTime : 0;
+    /// @notice The state of a proposal.
+    /// @param _gameId The ID of the game to get a proposal state of.
+    /// @param _scorecardId The ID of the proposal to get the state of.
+    /// @return The state.
+    function stateOf(uint256 _gameId, uint256 _scorecardId) public view virtual override returns (DefifaScorecardState) {
+
+        // Keep a reference to the ratified scorecard ID.
+        uint256 _ratifiedScorecardId = ratifiedScorecardIdOf[_gameId];
+
+        // If the game has already ratified a scorecard, return succeeded if the ratified proposal is being checked. Else return defeated.
+        if (_ratifiedScorecardId != 0) {
+            return _ratifiedScorecardId == _scorecardId ? DefifaScorecardState.RATIFIED : DefifaScorecardState.DEFEATED;
+        }
+
+        // Get a reference to the scorecard.
+        DefifaScorecard memory _scorecard = _scorecardOf[_gameId][_scorecardId];
+
+        // Make sure the proposal is known.
+        if (_scorecard.attestationsBegin == 0) {
+            revert UNKNOWN_PROPOSAL();
+        }
+
+        // If the scorecard has attestations beginning in the future, the state is PENDING.
+        if (_scorecard.attestationsBegin >= block.number) {
+            return DefifaScorecardState.PENDING;
+        }
+
+        // If the scorecard has a grace period expiring in the future, the state is ACTIVE.
+        if (_scorecard.gracePeriodEnds >= block.number) {
+            return DefifaScorecardState.ACTIVE;
+        }
+
+        // If quorum has been reached, the state is SUCCEEDED, otherwise it is ACTIVE.  
+        return quorum(_gameId) <= _scorecardAttestationsOf[_gameId][_scorecardId].count ? DefifaScorecardState.SUCCEEDED : DefifaScorecardState.ACTIVE;
+    }
+
+    /// @notice The amount of time between a scorecard being submitted and attestations to it being enabled, measured in seconds.
+    /// @dev This can be increassed to leave time for users to aquire attestation power, or delegate it, before a scorecard becomes live.
+    /// @param _gameId The ID of the game to get the attestation delay of.
+    /// @return The delay, in seconds.
+    function attestationStartTimeOf(uint256 _gameId) public view override returns (uint256) {
+      // attestation start time in bits 0-47 (48 bits).
+      return uint256(uint48(_packedScorecardInfoOf[_gameId]));
     }
 
     /// @notice The amount of time that must go by before a scorecard can be ratified.
+    /// @param _gameId The ID of the game to get the voting period of.
     /// @return The voting period in number of blocks.
-    function votingPeriod() public view override(IGovernor) returns (uint256) {
-        return __votingPeriod / _blockTime;
+    function attestationGracePeriodOf(uint256 _gameId) public view override returns (uint256) {
+      // attestation grace period in bits 48-95 (48 bits).
+      return uint256(uint48(_packedScorecardInfoOf[_gameId] >> 48));
     }
 
     /// @notice The number of voting units that must have participated in a proposal for it to be ratified.
     /// @return The quorum number of votes.
-    function quorum(uint256) public view override(IGovernor) returns (uint256) {
-        return (delegate.store().maxTierIdOf(address(delegate)) / 2) * MAX_VOTING_POWER_TIER;
+    function quorum(uint256 _gameId) public view override returns (uint256) {
+        // Get the game's current funding cycle along with its metadata.
+        (, JBFundingCycleMetadata memory _metadata) =
+            controller.currentFundingCycleOf(_gameId);
+
+        return (IDefifaDelegate(_metadata.dataSource).store().maxTierIdOf(_metadata.dataSource) / 2) * MAX_VOTING_POWER_TIER;
     }
 
-    /// @notice The number of votes someone must have to submit a scorecard.
-    /// @return The proposal threshold.
-    function proposalThreshold() public pure override(Governor) returns (uint256) {
-        return 0;
-    }
-
-    /// @notice Indicates if this contract adheres to the specified interface.
-    /// @dev See {IERC165-supportsInterface}.
-    /// @param _interfaceId The ID of the interface to check for adherence to.
-    function supportsInterface(bytes4 _interfaceId) public view override(Governor) returns (bool) {
-        return _interfaceId == type(IDefifaGovernor).interfaceId || super.supportsInterface(_interfaceId);
-    }
     //*********************************************************************//
     // -------------------------- constructor ---------------------------- //
     //*********************************************************************//
 
-    constructor(uint256 __blockTime) Governor("DefifaGovernor") {
-        codeOrigin = address(this);
+    constructor(IJBController3_1 _controller, uint256 __blockTime) {
+        controller = _controller;
         _blockTime = __blockTime;
     }
 
@@ -140,69 +163,50 @@ contract DefifaGovernor is Governor, GovernorCountingSimple, IDefifaGovernor {
     // ----------------------- public transactions ----------------------- //
     //*********************************************************************//
 
-    /// @notice Initializes the contract.
-    /// @param _delegate The Defifa delegate contract that this contract is Governing.
-    /// @param _votingStartTime Voting start time.
-    /// @param _votingPeriod The time the vote will be active for once it has started. This is one weeks by default.
-    function initialize(IDefifaDelegate _delegate, uint256 _votingStartTime, uint256 _votingPeriod)
+    /// @notice Initializes a game.
+    /// @param _attestationStartTime The amount of time between a scorecard being submitted and attestations to it being enabled, measured in seconds.
+    /// @param _attestationGracePeriod The amount of time that must go by before a scorecard can be ratified.
+    function initializeGame(uint256 _gameId, uint256 _attestationStartTime, uint256 _attestationGracePeriod)
         public
         virtual
+        onlyOwner
         override
     {
-        // Make the original un-initializable.
-        if (address(this) == codeOrigin) revert();
+      uint256 _packed;
+      // attestation start time in bits 0-47 (48 bits).
+      _packed |= _attestationStartTime;
+      // attestation grace period in bits 48-95 (48 bits).
+      _packed |= _attestationGracePeriod << 48;
 
-        // Stop re-initialization.
-        if (address(delegate) != address(0)) revert();
-
-        // Store stuff
-        delegate = _delegate;
-        votingStartTime = _votingStartTime;
-        __votingPeriod = _votingPeriod;
-    }
-
-    /// @notice Only allow proposals through the scorecard submission process.
-    /// @dev Required override.
-    function propose(
-        address[] memory _targets,
-        uint256[] memory _values,
-        bytes[] memory _calldatas,
-        string memory _description
-    ) public override(Governor) returns (uint256) {
-        revert DISABLED();
-    }
-
-    /// @notice Only allow executions through the scorecard submission process.
-    /// @dev Required override.
-    function execute(
-        address[] memory _targets,
-        uint256[] memory _values,
-        bytes[] memory _calldatas,
-        bytes32 _descriptionHash
-    ) public payable virtual override returns (uint256) {
-        revert DISABLED();
+      // Store the packed value.
+      _packedScorecardInfoOf[_gameId] = _packed; 
     }
 
     //*********************************************************************//
     // ---------------------- external transactions ---------------------- //
     //*********************************************************************//
 
-    /// @notice Submits a scorecard to be voted on.
+    /// @notice Submits a scorecard to be attested to.
     /// @param _tierWeights The weights of each tier in the scorecard.
-    /// @return proposalId The proposal ID.
-    function submitScorecard(DefifaTierRedemptionWeight[] calldata _tierWeights)
+    /// @return scorecardId The scorecard's ID.
+    function submitScorecardFor(uint256 _gameId, DefifaTierRedemptionWeight[] calldata _tierWeights)
         external
         override
-        returns (uint256 proposalId)
+        returns (uint256 scorecardId)
     {
         // Make sure a proposal hasn't yet been ratified.
-        if (ratifiedProposal != 0) revert ALREADY_RATIFIED();
+        if (ratifiedScorecardIdOf[_gameId] != 0) revert ALREADY_RATIFIED();
 
         // Make sure no weight is assigned to an unowned tier.
         uint256 _numberOfTierWeights = _tierWeights.length;
+
+        // Get the game's current funding cycle along with its metadata.
+        (, JBFundingCycleMetadata memory _metadata) =
+            controller.currentFundingCycleOf(_gameId);
+
         for (uint256 _i; _i < _numberOfTierWeights;) {
             // Get a reference to the tier.
-            JB721Tier memory _tier = delegate.store().tierOf(address(delegate), _tierWeights[_i].id, false);
+            JB721Tier memory _tier = IDefifaDelegate(_metadata.dataSource).store().tierOf(_metadata.dataSource, _tierWeights[_i].id, false);
 
             // If there's a weight assigned to the tier, make sure there is a token backed by it.
             if (_tier.initialQuantity == _tier.remainingQuantity && _tierWeights[_i].redemptionWeight > 0) {
@@ -214,126 +218,143 @@ contract DefifaGovernor is Governor, GovernorCountingSimple, IDefifaGovernor {
             }
         }
 
-        // Build the calldata normalized such that the Governor contract accepts.
-        (address[] memory _targets, uint256[] memory _values, bytes[] memory _calldatas) =
-            _buildScorecardCalldata(_tierWeights);
+        // Hash the scorecard.
+        scorecardId = hashScorecard(_metadata.dataSource,  _buildScorecardCalldataFor(_tierWeights));
 
-        // Submit the proposal.
-        proposalId = super.propose(_targets, _values, _calldatas, "");
+        // Store the scorecard
+        DefifaScorecard storage _scorecard = _scorecardOf[_gameId][scorecardId];
+        if (_scorecard.attestationsBegin != 0) revert DUPLICATE_SCORECARD(); 
 
-        // Keep a reference to the default voting delegate.
-        address _defaultVotingDelegate = delegate.defaultVotingDelegate();
+        uint256 _attestationStartTime = attestationStartTimeOf(_gameId);
+        uint256 _timeUntilAttestationsBegin = block.timestamp > _attestationStartTime ? block.timestamp : _attestationStartTime - block.timestamp;
+        _scorecard.attestationsBegin = uint48(block.number + (_timeUntilAttestationsBegin / _blockTime)); 
+        _scorecard.gracePeriodEnds = uint48(attestationGracePeriodOf(_gameId) / _blockTime); 
 
-        // If the scorecard is being sent from the default voting delegate, store it.
-        if (msg.sender == _defaultVotingDelegate) {
-            defaultVotingDelegateProposal = proposalId;
+        // Keep a reference to the default attestation delegate.
+        address _defaultAttestationDelegate = IDefifaDelegate(_metadata.dataSource).defaultVotingDelegate();
+
+        // If the scorecard is being sent from the default attestation delegate, store it.
+        if (msg.sender == _defaultAttestationDelegate) {
+            defaultAttestationDelegateProposalOf[_gameId] = scorecardId;
         }
 
-        emit ScorecardSubmitted(proposalId, _tierWeights, msg.sender == _defaultVotingDelegate, msg.sender);
+        emit ScorecardSubmitted(scorecardId, _tierWeights, msg.sender == _defaultAttestationDelegate, msg.sender);
     }
 
     /// @notice Attests to a scorecard.
+    /// @param _gameId The ID of the game to which the scorecard belongs.
     /// @param _scorecardId The scorecard ID.
-    function attestToScorecard(uint256 _scorecardId) external override {
-        super._castVote(_scorecardId, msg.sender, 1, "", _defaultParams());
-    }
+    /// @return weight The attestation weight that was applied.
+    function attestToScorecardFrom(uint256 _gameId, uint256 _scorecardId) external override returns (uint256 weight) {
+        // Keep a reference to the scorecard being attested to.
+        DefifaScorecard storage _scorecard = _scorecardOf[_gameId][_scorecardId];
 
-    /// @notice Attests to a scorecard with the set of ordered tier id's.
-    /// @param _scorecardId The scorecard ID.
-    function attestToScorecardWithReasonAndParams(uint256 _scorecardId, bytes memory params) external override {
-        super._castVote(_scorecardId, msg.sender, 1, "", params);
+        // Keep a reference to the scorecard state.
+        DefifaScorecardState _state = stateOf(_gameId, _scorecardId);
+
+        if (_state != DefifaScorecardState.ACTIVE && _state != DefifaScorecardState.SUCCEEDED)
+            revert NOT_ALLOWED(); 
+
+        // Get a reference to the attestation weight.  
+        weight = _getAttestationWeight(_gameId, msg.sender, _scorecard.attestationsBegin);
+
+        // Keep a reference to the attestations for the scorecard.
+        DefifaAttestations storage _attestations = _scorecardAttestationsOf[_gameId][_scorecardId];
+
+        // Make sure the account isn't attesting to the same scorecard again.
+        if (_attestations.hasAttested[msg.sender]) revert ALREADY_ATTESTED(); 
+
+        // Store the fact that the account has attested to the scorecard.
+        _attestations.hasAttested[msg.sender] = true;
+
+        // Increase the attestationc count.
+        _attestations.count += weight;
+
+        // emit VoteCastWithParams(_account, _scorecardId, 1, weight, _tierIds);
     }
 
     /// @notice Ratifies a scorecard that has been approved.
     /// @param _tierWeights The weights of each tier in the approved scorecard.
-    /// @return proposalId The proposal ID.
-    function ratifyScorecard(DefifaTierRedemptionWeight[] calldata _tierWeights)
+    /// @return scorecardId The scorecard ID that was ratified.
+    function ratifyScorecardFrom(uint256 _gameId, DefifaTierRedemptionWeight[] calldata _tierWeights)
         external
         override
-        returns (uint256 proposalId)
+        returns (uint256 scorecardId)
     {
         // Make sure a scorecard hasn't been ratified yet.
-        if (ratifiedProposal != 0) revert ALREADY_RATIFIED();
+        if (ratifiedScorecardIdOf[_gameId] != 0) revert ALREADY_RATIFIED();
 
-        // Build the calldata to the delegate
-        (address[] memory _targets, uint256[] memory _values, bytes[] memory _calldatas) =
-            _buildScorecardCalldata(_tierWeights);
+        // Get the game's current funding cycle along with its metadata.
+        (, JBFundingCycleMetadata memory _metadata) =
+            controller.currentFundingCycleOf(_gameId);
+
+        // Build the calldata to the target
+        bytes memory _calldata =
+            _buildScorecardCalldataFor(_tierWeights);
 
         // Attempt to execute the proposal.
-        proposalId = super.execute(_targets, _values, _calldatas, keccak256(""));
+        scorecardId = hashScorecard(_metadata.dataSource, _calldata);
 
-        // Set the ratifies proposal.
-        ratifiedProposal = proposalId;
+        // Make sure the proposal being ratified has suceeded.
+        if (
+            stateOf(_gameId, scorecardId) != DefifaScorecardState.SUCCEEDED
+        ) revert NOT_ALLOWED();
+
+        // Set the ratified scorecard.
+        ratifiedScorecardIdOf[_gameId] = scorecardId;
+
+        // Execute the scorecard.  
+       (bool success, bytes memory returndata) = _metadata.dataSource.call(_calldata);
+        Address.verifyCallResult(success, returndata, "BAD_SCORECARD");
+        // emit ProposalExecuted(scorecardId);
     }
 
     //*********************************************************************//
     // ------------------------ internal functions ----------------------- //
     //*********************************************************************//
 
-    /// @notice Build the calldata normalized such that the Governor contract accepts.
+    /// @notice Build the normalized calldata.
     /// @param _tierWeights The weights of each tier in the scorecard data.
-    /// @return The targets to send transactions to.
-    /// @return The values to send allongside the transactions.
     /// @return The calldata to send allongside the transactions.
-    function _buildScorecardCalldata(DefifaTierRedemptionWeight[] calldata _tierWeights)
+    function _buildScorecardCalldataFor(DefifaTierRedemptionWeight[] calldata _tierWeights)
         internal
         view
-        returns (address[] memory, uint256[] memory, bytes[] memory)
+        returns (bytes memory)
     {
-        // Set the one target to be the delegate's address.
-        address[] memory _targets = new address[](1);
-        _targets[0] = address(delegate);
-
-        // There are no values sent.
-        uint256[] memory _values = new uint256[](1);
-
         // Build the calldata from the tier weights.
-        bytes memory _calldata =
+        return
             abi.encodeWithSelector(DefifaDelegate.setTierRedemptionWeights.selector, (_tierWeights));
-
-        // Add the calldata.
-        bytes[] memory _calldatas = new bytes[](1);
-        _calldatas[0] = _calldata;
-
-        return (_targets, _values, _calldatas);
     }
 
     /// @notice Gets an account's voting power given a number of tiers to look through.
+    /// @param _gameId The ID of the game for which votes are being counted.
     /// @param _account The account to get votes for.
     /// @param _blockNumber The block number to measure votes from.
-    /// @param _params The params to decode tier ID's from.
     /// @return votingPower The amount of voting power.
-    function _getVotes(address _account, uint256 _blockNumber, bytes memory _params)
+    function _getAttestationWeight(uint256 _gameId, address _account, uint256 _blockNumber)
         internal
         view
         virtual
-        override(Governor)
         returns (uint256 votingPower)
     {
-        // Decode the tier IDs from the provided param bytes.
-        uint256[] memory _tierIds = abi.decode(_params, (uint256[]));
+
+        // Get the game's current funding cycle along with its metadata.
+        (, JBFundingCycleMetadata memory _metadata) =
+            controller.currentFundingCycleOf(_gameId);
 
         // Keep a reference to the number of tiers.
-        uint256 _numbeOfTiers = _tierIds.length;
-
-        // Loop over all tiers gathering the voting share of the provided account.
-        uint256 _prevTierId;
+        // Get a reference to the number of tiers.
+        uint256 _numbeOfTiers = IDefifaDelegate(_metadata.dataSource).store().maxTierIdOf(_metadata.dataSource);
 
         // Keep a reference to the tier being iterated on.
         uint256 _tierId;
 
         for (uint256 _i; _i < _numbeOfTiers;) {
-            // Set the tier being iterated on.
-            _tierId = _tierIds[_i];
-
-            // Enforce the tiers to be in ascending order to make sure there aren't duplicate tier IDs in the params.
-            if (_tierId <= _prevTierId) revert INCORRECT_TIER_ORDER();
-
-            // Set the previous tier ID.
-            _prevTierId = _tierId;
+            // Tier's are 1 indexed;
+            _tierId = _i + 1;
 
             // Keep a reference to the number of tier votes for the account.
-            uint256 _tierVotesForAccount = delegate.getPastTierVotes(_account, _tierId, _blockNumber);
+            uint256 _tierVotesForAccount = IDefifaDelegate(_metadata.dataSource).getPastTierVotes(_account, _tierId, _blockNumber);
 
             // If there is tier voting power, increment the result by the proportion of votes the account has to the total, multiplied by the tier's maximum vote power.
             unchecked {
@@ -341,68 +362,12 @@ contract DefifaGovernor is Governor, GovernorCountingSimple, IDefifaGovernor {
                     votingPower += PRBMath.mulDiv(
                         MAX_VOTING_POWER_TIER,
                         _tierVotesForAccount,
-                        delegate.getPastTierTotalVotes(_tierId, _blockNumber)
+                        IDefifaDelegate(_metadata.dataSource).getPastTierTotalVotes(_tierId, _blockNumber)
                     );
                 }
             }
 
             ++_i;
         }
-    }
-
-    /// @notice By default, look for voting power within all tiers.
-    /// @return votingPower The amount of voting power.
-    function _defaultParams() internal view virtual override returns (bytes memory) {
-        // Get a reference to the number of tiers.
-        uint256 _count = delegate.store().maxTierIdOf(address(delegate));
-
-        // Initialize an array to store the IDs.
-        uint256[] memory _ids = new uint256[](_count);
-
-        // Add all tiers to the array.
-        for (uint256 _i; _i < _count;) {
-            // Tiers start counting from 1.
-            _ids[_i] = _i + 1;
-
-            unchecked {
-                ++_i;
-            }
-        }
-
-        // Return the encoded IDs.
-        return abi.encode(_ids);
-    }
-
-    /// @notice Execute a proposal.
-    /// @dev Required override.
-    function _execute(
-        uint256 _proposalId,
-        address[] memory _targets,
-        uint256[] memory _values,
-        bytes[] memory _calldatas,
-        bytes32 _descriptionHash
-    ) internal override(Governor) {
-        super._execute(_proposalId, _targets, _values, _calldatas, _descriptionHash);
-    }
-
-    /// @notice Proposal cancelations aren't allowed.
-    /// @dev Required override.
-    function _cancel(
-        address[] memory _targets,
-        uint256[] memory _values,
-        bytes[] memory _calldatas,
-        bytes32 _descriptionHash
-    ) internal override(Governor) returns (uint256) {
-        _targets;
-        _values;
-        _calldatas;
-        _descriptionHash;
-        revert DISABLED();
-    }
-
-    /// @notice Proposal will be executed by this contract.
-    /// @dev Required override.
-    function _executor() internal view override(Governor) returns (address) {
-        return super._executor();
     }
 }

@@ -10,19 +10,19 @@
   },
   "ast": {
     "absolutePath": "contracts/structs/DefifaTierParams.sol",
-    "id": 12323,
+    "id": 12365,
     "exportedSymbols": {
       "DefifaTierParams": [
-        12322
+        12364
       ]
     },
     "nodeType": "SourceUnit",
-    "src": "32:780:22",
+    "src": "32:785:19",
     "nodes": [
       {
-        "id": 12308,
+        "id": 12350,
         "nodeType": "PragmaDirective",
-        "src": "32:23:22",
+        "src": "32:23:19",
         "nodes": [],
         "literals": [
           "solidity",
@@ -32,27 +32,54 @@
         ]
       },
       {
-        "id": 12322,
+        "id": 12364,
         "nodeType": "StructDefinition",
-        "src": "605:206:22",
+        "src": "610:206:19",
         "nodes": [],
         "canonicalName": "DefifaTierParams",
         "documentation": {
-          "id": 12309,
+          "id": 12351,
           "nodeType": "StructuredDocumentation",
-          "src": "57:547:22",
-          "text": " @member price The cost to mint from this tier.\n   @memver reservedRate The number of minted tokens needed in the tier to allow for minting another reserved token.\n   @member reservedRateBeneficiary The beneificary of the reserved tokens for this tier.\n   @member encodedIPFSUri The URI to use for each token within the tier.\n   @member shouldUseReservedRateBeneficiaryAsDefault A flag indicating if the `reservedTokenBeneficiary` should be stored as the default beneficiary for all tiers.\n   @member name The name of the tier."
+          "src": "57:553:19",
+          "text": "@member name The name of the tier.\n @member price The price to mint from this tier.\n @member reservedRate The number of minted tokens needed in the tier to allow for minting another reserved token.\n @member reservedRateBeneficiary The beneificary of the reserved tokens for this tier.\n @member encodedIPFSUri The URI to use for each token within the tier.\n @member shouldUseReservedRateBeneficiaryAsDefault A flag indicating if the `reservedTokenBeneficiary` should be stored as the default beneficiary for all tiers, saving storage."
         },
         "members": [
           {
             "constant": false,
-            "id": 12311,
+            "id": 12353,
+            "mutability": "mutable",
+            "name": "name",
+            "nameLocation": "647:4:19",
+            "nodeType": "VariableDeclaration",
+            "scope": 12364,
+            "src": "640:11:19",
+            "stateVariable": false,
+            "storageLocation": "default",
+            "typeDescriptions": {
+              "typeIdentifier": "t_string_storage_ptr",
+              "typeString": "string"
+            },
+            "typeName": {
+              "id": 12352,
+              "name": "string",
+              "nodeType": "ElementaryTypeName",
+              "src": "640:6:19",
+              "typeDescriptions": {
+                "typeIdentifier": "t_string_storage_ptr",
+                "typeString": "string"
+              }
+            },
+            "visibility": "internal"
+          },
+          {
+            "constant": false,
+            "id": 12355,
             "mutability": "mutable",
             "name": "price",
-            "nameLocation": "642:5:22",
+            "nameLocation": "664:5:19",
             "nodeType": "VariableDeclaration",
-            "scope": 12322,
-            "src": "635:12:22",
+            "scope": 12364,
+            "src": "657:12:19",
             "stateVariable": false,
             "storageLocation": "default",
             "typeDescriptions": {
@@ -60,10 +87,10 @@
               "typeString": "uint80"
             },
             "typeName": {
-              "id": 12310,
+              "id": 12354,
               "name": "uint80",
               "nodeType": "ElementaryTypeName",
-              "src": "635:6:22",
+              "src": "657:6:19",
               "typeDescriptions": {
                 "typeIdentifier": "t_uint80",
                 "typeString": "uint80"
@@ -73,13 +100,13 @@
           },
           {
             "constant": false,
-            "id": 12313,
+            "id": 12357,
             "mutability": "mutable",
             "name": "reservedRate",
-            "nameLocation": "660:12:22",
+            "nameLocation": "682:12:19",
             "nodeType": "VariableDeclaration",
-            "scope": 12322,
-            "src": "653:19:22",
+            "scope": 12364,
+            "src": "675:19:19",
             "stateVariable": false,
             "storageLocation": "default",
             "typeDescriptions": {
@@ -87,10 +114,10 @@
               "typeString": "uint16"
             },
             "typeName": {
-              "id": 12312,
+              "id": 12356,
               "name": "uint16",
               "nodeType": "ElementaryTypeName",
-              "src": "653:6:22",
+              "src": "675:6:19",
               "typeDescriptions": {
                 "typeIdentifier": "t_uint16",
                 "typeString": "uint16"
@@ -100,13 +127,13 @@
           },
           {
             "constant": false,
-            "id": 12315,
+            "id": 12359,
             "mutability": "mutable",
             "name": "reservedTokenBeneficiary",
-            "nameLocation": "686:24:22",
+            "nameLocation": "708:24:19",
             "nodeType": "VariableDeclaration",
-            "scope": 12322,
-            "src": "678:32:22",
+            "scope": 12364,
+            "src": "700:32:19",
             "stateVariable": false,
             "storageLocation": "default",
             "typeDescriptions": {
@@ -114,10 +141,10 @@
               "typeString": "address"
             },
             "typeName": {
-              "id": 12314,
+              "id": 12358,
               "name": "address",
               "nodeType": "ElementaryTypeName",
-              "src": "678:7:22",
+              "src": "700:7:19",
               "stateMutability": "nonpayable",
               "typeDescriptions": {
                 "typeIdentifier": "t_address",
@@ -128,13 +155,13 @@
           },
           {
             "constant": false,
-            "id": 12317,
+            "id": 12361,
             "mutability": "mutable",
             "name": "encodedIPFSUri",
-            "nameLocation": "724:14:22",
+            "nameLocation": "746:14:19",
             "nodeType": "VariableDeclaration",
-            "scope": 12322,
-            "src": "716:22:22",
+            "scope": 12364,
+            "src": "738:22:19",
             "stateVariable": false,
             "storageLocation": "default",
             "typeDescriptions": {
@@ -142,10 +169,10 @@
               "typeString": "bytes32"
             },
             "typeName": {
-              "id": 12316,
+              "id": 12360,
               "name": "bytes32",
               "nodeType": "ElementaryTypeName",
-              "src": "716:7:22",
+              "src": "738:7:19",
               "typeDescriptions": {
                 "typeIdentifier": "t_bytes32",
                 "typeString": "bytes32"
@@ -155,13 +182,13 @@
           },
           {
             "constant": false,
-            "id": 12319,
+            "id": 12363,
             "mutability": "mutable",
             "name": "shouldUseReservedTokenBeneficiaryAsDefault",
-            "nameLocation": "749:42:22",
+            "nameLocation": "771:42:19",
             "nodeType": "VariableDeclaration",
-            "scope": 12322,
-            "src": "744:47:22",
+            "scope": 12364,
+            "src": "766:47:19",
             "stateVariable": false,
             "storageLocation": "default",
             "typeDescriptions": {
@@ -169,52 +196,25 @@
               "typeString": "bool"
             },
             "typeName": {
-              "id": 12318,
+              "id": 12362,
               "name": "bool",
               "nodeType": "ElementaryTypeName",
-              "src": "744:4:22",
+              "src": "766:4:19",
               "typeDescriptions": {
                 "typeIdentifier": "t_bool",
                 "typeString": "bool"
               }
             },
             "visibility": "internal"
-          },
-          {
-            "constant": false,
-            "id": 12321,
-            "mutability": "mutable",
-            "name": "name",
-            "nameLocation": "804:4:22",
-            "nodeType": "VariableDeclaration",
-            "scope": 12322,
-            "src": "797:11:22",
-            "stateVariable": false,
-            "storageLocation": "default",
-            "typeDescriptions": {
-              "typeIdentifier": "t_string_storage_ptr",
-              "typeString": "string"
-            },
-            "typeName": {
-              "id": 12320,
-              "name": "string",
-              "nodeType": "ElementaryTypeName",
-              "src": "797:6:22",
-              "typeDescriptions": {
-                "typeIdentifier": "t_string_storage_ptr",
-                "typeString": "string"
-              }
-            },
-            "visibility": "internal"
           }
         ],
         "name": "DefifaTierParams",
-        "nameLocation": "612:16:22",
-        "scope": 12323,
+        "nameLocation": "617:16:19",
+        "scope": 12365,
         "visibility": "public"
       }
     ],
     "license": "MIT"
   },
-  "id": 22
+  "id": 19
 }

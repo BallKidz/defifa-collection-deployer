@@ -42,6 +42,10 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate {
     /// _tokenId The ID of the token to get the stored first owner of.
     mapping(uint256 => address) internal _firstOwnerOf;
 
+    /// @notice The names of each tier.
+    /// @dev _tierId The ID of the tier to get a name for.
+    mapping(uint256 => string) internal _tierNameOf;
+
     //*********************************************************************//
     // --------------------- public constant properties ------------------ //
     //*********************************************************************//
@@ -180,6 +184,15 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate {
 
         // Otherwise, the first owner must be the current owner.
         return _owners[_tokenId];
+    }
+
+    //*********************************************************************//
+    // ------------------------- external views -------------------------- //
+    //*********************************************************************//
+
+    /// @notice The name of the tier with the specified ID.
+    function tierNameOf(uint256 _tierId) external view override returns (string memory) {
+        return _tierNameOf[_tierId];
     }
 
     //*********************************************************************//
@@ -347,6 +360,7 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate {
     /// @param _gamePhaseReporter The contract that reports the game phase.
     /// @param _gamePotReporter The contract that reports the game's pot.
     /// @param _defaultVotingDelegate The address that'll be set as the voting delegate by default.
+    /// @param _tierNames The names of each tier.
     function initialize(
         uint256 _gameId,
         IJBDirectory _directory,
@@ -361,7 +375,8 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate {
         IJBTiered721DelegateStore _store,
         IDefifaGamePhaseReporter _gamePhaseReporter,
         IDefifaGamePotReporter _gamePotReporter,
-        address _defaultVotingDelegate
+        address _defaultVotingDelegate,
+        string[] memory _tierNames
     ) public override {
         // Make the original un-initializable.
         if (address(this) == codeOrigin) revert();
@@ -393,6 +408,19 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate {
 
         // Record the provided tiers.
         _store.recordAddTiers(_tiers);
+
+        // Keep a reference to the number of tier names.
+        uint256 _numberOfTierNames = _tierNames.length;
+
+        // Set the name for each tier.
+        for (uint256 _i; _i < _numberOfTierNames;) {
+            // Set the tier name.
+            _tierNameOf[_i + 1] = _tierNames[_i];
+
+            unchecked {
+                ++_i;
+            }
+        }
 
         // Transfer ownership to the initializer.
         _transferOwnership(msg.sender);

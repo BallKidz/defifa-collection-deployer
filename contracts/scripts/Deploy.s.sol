@@ -11,7 +11,7 @@ import "forge-std/Script.sol";
 
 contract DeployMainnet is Script {
     // V3_1 mainnet controller.
-    IJBController3_1 controller = IJBController3_1(0x97a5b9D9F0F7cD676B69f584F29048D0Ef4BB59b);
+    IJBController3_1 _controller = IJBController3_1(0x97a5b9D9F0F7cD676B69f584F29048D0Ef4BB59b);
 
     address _defifaBallkidz = 0x11834239698c7336EF232C00a2A9926d3375DF9D;
     IJBDelegatesRegistry _delegateRegistry = IJBDelegatesRegistry(0x7A53cAA1dC4d752CAD283d039501c0Ee45719FaC);
@@ -28,7 +28,7 @@ contract DeployMainnet is Script {
         DefifaDelegate _defifaDelegateCodeOrigin = new DefifaDelegate();
 
         // Deploy the codeOrigin for the governor.
-        DefifaGovernor _defifaGovernorCodeOrigin = new DefifaGovernor(_blockTime);
+        DefifaGovernor _defifaGovernorCodeOrigin = new DefifaGovernor(_controller, _blockTime);
 
         // Deploy the codeOrigin for the token uri resolver.
         DefifaTokenUriResolver _defifaTokenUriResolverCodeOrigin = new DefifaTokenUriResolver(_typeface);
@@ -38,7 +38,7 @@ contract DeployMainnet is Script {
       address(_defifaDelegateCodeOrigin),
       address(_defifaGovernorCodeOrigin),
       address(_defifaTokenUriResolverCodeOrigin),
-      controller,
+      _controller,
       _delegateRegistry,
       _defifaBallkidz,
       _ballkidzProjectId,
@@ -51,7 +51,7 @@ contract DeployMainnet is Script {
 
 contract DeployGoerli is Script {
     // V3_1 goerli controller.
-    IJBController3_1 controller = IJBController3_1(0x1d260DE91233e650F136Bf35f8A4ea1F2b68aDB6);
+    IJBController3_1 _controller = IJBController3_1(0x1d260DE91233e650F136Bf35f8A4ea1F2b68aDB6);
 
     address _defifaBallkidz = 0x11834239698c7336EF232C00a2A9926d3375DF9D;
     IJBDelegatesRegistry _delegateRegistry = IJBDelegatesRegistry(0xCe3Ebe8A7339D1f7703bAF363d26cD2b15D23C23);
@@ -68,7 +68,7 @@ contract DeployGoerli is Script {
         DefifaDelegate _defifaDelegateCodeOrigin = new DefifaDelegate();
 
         // Deploy the codeOrigin for the governor.
-        DefifaGovernor _defifaGovernorCodeOrigin = new DefifaGovernor(_blockTime);
+        DefifaGovernor _defifaGovernorCodeOrigin = new DefifaGovernor(_controller, _blockTime);
 
         // Deploy the codeOrigin for the token uri resolver.
         DefifaTokenUriResolver _defifaTokenUriResolverCodeOrigin = new DefifaTokenUriResolver(_typeface);
@@ -78,7 +78,7 @@ contract DeployGoerli is Script {
           address(_defifaDelegateCodeOrigin),
           address(_defifaGovernorCodeOrigin),
           address(_defifaTokenUriResolverCodeOrigin),
-          controller,
+          _controller,
           _delegateRegistry,
           _defifaBallkidz,
           _ballkidzProjectId,
