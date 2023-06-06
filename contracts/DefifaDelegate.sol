@@ -399,6 +399,57 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate {
         _transferOwnership(msg.sender);
     }
 
+    /// @notice Mint reserved tokens within the tier for the provided value.
+    /// @param _tierId The ID of the tier to mint within.
+    /// @param _count The number of reserved tokens to mint.
+    function mintReservesFor(uint256 _tierId, uint256 _count) public override {
+        // Minting reserves must not be paused.
+        if (
+            JBTiered721FundingCycleMetadataResolver.mintingReservesPaused(
+                (JBFundingCycleMetadataResolver.metadata(fundingCycleStore.currentOf(projectId)))
+            )
+        ) revert RESERVED_TOKEN_MINTING_PAUSED();
+
+        // Keep a reference to the reserved token beneficiary.
+        address _reservedTokenBeneficiary = store.reservedTokenBeneficiaryOf(address(this), _tierId);
+
+        // Get a reference to the old delegate.
+        address _oldDelegate = _tierDelegation[_reservedTokenBeneficiary][_tierId];
+
+        // Set the delegate as the beneficiary if the beneficiary hasn't already set a delegate.
+        if (_oldDelegate == address(0)) {
+            _delegateTier(_reservedTokenBeneficiary, defaultVotingDelegate != address(0) ? defaultVotingDelegate : _reservedTokenBeneficiary, _tierId);
+        }
+
+        // Record the minted reserves for the tier.
+        uint256[] memory _tokenIds = store.recordMintReservesFor(_tierId, _count);
+
+        // Keep a reference to the token ID being iterated on.
+        uint256 _tokenId;
+
+        for (uint256 _i; _i < _count;) {
+            // Set the token ID.
+            _tokenId = _tokenIds[_i];
+
+            // Mint the token.
+            _mint(_reservedTokenBeneficiary, _tokenId);
+
+            emit MintReservedToken(_tokenId, _tierId, _reservedTokenBeneficiary, msg.sender);
+
+            unchecked {
+                ++_i;
+            }
+        }
+
+        // Transfer the voting units to the delegate.
+        _transferTierVotingUnits(
+            address(0),
+            _reservedTokenBeneficiary,
+            _tierId,
+            store.tierOf(address(this), _tierId, false).votingUnits * _tokenIds.length
+        );
+    }
+
     //*********************************************************************//
     // ---------------------- external transactions ---------------------- //
     //*********************************************************************//
@@ -579,61 +630,6 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate {
         if (gamePhaseReporter.currentGamePhaseOf(projectId) != DefifaGamePhase.MINT) revert DELEGATE_CHANGES_UNAVAILABLE_IN_THIS_PHASE();
 
         _delegateTier(msg.sender, _delegatee, _tierId);
-    }
-
-    //*********************************************************************//
-    // ----------------------- public transactions ----------------------- //
-    //*********************************************************************//
-
-    /// @notice Mint reserved tokens within the tier for the provided value.
-    /// @param _tierId The ID of the tier to mint within.
-    /// @param _count The number of reserved tokens to mint.
-    function mintReservesFor(uint256 _tierId, uint256 _count) public override {
-        // Minting reserves must not be paused.
-        if (
-            JBTiered721FundingCycleMetadataResolver.mintingReservesPaused(
-                (JBFundingCycleMetadataResolver.metadata(fundingCycleStore.currentOf(projectId)))
-            )
-        ) revert RESERVED_TOKEN_MINTING_PAUSED();
-
-        // Keep a reference to the reserved token beneficiary.
-        address _reservedTokenBeneficiary = store.reservedTokenBeneficiaryOf(address(this), _tierId);
-
-        // Get a reference to the old delegate.
-        address _oldDelegate = _tierDelegation[_reservedTokenBeneficiary][_tierId];
-
-        // Set the delegate as the beneficiary if the beneficiary hasn't already set a delegate.
-        if (_oldDelegate == address(0)) {
-            _delegateTier(_reservedTokenBeneficiary, defaultVotingDelegate != address(0) ? defaultVotingDelegate : _reservedTokenBeneficiary, _tierId);
-        }
-
-        // Record the minted reserves for the tier.
-        uint256[] memory _tokenIds = store.recordMintReservesFor(_tierId, _count);
-
-        // Keep a reference to the token ID being iterated on.
-        uint256 _tokenId;
-
-        for (uint256 _i; _i < _count;) {
-            // Set the token ID.
-            _tokenId = _tokenIds[_i];
-
-            // Mint the token.
-            _mint(_reservedTokenBeneficiary, _tokenId);
-
-            emit MintReservedToken(_tokenId, _tierId, _reservedTokenBeneficiary, msg.sender);
-
-            unchecked {
-                ++_i;
-            }
-        }
-
-        // Transfer the voting units to the delegate.
-        _transferTierVotingUnits(
-            address(0),
-            _reservedTokenBeneficiary,
-            _tierId,
-            store.tierOf(address(this), _tierId, false).votingUnits * _tokenIds.length
-        );
     }
 
     //*********************************************************************//
