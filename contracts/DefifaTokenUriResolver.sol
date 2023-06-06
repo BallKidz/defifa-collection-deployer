@@ -167,7 +167,7 @@ contract DefifaTokenUriResolver is IDefifaTokenUriResolver, IJBTokenUriResolver 
                     _rarityText = string(abi.encodePacked(_totalMinted.toString(), " in existence"));
                 }
 
-                if (_gamePhase == DefifaGamePhase.SCORING) {
+                if (_gamePhase == DefifaGamePhase.SCORING || _gamePhase == DefifaGamePhase.COMPLETE) {
                     uint256 _potPortion = PRBMath.mulDiv(
                         _gamePot, _delegate.redemptionWeightOf(_tokenId), _delegate.TOTAL_REDEMPTION_WEIGHT()
                     );
