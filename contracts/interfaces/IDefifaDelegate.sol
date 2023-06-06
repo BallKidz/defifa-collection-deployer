@@ -26,7 +26,7 @@ interface IDefifaDelegate is IJB721Delegate {
         uint256 indexed tokenId, uint256 indexed tierId, address indexed beneficiary, address caller
     );
 
-    event TierDelegateVotesChanged(
+    event TierDelegateAttestationsChanged(
         address indexed delegate, uint256 indexed tierId, uint256 previousBalance, uint256 newBalance, address caller
     );
 
@@ -68,21 +68,21 @@ interface IDefifaDelegate is IJB721Delegate {
 
     function defaultVotingDelegate() external view returns (address);
 
-    function getTierDelegate(address _account, uint256 _tier) external view returns (address);
+    function getTierDelegateOf(address _account, uint256 _tier) external view returns (address);
 
-    function getTierVotes(address _account, uint256 _tier) external view returns (uint256);
+    function getTierAttestationsOf(address _account, uint256 _tier) external view returns (uint256);
 
-    function getPastTierVotes(address _account, uint256 _tier, uint256 _blockNumber) external view returns (uint256);
+    function getPastTierAttestationsOf(address _account, uint256 _tier, uint256 _blockNumber) external view returns (uint256);
 
-    function getTierTotalVotes(uint256 _tier) external view returns (uint256);
+    function getTierTotalAttestationsOf(uint256 _tier) external view returns (uint256);
 
-    function getPastTierTotalVotes(uint256 _tier, uint256 _blockNumber) external view returns (uint256);
+    function getPastTierTotalAttestationsOf(uint256 _tier, uint256 _blockNumber) external view returns (uint256);
 
-    function setTierDelegate(address _delegatee, uint256 _tierId) external;
+    function setTierDelegateTo(address _delegatee, uint256 _tierId) external;
 
-    function setTierDelegates(JBTiered721SetTierDelegatesData[] memory _setTierDelegatesData) external;
+    function setTierDelegatesTo(JBTiered721SetTierDelegatesData[] memory _setTierDelegatesData) external;
 
-    function setTierRedemptionWeights(DefifaTierRedemptionWeight[] memory _tierWeights) external;
+    function setTierRedemptionWeightsTo(DefifaTierRedemptionWeight[] memory _tierWeights) external;
 
     function mintReservesFor(JBTiered721MintReservesForTiersData[] memory _mintReservesForTiersData) external;
 

@@ -135,14 +135,14 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate {
     /// @notice Returns the delegate of an account for specific tier.
     /// @param _account The account to check for a delegate of.
     /// @param _tier the tier to check within.
-    function getTierDelegate(address _account, uint256 _tier) external view override returns (address) {
+    function getTierDelegateOf(address _account, uint256 _tier) external view override returns (address) {
         return _tierDelegation[_account][_tier];
     }
 
     /// @notice Returns the current voting power of an address for a specific tier.
     /// @param _account The address to check.
     /// @param _tier The tier to check within.
-    function getTierVotes(address _account, uint256 _tier) external view override returns (uint256) {
+    function getTierAttestationsOf(address _account, uint256 _tier) external view override returns (uint256) {
         return _delegateTierCheckpoints[_account][_tier].latest();
     }
 
@@ -150,7 +150,7 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate {
     /// @param _account The address to check.
     /// @param _tier The tier to check within.
     /// @param _blockNumber the blocknumber to check the voting power at.
-    function getPastTierVotes(address _account, uint256 _tier, uint256 _blockNumber)
+    function getPastTierAttestationsOf(address _account, uint256 _tier, uint256 _blockNumber)
         external
         view
         override
@@ -161,14 +161,14 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate {
 
     /// @notice Returns the total amount of voting power that exists for a tier.
     /// @param _tier The tier to check.
-    function getTierTotalVotes(uint256 _tier) external view override returns (uint256) {
+    function getTierTotalAttestationsOf(uint256 _tier) external view override returns (uint256) {
         return _totalTierCheckpoints[_tier].latest();
     }
 
     /// @notice Returns the total amount of voting power that has existed for a tier.
     /// @param _tier The tier to check.
     /// @param _blockNumber The blocknumber to check the total voting power at.
-    function getPastTierTotalVotes(uint256 _tier, uint256 _blockNumber) external view override returns (uint256) {
+    function getPastTierTotalAttestationsOf(uint256 _tier, uint256 _blockNumber) external view override returns (uint256) {
         return _totalTierCheckpoints[_tier].getAtBlock(_blockNumber);
     }
 
@@ -488,7 +488,7 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate {
     /// @notice Stores the redemption weights that should be used in the end game phase.
     /// @dev Only this contract's owner can set tier redemption weights.
     /// @param _tierWeights The tier weights to set.
-    function setTierRedemptionWeights(DefifaTierRedemptionWeight[] memory _tierWeights) external override onlyOwner {
+    function setTierRedemptionWeightsTo(DefifaTierRedemptionWeight[] memory _tierWeights) external override onlyOwner {
         // Get a reference to the game phase.
         DefifaGamePhase _gamePhase = gamePhaseReporter.currentGamePhaseOf(projectId);
 
@@ -622,9 +622,9 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate {
         }
     }
 
-    /// @notice Delegates votes.
+    /// @notice Delegate attestations.
     /// @param _setTierDelegatesData An array of tiers to set delegates for.
-    function setTierDelegates(JBTiered721SetTierDelegatesData[] memory _setTierDelegatesData)
+    function setTierDelegatesTo(JBTiered721SetTierDelegatesData[] memory _setTierDelegatesData)
         external
         virtual
         override
@@ -655,10 +655,10 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate {
         }
     }
 
-    /// @notice Delegates votes.
+    /// @notice Delegate attestations.
     /// @param _delegatee The account to delegate tier voting units to.
     /// @param _tierId The ID of the tier to delegate voting units for.
-    function setTierDelegate(address _delegatee, uint256 _tierId) public virtual override {
+    function setTierDelegateTo(address _delegatee, uint256 _tierId) public virtual override {
         // Make sure the current game phase is the minting phase.
         if (gamePhaseReporter.currentGamePhaseOf(projectId) != DefifaGamePhase.MINT) {
             revert DELEGATE_CHANGES_UNAVAILABLE_IN_THIS_PHASE();
@@ -677,7 +677,7 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate {
         // Make sure the game is being played in the correct currency.
         if (_data.amount.currency != pricingCurrency) revert WRONG_CURRENCY();
 
-        // Keep a reference to the address that should be given attestation votes from this mint.
+        // Keep a reference to the address that should be given attestations from this mint.
         address _votingDelegate;
 
         // Skip the first 32 bytes which are used by the JB protocol to pass the paying project's ID when paying from a JBSplit.
@@ -779,8 +779,8 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate {
 
         emit DelegateChanged(_account, _oldDelegate, _delegatee);
 
-        // Move the votes.
-        _moveTierDelegateVotes(_oldDelegate, _delegatee, _tierId, _getTierVotingUnits(_account, _tierId));
+        // Move the attestations.
+        _moveTierDelegateAttestations(_oldDelegate, _delegatee, _tierId, _getTierVotingUnits(_account, _tierId));
     }
 
     /// @notice Transfers, mints, or burns tier voting units. To register a mint, `_from` should be zero. To register a burn, `_to` should be zero. Total supply of voting units will be adjusted with mints and burns.
@@ -795,29 +795,29 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate {
         // If burning, subtract from the total tier checkpoints.
         if (_to == address(0)) _totalTierCheckpoints[_tierId].push(_subtract, _amount);
 
-        // Move delegated votes.
-        _moveTierDelegateVotes(_tierDelegation[_from][_tierId], _tierDelegation[_to][_tierId], _tierId, _amount);
+        // Move delegated attestations.
+        _moveTierDelegateAttestations(_tierDelegation[_from][_tierId], _tierDelegation[_to][_tierId], _tierId, _amount);
     }
 
-    /// @notice Moves delegated tier votes from one delegate to another.
+    /// @notice Moves delegated tier attestations from one delegate to another.
     /// @param _from The account to transfer tier voting units from.
     /// @param _to The account to transfer tier voting units to.
     /// @param _tierId The ID of the tier for which voting units are being transferred.
     /// @param _amount The amount of voting units to delegate.
-    function _moveTierDelegateVotes(address _from, address _to, uint256 _tierId, uint256 _amount) internal {
+    function _moveTierDelegateAttestations(address _from, address _to, uint256 _tierId, uint256 _amount) internal {
         // Nothing to do if moving to the same account, or no amount is being moved.
         if (_from == _to || _amount == 0) return;
 
         // If not moving from the zero address, update the checkpoints to subtract the amount.
         if (_from != address(0)) {
             (uint256 _oldValue, uint256 _newValue) = _delegateTierCheckpoints[_from][_tierId].push(_subtract, _amount);
-            emit TierDelegateVotesChanged(_from, _tierId, _oldValue, _newValue, msg.sender);
+            emit TierDelegateAttestationsChanged(_from, _tierId, _oldValue, _newValue, msg.sender);
         }
 
         // If not moving to the zero address, update the checkpoints to add the amount.
         if (_to != address(0)) {
             (uint256 _oldValue, uint256 _newValue) = _delegateTierCheckpoints[_to][_tierId].push(_add, _amount);
-            emit TierDelegateVotesChanged(_to, _tierId, _oldValue, _newValue, msg.sender);
+            emit TierDelegateAttestationsChanged(_to, _tierId, _oldValue, _newValue, msg.sender);
         }
     }
 
@@ -928,7 +928,7 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate {
         _transferTierVotingUnits(_from, _to, _tier.id, _tier.votingUnits);
     }
 
-    // Utils from the Votes extension that is being reused for tier delegation.
+    // Utils OZ extension that is being reused for tier delegation.
     function _add(uint256 a, uint256 b) internal pure returns (uint256) {
         return a + b;
     }

@@ -282,11 +282,20 @@ contract DefifaTokenUriResolver is IDefifaTokenUriResolver, IJBTokenUriResolver 
 
         // Convert amount to a decimal format
         string memory _integerPart = _amount.div(_fixedPoint).toString();
-        string memory _decimalPart = _amount.mod(_fixedPoint).div(_fixedPoint.div(10 ** _fidelity)).toString();
+
+        uint256 _remainder = _amount.mod(_fixedPoint);
+        uint256 _scaledRemainder = _remainder.mul(10 ** _fidelity);
+        uint256 _decimalPart = _scaledRemainder.div(_fixedPoint);
+
+        // Pad with zeros if necessary
+        string memory _decimalPartStr = _decimalPart.toString();
+        while (bytes(_decimalPartStr).length < _fidelity) {
+            _decimalPartStr = string(abi.encodePacked("0", _decimalPartStr));
+        }
 
         // Concatenate the strings
         return _isEth
-            ? string(abi.encodePacked("\u039E", _integerPart, ".", _decimalPart))
-            : string(abi.encodePacked(_integerPart, ".", _decimalPart, " ", IERC20Metadata(_token).symbol()));
+            ? string(abi.encodePacked("\u039E", _integerPart, ".", _decimalPartStr))
+            : string(abi.encodePacked(_integerPart, ".", _decimalPartStr, " ", IERC20Metadata(_token).symbol()));
     }
 }

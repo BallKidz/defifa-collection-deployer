@@ -44,9 +44,7 @@ interface IDefifaDeployer {
 
     function nextPhaseNeedsQueueing(uint256 _gameId) external view returns (bool);
 
-    function launchGameWith(DefifaLaunchProjectData calldata _launchProjectData)
-        external
-        returns (uint256 gameId);
+    function launchGameWith(DefifaLaunchProjectData calldata _launchProjectData) external returns (uint256 gameId);
 
     function queueNextPhaseOf(uint256 _projectId) external returns (uint256 configuration);
 
