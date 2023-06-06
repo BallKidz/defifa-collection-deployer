@@ -48,24 +48,14 @@ contract DefifaTokenUriResolver is IDefifaTokenUriResolver, IJBTokenUriResolver 
     // -------------------- public stored properties --------------------- //
     //*********************************************************************//
 
-    /**
-     * @notice
-     * The delegate being shown.
-     */
+    /// @notice The delegate being shown.
     IDefifaDelegate public override delegate;
 
     //*********************************************************************//
     // ------------------------- external views -------------------------- //
     //*********************************************************************//
 
-    /**
-     * @notice
-     * The name of the tier with the specified ID.
-     *
-     * @param _tierId The ID of the tier to get the name of.
-     *
-     * @return The tier's name.
-     */
+    /// @notice The name of the tier with the specified ID.
     function tierNameOf(uint256 _tierId) external view override returns (string memory) {
         return _tierNameOf[_tierId];
     }
@@ -83,13 +73,9 @@ contract DefifaTokenUriResolver is IDefifaTokenUriResolver, IJBTokenUriResolver 
     // ---------------------- external transactions ---------------------- //
     //*********************************************************************//
 
-    /**
-     * @notice
-     * Initializes the contract.
-     *
-     * @param _delegate The Defifa delegate contract that this contract is showing.
-     * @param _tierNames The names of each tier.
-     */
+    /// @notice Initializes the contract.
+    /// @param _delegate The Defifa delegate contract that this contract is showing.
+    /// @param _tierNames The names of each tier.
     function initialize(IDefifaDelegate _delegate, string[] memory _tierNames) public virtual override {
         // Make the original un-initializable.
         if (address(this) == codeOrigin) revert();
@@ -113,17 +99,10 @@ contract DefifaTokenUriResolver is IDefifaTokenUriResolver, IJBTokenUriResolver 
         }
     }
 
-    /**
-     * @notice
-     * The metadata URI of the provided token ID.
-     *
-     * @dev
-     * Defer to the token's tier IPFS URI if set.
-     *
-     * @param _tokenId The ID of the token to get the tier URI for.
-     *
-     * @return The token URI corresponding with the tier.
-     */
+    /// @notice The metadata URI of the provided token ID.
+    /// @dev Defer to the token's tier IPFS URI if set.
+    /// @param _tokenId The ID of the token to get the tier URI for.
+    /// @return The token URI corresponding with the tier.
     function getUri(uint256 _tokenId) external view override returns (string memory) {
         // Keep a reference to the delegate.
         IDefifaDelegate _delegate = delegate;
@@ -291,19 +270,12 @@ contract DefifaTokenUriResolver is IDefifaTokenUriResolver, IJBTokenUriResolver 
         return string.concat(parts[0], Base64.encode(abi.encodePacked(parts[1], parts[2], parts[3])));
     }
 
-    /**
-     * @notice
-     *   Gets a substring.
-     *
-     *   @dev
-     *   If the first character is a space, it is not included.
-     *
-     *   @param _str The string to get a substring of.
-     *   @param _startIndex The first index of the substring from within the string.
-     *   @param _endIndex The last index of the string from within the string.
-     *
-     *   @return substring The substring.
-     */
+    /// @notice Gets a substring.
+    /// @dev If the first character is a space, it is not included.
+    /// @param _str The string to get a substring of.
+    /// @param _startIndex The first index of the substring from within the string.
+    /// @param _endIndex The last index of the string from within the string.
+    /// @return substring The substring.
     function _getSubstring(string memory _str, uint256 _startIndex, uint256 _endIndex)
         internal
         pure
@@ -324,17 +296,12 @@ contract DefifaTokenUriResolver is IDefifaTokenUriResolver, IJBTokenUriResolver 
         return string(_result);
     }
 
-    /**
-     * @notice
-     *   Formats a balance from a fixed point number to a string.
-     *
-     *   @param _amount The fixed point amount.
-     *   @param _token The token the amount is in.
-     *   @param _decimals The number of decimals in the fixed point amount.
-     *   @param _fidelity The number of decimals that should be returned in the formatted string.
-     *
-     *   @return The formatted balance.
-     */
+    /// @notice Formats a balance from a fixed point number to a string.
+    /// @param _amount The fixed point amount.
+    /// @param _token The token the amount is in.
+    /// @param _decimals The number of decimals in the fixed point amount.
+    /// @param _fidelity The number of decimals that should be returned in the formatted string.
+    /// @return The formatted balance.
     function _formatBalance(uint256 _amount, address _token, uint256 _decimals, uint256 _fidelity)
         internal
         view

@@ -8,7 +8,6 @@ import "lib/base64/base64.sol";
 import "./interfaces/IDefifaDelegate.sol";
 import "./interfaces/IDefifaTokenUriResolver.sol";
 import "./libraries/DefifaFontImporter.sol";
-import "./libraries/DefifaPercentFormatter.sol";
 import {
     IScriptyBuilder,
     InlineScriptRequest,
@@ -216,10 +215,6 @@ contract DefifaHTMLTokenUriResolver is IDefifaTokenUriResolver, IJBTokenUriResol
         string memory _gamePhaseText;
 
         {
-            string memory _percentOfPot = DefifaPercentFormatter.getFormattedPercentageOfRedemptionWeight(
-                _delegate.redemptionWeightOf(_tokenId), _delegate.TOTAL_REDEMPTION_WEIGHT(), _IMG_DECIMAL_FIDELITY
-            );
-
             if (_gamePhase == 0) {
                 _gamePhaseText = "Minting starts soon.";
             } else if (_gamePhase == 1) {
@@ -231,7 +226,7 @@ contract DefifaHTMLTokenUriResolver is IDefifaTokenUriResolver, IJBTokenUriResol
             } else if (_gamePhase == 4 && _delegate.redemptionWeightIsSet()) {
                 _gamePhaseText = "Scorecard awaiting approval.";
             } else {
-                _gamePhaseText = string.concat("Redeem for ", _percentOfPot, " of the pot.");
+                _gamePhaseText = string.concat("Redeem for 0% of the pot.");
             }
         }
         string memory _rarityText;
