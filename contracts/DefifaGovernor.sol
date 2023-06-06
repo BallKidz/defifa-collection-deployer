@@ -5,25 +5,10 @@ import "@paulrberg/contracts/math/PRBMath.sol";
 import "@openzeppelin/contracts/governance/Governor.sol";
 import "@openzeppelin/contracts/governance/extensions/GovernorCountingSimple.sol";
 import "./interfaces/IDefifaGovernor.sol";
-import "./interfaces/IDefifaDeployer.sol";
 import "./DefifaDelegate.sol";
 
-/**
- * @title
- *   DefifaGovernor
- *
- *   @notice
- *   Governs a Defifa game.
- *
- *   @dev
- *   Adheres to -
- *   IDefifaGovernor: General interface for the generic controller methods in this contract that interacts with funding cycles and tokens according to the protocol's rules.
- *
- *   @dev
- *   Inherits from -
- *   Governor: Standard OZ governor.
- *   GovernorCountingSimple: Simple counting params for Governor.
- */
+/// @title DefifaGovernor
+/// @notice Manages the ratification of Defifa scorecards.
 contract DefifaGovernor is Governor, GovernorCountingSimple, IDefifaGovernor {
     //*********************************************************************//
     // --------------------------- custom errors ------------------------- //
@@ -37,70 +22,111 @@ contract DefifaGovernor is Governor, GovernorCountingSimple, IDefifaGovernor {
     // ---------------- immutable internal stored properties ------------- //
     //*********************************************************************//
 
-    /**
-     * @notice
-     * The duration of one block.
-     */
+    /// @notice The duration of one block.
     uint256 internal immutable _blockTime;
 
     //*********************************************************************//
     // --------------------- internal stored properties ------------------ //
     //*********************************************************************//
 
-    /**
-     * @notice
-     * The time the vote will be active for once it has started, measured in blocks.
-     */
+    /// @notice The time the vote will be active for once it has started, measured in seconds.
     uint256 internal __votingPeriod;
 
     //*********************************************************************//
     // ------------------------ public constants ------------------------- //
     //*********************************************************************//
 
-    /**
-     * @notice
-     * The max voting power each tier has if every token within the tier votes.
-     */
+    /// @notice The max voting power each tier has if every token within the tier votes.
     uint256 public constant override MAX_VOTING_POWER_TIER = 1_000_000_000;
 
     //*********************************************************************//
     // --------------- public immutable stored properties ---------------- //
     //*********************************************************************//
 
-    /**
-     * @notice
-     * The address of the origin 'DefifaGovernor', used to check in the init if the contract is the original or not
-     */
+    /// @notice The address of the origin 'DefifaGovernor', used to check in the init if the contract is the original or not
     address public immutable override codeOrigin;
 
     //*********************************************************************//
     // -------------------- public stored properties --------------------- //
     //*********************************************************************//
 
-    /**
-     * @notice
-     * The Defifa delegate contract that this contract is Governing.
-     */
+    /// @notice The Defifa delegate contract that this contract is Governing.
     IDefifaDelegate public override delegate;
 
-    /**
-     * @notice
-     * Voting start timestamp after which voting can begin.
-     */
+    /// @notice Voting start timestamp after which voting can begin.
     uint256 public override votingStartTime;
 
-    /**
-     * @notice
-     * The latest proposal submitted by the default voting delegate.
-     */
+    /// @notice The latest proposal submitted by the default voting delegate.
     uint256 public override defaultVotingDelegateProposal;
 
-    /** 
-    * @notice 
-    * The proposal that has been ratified.
-    */
+    /// @notice The proposal that has been ratified.
     uint256 public override ratifiedProposal;
 
+    //*********************************************************************//
+    // -------------------------- public views --------------------------- //
+    //*********************************************************************//
+
+    /// @notice The state of a proposal.
+    /// @return The state.
+    function state(uint256 _proposalId) public view virtual override returns (ProposalState) {
+        if (ratifiedProposal != 0) {
+          return ratifiedProposal == _proposalId ? ProposalState.Succeeded : ProposalState.Defeated;
+        }
+
+        uint256 _snapshot = proposalSnapshot(_proposalId);
+
+        if (_snapshot == 0) {
+            revert("Governor: unknown proposal id");
+        }
+
+        if (_snapshot >= block.number) {
+            return ProposalState.Pending;
+        }
+
+        uint256 deadline = proposalDeadline(_proposalId);
+
+        if (deadline >= block.number) {
+            return ProposalState.Active;
+        }
+
+        if (_quorumReached(_proposalId) && _voteSucceeded(_proposalId)) {
+            return ProposalState.Succeeded;
+        } else {
+            return ProposalState.Active;
+        }
+    }
+
+    /// @notice The amount of time between a scorecard being submitted and attestations to it being enabled, measured in blocks.
+    /// @dev This can be increassed to leave time for users to buy voting power, or delegate it, before the voting of a proposal starts.
+    /// @return The delay in number of blocks.
+    function votingDelay() public view override(IGovernor) returns (uint256) {
+        return votingStartTime > block.timestamp ? (votingStartTime - block.timestamp) / _blockTime : 0;
+    }
+
+    /// @notice The amount of time that must go by before a scorecard can be ratified.
+    /// @return The voting period in number of blocks.
+    function votingPeriod() public view override(IGovernor) returns (uint256) {
+        return __votingPeriod / _blockTime;
+    }
+
+    /// @notice The number of voting units that must have participated in a proposal for it to be ratified.
+    /// @return The quorum number of votes.
+    function quorum(uint256) public view override(IGovernor) returns (uint256) {
+        return (delegate.store().maxTierIdOf(address(delegate)) / 2) * MAX_VOTING_POWER_TIER;
+    }
+
+    /// @notice The number of votes someone must have to submit a scorecard. 
+    /// @return The proposal threshold.
+    function proposalThreshold() public pure override(Governor) returns (uint256) {
+        return 0;
+    }
+
+    /// @notice Indicates if this contract adheres to the specified interface.
+    /// @dev See {IERC165-supportsInterface}.
+    /// @param _interfaceId The ID of the interface to check for adherence to.
+    function supportsInterface(bytes4 _interfaceId) public view override(Governor) returns (bool) {
+        return _interfaceId == type(IDefifaGovernor).interfaceId || super.supportsInterface(_interfaceId);
+    }
     //*********************************************************************//
     // -------------------------- constructor ---------------------------- //
     //*********************************************************************//
@@ -111,17 +137,13 @@ contract DefifaGovernor is Governor, GovernorCountingSimple, IDefifaGovernor {
     }
 
     //*********************************************************************//
-    // ---------------------- external transactions ---------------------- //
+    // ----------------------- public transactions ----------------------- //
     //*********************************************************************//
 
-    /**
-     * @notice
-     * Initializes the contract.
-     *
-     * @param _delegate The Defifa delegate contract that this contract is Governing.
-     * @param _votingStartTime Voting start time.
-     * @param _votingPeriod The time the vote will be active for once it has started. This is one weeks by default.
-     */
+    /// @notice Initializes the contract.
+    /// @param _delegate The Defifa delegate contract that this contract is Governing.
+    /// @param _votingStartTime Voting start time.
+    /// @param _votingPeriod The time the vote will be active for once it has started. This is one weeks by default.
     function initialize(IDefifaDelegate _delegate, uint256 _votingStartTime, uint256 _votingPeriod)
         public
         virtual
@@ -133,27 +155,52 @@ contract DefifaGovernor is Governor, GovernorCountingSimple, IDefifaGovernor {
         // Stop re-initialization.
         if (address(delegate) != address(0)) revert();
 
+        // Store stuff
         delegate = _delegate;
         votingStartTime = _votingStartTime;
         __votingPeriod = _votingPeriod;
     }
 
-    /**
-     * @notice
-     * Submits a scorecard to be voted on.
-     *
-     * @param _tierWeights The weights of each tier in the scorecard.
-     *
-     * @return proposalId The proposal ID.
-     */
+    /// @notice Only allow proposals through the scorecard submission process. 
+    /// @dev Required override.
+    function propose(
+        address[] memory _targets,
+        uint256[] memory _values,
+        bytes[] memory _calldatas,
+        string memory _description
+    ) public override(Governor) returns (uint256) {
+        revert DISABLED();
+    }
+
+    /// @notice Only allow executions through the scorecard submission process. 
+    /// @dev Required override.
+    function execute(
+        address[] memory _targets,
+        uint256[] memory _values,
+        bytes[] memory _calldatas,
+        bytes32 _descriptionHash
+    ) public payable virtual override returns (uint256) {
+      revert DISABLED();
+    }
+
+
+    //*********************************************************************//
+    // ---------------------- external transactions ---------------------- //
+    //*********************************************************************//
+
+    /// @notice Submits a scorecard to be voted on.
+    /// @param _tierWeights The weights of each tier in the scorecard.
+    /// @return proposalId The proposal ID.
     function submitScorecard(DefifaTierRedemptionWeight[] calldata _tierWeights)
         external
         override
         returns (uint256 proposalId)
     {
+        // Make sure a proposal hasn't yet been ratified.
+        if (ratifiedProposal != 0) revert ALREADY_RATIFIED();
+
         // Make sure no weight is assigned to an unowned tier.
         uint256 _numberOfTierWeights = _tierWeights.length;
-
         for (uint256 _i; _i < _numberOfTierWeights;) {
             // Get a reference to the tier.
             JB721Tier memory _tier = delegate.store().tierOf(address(delegate), _tierWeights[_i].id, false);
@@ -173,7 +220,7 @@ contract DefifaGovernor is Governor, GovernorCountingSimple, IDefifaGovernor {
             _buildScorecardCalldata(_tierWeights);
 
         // Submit the proposal.
-        proposalId = this.propose(_targets, _values, _calldatas, "");
+        proposalId = super.propose(_targets, _values, _calldatas, "");
 
         // Keep a reference to the default voting delegate.
         address _defaultVotingDelegate = delegate.defaultVotingDelegate();
@@ -186,76 +233,45 @@ contract DefifaGovernor is Governor, GovernorCountingSimple, IDefifaGovernor {
         emit ScorecardSubmitted(proposalId, _tierWeights, msg.sender == _defaultVotingDelegate, msg.sender);
     }
 
-    /**
-     * @notice
-     * Attests to a scorecard.
-     *
-     * @param _scorecardId The scorecard ID.
-     */
+    /// @notice Attests to a scorecard.
+    /// @param _scorecardId The scorecard ID.
     function attestToScorecard(uint256 _scorecardId) external override {
-        // Vote.
         super._castVote(_scorecardId, msg.sender, 1, "", _defaultParams());
     }
 
-    /**
-     * @notice
-     * Attests to a scorecard with the set of ordered tier id's.
-     *
-     * @param _scorecardId The scorecard ID.
-     */
+    /// @notice Attests to a scorecard with the set of ordered tier id's.
+    /// @param _scorecardId The scorecard ID.
     function attestToScorecardWithReasonAndParams(uint256 _scorecardId, bytes memory params) external override {
-        // Vote.
         super._castVote(_scorecardId, msg.sender, 1, "", params);
     }
 
-    /**
-     * @notice
-     * Ratifies a scorecard that has been approved.
-     *
-     * @param _tierWeights The weights of each tier in the approved scorecard.
-     *
-     * @return proposalId The proposal ID.
-     */
+    /// @notice Ratifies a scorecard that has been approved.
+    /// @param _tierWeights The weights of each tier in the approved scorecard.
+    /// @return proposalId The proposal ID.
     function ratifyScorecard(DefifaTierRedemptionWeight[] calldata _tierWeights) external override returns (uint256 proposalId) {
+        // Make sure a scorecard hasn't been ratified yet.
+        if (ratifiedProposal != 0) revert ALREADY_RATIFIED();
+
         // Build the calldata to the delegate
         (address[] memory _targets, uint256[] memory _values, bytes[] memory _calldatas) =
             _buildScorecardCalldata(_tierWeights);
 
-        if (ratifiedProposal != 0) revert ALREADY_RATIFIED();
-
         // Attempt to execute the proposal.
-        proposalId = this.execute(_targets, _values, _calldatas, keccak256(""));
+        proposalId = super.execute(_targets, _values, _calldatas, keccak256(""));
 
         // Set the ratifies proposal.
         ratifiedProposal = proposalId;
-    }
-
-    function execute(
-        address[] memory _targets,
-        uint256[] memory _values,
-        bytes[] memory _calldatas,
-        bytes32 _descriptionHash
-    ) public payable virtual override returns (uint256) {
-      // We don't allow executing proposals other than scorecards
-      if (_msgSender() != address(this)) revert DISABLED();
-
-      super.execute(_targets, _values, _calldatas, _descriptionHash);
     }
 
     //*********************************************************************//
     // ------------------------ internal functions ----------------------- //
     //*********************************************************************//
 
-    /**
-     * @notice
-     * Build the calldata normalized such that the Governor contract accepts.
-     *
-     * @param _tierWeights The weights of each tier in the scorecard data.
-     *
-     * @return The targets to send transactions to.
-     * @return The values to send allongside the transactions.
-     * @return The calldata to send allongside the transactions.
-     */
+    /// @notice Build the calldata normalized such that the Governor contract accepts.
+    /// @param _tierWeights The weights of each tier in the scorecard data.
+    /// @return The targets to send transactions to.
+    /// @return The values to send allongside the transactions.
+    /// @return The calldata to send allongside the transactions.
     function _buildScorecardCalldata(DefifaTierRedemptionWeight[] calldata _tierWeights)
         internal
         view
@@ -279,16 +295,11 @@ contract DefifaGovernor is Governor, GovernorCountingSimple, IDefifaGovernor {
         return (_targets, _values, _calldatas);
     }
 
-    /**
-     * @notice
-     * Gets an account's voting power given a number of tiers to look through.
-     *
-     * @param _account The account to get votes for.
-     * @param _blockNumber The block number to measure votes from.
-     * @param _params The params to decode tier ID's from.
-     *
-     * @return votingPower The amount of voting power.
-     */
+    /// @notice Gets an account's voting power given a number of tiers to look through.
+    /// @param _account The account to get votes for.
+    /// @param _blockNumber The block number to measure votes from.
+    /// @param _params The params to decode tier ID's from.
+    /// @return votingPower The amount of voting power.
     function _getVotes(address _account, uint256 _blockNumber, bytes memory _params)
         internal
         view
@@ -336,12 +347,8 @@ contract DefifaGovernor is Governor, GovernorCountingSimple, IDefifaGovernor {
         }
     }
 
-    /**
-     * @notice
-     * By default, look for voting power within all tiers.
-     *
-     * @return votingPower The amount of voting power.
-     */
+    /// @notice By default, look for voting power within all tiers.
+    /// @return votingPower The amount of voting power.
     function _defaultParams() internal view virtual override returns (bytes memory) {
         // Get a reference to the number of tiers.
         uint256 _count = delegate.store().maxTierIdOf(address(delegate));
@@ -363,112 +370,36 @@ contract DefifaGovernor is Governor, GovernorCountingSimple, IDefifaGovernor {
         return abi.encode(_ids);
     }
 
-    /**
-     * @dev See {IGovernor-state}.
-     */
-    function state(uint256 _proposalId) public view virtual override returns (ProposalState) {
-        if (ratifiedProposal != 0) {
-          return ratifiedProposal == _proposalId ? ProposalState.Succeeded : ProposalState.Defeated;
-        }
-
-        uint256 _snapshot = proposalSnapshot(_proposalId);
-
-        if (_snapshot == 0) {
-            revert("Governor: unknown proposal id");
-        }
-
-        if (_snapshot >= block.number) {
-            return ProposalState.Pending;
-        }
-
-        uint256 deadline = proposalDeadline(_proposalId);
-
-        if (deadline >= block.number) {
-            return ProposalState.Active;
-        }
-
-        if (_quorumReached(_proposalId) && _voteSucceeded(_proposalId)) {
-            return ProposalState.Succeeded;
-        } else {
-            return ProposalState.Active;
-        }
-    }
-
-    /**
-     * @notice
-     * Calculating the voting delay based on the votingStartTime configured in the constructor.
-     *
-     * @dev
-     * Delay, in number of block, between when the proposal is created and the vote starts. This can be increassed to
-     * leave time for users to buy voting power, or delegate it, before the voting of a proposal starts.
-     *
-     * @return The delay in number of blocks.
-     */
-    function votingDelay() public view override(IGovernor) returns (uint256) {
-        return votingStartTime > block.timestamp ? (votingStartTime - block.timestamp) / _blockTime : 0;
-    }
-
-    /**
-     * @notice
-     * The amount of time that must go by for voting on a proposal to no longer be allowed.
-     */
-    function votingPeriod() public view override(IGovernor) returns (uint256) {
-        return __votingPeriod / _blockTime;
-    }
-
-    /**
-     * @notice
-     * The number of voting units that must have participated in a vote for it to be ratified.
-     */
-    function quorum(uint256) public view override(IGovernor) returns (uint256) {
-        return (delegate.store().maxTierIdOf(address(delegate)) / 2) * MAX_VOTING_POWER_TIER;
-    }
-
-    // Required override.
-    function propose(
+    /// @notice Execute a proposal. 
+    /// @dev Required override.
+    function _execute(
+        uint256 _proposalId,
         address[] memory _targets,
         uint256[] memory _values,
         bytes[] memory _calldatas,
-        string memory _description
-    ) public override(Governor) returns (uint256) {
-        // We don't allow submitting proposals other than scorecards
-        if (_msgSender() != address(this)) revert DISABLED();
-
-        return super.propose(_targets, _values, _calldatas, _description);
-    }
-
-    // Required override.
-    function proposalThreshold() public pure override(Governor) returns (uint256) {
-        return 0; //
-    }
-
-    // Required override.
-    function _execute(
-        uint256 proposalId,
-        address[] memory targets,
-        uint256[] memory values,
-        bytes[] memory calldatas,
-        bytes32 descriptionHash
+        bytes32 _descriptionHash
     ) internal override(Governor) {
-        super._execute(proposalId, targets, values, calldatas, descriptionHash);
+      super._execute(_proposalId, _targets, _values, _calldatas, _descriptionHash);
     }
 
-    // Required override.
+    /// @notice Proposal cancelations aren't allowed. 
+    /// @dev Required override.
     function _cancel(
         address[] memory _targets,
         uint256[] memory _values,
         bytes[] memory _calldatas,
         bytes32 _descriptionHash
     ) internal override(Governor) returns (uint256) {
+      _targets;
+      _values;
+      _calldatas;
+      _descriptionHash;
       revert DISABLED();
     }
 
-    // Required override.
+    /// @notice Proposal will be executed by this contract. 
+    /// @dev Required override.
     function _executor() internal view override(Governor) returns (address) {
         return super._executor();
-    }
-
-    function supportsInterface(bytes4 interfaceId) public view override(Governor) returns (bool) {
-        return super.supportsInterface(interfaceId);
     }
 }

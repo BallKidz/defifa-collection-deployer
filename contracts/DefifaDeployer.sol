@@ -17,7 +17,6 @@ import "./interfaces/IDefifaGamePhaseReporter.sol";
 import "./interfaces/IDefifaGamePotReporter.sol";
 import "./structs/DefifaDistributionOpsData.sol";
 import "./DefifaDelegate.sol";
-import "./DefifaGovernor.sol";
 import "./DefifaTokenUriResolver.sol";
 
 /// @title DefifaDeployer
