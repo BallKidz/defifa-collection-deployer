@@ -429,12 +429,6 @@ contract DefifaDeployer is
             _tiers: _delegateTiers,
             _currency: uint48(_launchProjectData.terminal.currencyForToken(_launchProjectData.token)),
             _store: _launchProjectData.store,
-            _flags: JBTiered721Flags({
-                preventOverspending: true,
-                lockReservedTokenChanges: false,
-                lockVotingUnitChanges: false,
-                lockManualMintingChanges: false
-            }),
             _gamePhaseReporter: this,
             _gamePotReporter: this,
             _defaultVotingDelegate: _launchProjectData.defaultVotingDelegate

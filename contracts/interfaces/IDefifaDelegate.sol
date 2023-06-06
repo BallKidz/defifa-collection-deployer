@@ -98,7 +98,6 @@ interface IDefifaDelegate is IJB721Delegate {
         JB721TierParams[] memory _tiers,
         uint48 _currency,
         IJBTiered721DelegateStore _store,
-        JBTiered721Flags memory _flags,
         IDefifaGamePhaseReporter _gamePhaseReporter,
         IDefifaGamePotReporter _gamePotReporter,
         address _defaultVotingDelegate

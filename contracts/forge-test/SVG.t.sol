@@ -81,12 +81,6 @@ contract SVGTest is Test {
             _tiers: _tiers,
             _currency: 1,
             _store: _store,
-            _flags: JBTiered721Flags({
-                lockReservedTokenChanges: false,
-                lockVotingUnitChanges: false,
-                lockManualMintingChanges: false,
-                preventOverspending: false
-            }),
             _gamePhaseReporter: _gamePhaseReporter,
             _gamePotReporter: _gamePotReporter,
             _defaultVotingDelegate: address(0)
@@ -141,12 +135,6 @@ contract SVGTest is Test {
             _tiers: _tiers,
             _currency: 1,
             _store: _store,
-            _flags: JBTiered721Flags({
-                lockReservedTokenChanges: false,
-                lockVotingUnitChanges: false,
-                lockManualMintingChanges: false,
-                preventOverspending: false
-            }),
             _gamePhaseReporter: _gamePhaseReporter,
             _gamePotReporter: _gamePotReporter,
             _defaultVotingDelegate: address(0)

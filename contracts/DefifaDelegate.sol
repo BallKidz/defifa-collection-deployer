@@ -9,21 +9,8 @@ import "@jbx-protocol/juice-721-delegate/contracts/libraries/JBTiered721FundingC
 
 import "./interfaces/IDefifaDelegate.sol";
 
-/**
- * @title
- *   DefifaDelegate
- *
- *   @notice
- *   Defifa specific 721 tiered delegate.
- *
- *   @dev
- *   Adheres to -
- *   IDefifaDelegate: General interface for the methods in this contract that interact with the blockchain's state according to the protocol's rules.
- *
- *   @dev
- *   Inherits from -
- *   JB721TieredGovernance: A generic tiered 721 delegate.
- */
+/// @title DefifaDelegate
+/// @notice A delegate that transforms Juicebox treasury interactions into a Defifa game.
 contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate {
     using Checkpoints for Checkpoints.History;
 
@@ -51,199 +38,114 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate {
     // --------------------- internal stored properties ------------------ //
     //*********************************************************************//
 
-    /**
-     * @notice
-     * The first owner of each token ID, stored on first transfer out.
-     *
-     * _nft The NFT contract to which the token belongs.
-     * _tokenId The ID of the token to get the stored first owner of.
-     */
+    /// @notice The first owner of each token ID, stored on first transfer out.
+    /// _tokenId The ID of the token to get the stored first owner of.
     mapping(uint256 => address) internal _firstOwnerOf;
 
     //*********************************************************************//
     // --------------------- public constant properties ------------------ //
     //*********************************************************************//
 
-    /**
-     * @notice
-     * The total weight that can be divided among tiers.
-     */
+    /// @notice
+    /// The total redemption weight that can be divided among tiers.
     uint256 public constant override TOTAL_REDEMPTION_WEIGHT = 1_000_000_000_000_000_000;
 
     //*********************************************************************//
     // -------------------- internal stored properties ------------------- //
     //*********************************************************************//
 
-    /**
-     * @notice
-     * The redemption weight for each tier.
-     *
-     * @dev
-     * Tiers are limited to ID 128
-     */
+    /// @notice The redemption weight for each tier.
+    /// @dev Tiers are limited to ID 128
     uint256[128] internal _tierRedemptionWeights;
 
-    /**
-     * @notice
-     * The delegation status for each address and for each tier.
-     *
-     * _delegator The delegator.
-     * _tierId The ID of the tier being delegated.
-     */
+    /// @notice The delegation status for each address and for each tier.
+    /// _delegator The delegator.
+    /// _tierId The ID of the tier being delegated.
     mapping(address => mapping(uint256 => address)) internal _tierDelegation;
 
-    /**
-     * @notice
-     * The delegation checkpoints for each address and for each tier.
-     *
-     * _delegator The delegator.
-     * _tierId The ID of the tier being delegated.
-     */
+    /// @notice The delegation checkpoints for each address and for each tier.
+    /// _delegator The delegator.
+    /// _tierId The ID of the tier being checked.
     mapping(address => mapping(uint256 => Checkpoints.History)) internal _delegateTierCheckpoints;
 
-    /**
-     * @notice
-     * The total delegation status for each tier.
-     *
-     * _tierId The ID of the tier being delegated.
-     */
+    /// @notice The total delegation status for each tier.
+    /// _tierId The ID of the tier being checked.
     mapping(uint256 => Checkpoints.History) internal _totalTierCheckpoints;
 
     //*********************************************************************//
     // --------------------- public stored properties -------------------- //
     //*********************************************************************//
 
-    /**
-     * @notice
-     * The address of the origin 'JBTiered721Delegate', used to check in the init if the contract is the original or not
-     */
+    /// @notice The address of the origin 'DefifaDelegate', used to check in the init if the contract is the original or not
     address public immutable override codeOrigin;
 
-    /**
-     * @notice
-     * The contract that stores and manages the NFT's data.
-     */
+    /// @notice The contract that stores and manages the NFT's data.
     IJBTiered721DelegateStore public override store;
 
-    /**
-     * @notice
-     * The contract storing all funding cycle configurations.
-     */
+    /// @notice The contract storing all funding cycle configurations.
     IJBFundingCycleStore public override fundingCycleStore;
 
-    /**
-     * @notice
-     * The contract reporting game phases.
-     */
+    /// @notice The contract reporting game phases.
     IDefifaGamePhaseReporter public override gamePhaseReporter;
 
-    /**
-     * @notice
-     * The contract reporting game pot.
-     */
+    /// @notice The contract reporting the game pot.
     IDefifaGamePotReporter public override gamePotReporter;
 
-    /**
-     * @notice
-     * The currency that is accepted when minting tier NFTs.
-     */
+    /// @notice The currency that is accepted when minting tier NFTs.
     uint256 public override pricingCurrency;
 
-    /**
-     * @notice
-     * A flag indicating if the redemption weight has been set.
-     */
+    /// @notice A flag indicating if the redemption weight has been set.
     bool public override redemptionWeightIsSet;
 
-    /**
-     * @notice
-     * The common base for the tokenUri's
-     *
-     * _nft The NFT for which the base URI applies.
-     */
+    /// @notice The common base for the tokenUri's
     string public override baseURI;
 
-    /**
-     * @notice
-     * Contract metadata uri.
-     *
-     * _nft The NFT for which the contract URI resolver applies.
-     */
+    /// @notice Contract metadata uri.
     string public override contractURI;
 
-    /**
-     * @notice
-     * The address that'll be set as the voting delegate by default.
-     *
-     */
+    /// @notice The address that'll be set as the voting delegate by default.
     address public override defaultVotingDelegate;
 
-    /**
-     * @notice
-     * The amount that has been redeemed from ths game, refunds are not counted.
-     */
+    /// @notice The amount that has been redeemed from ths game, refunds are not counted.
     uint256 public override amountRedeemed;
 
-    /**
-     * @notice
-     * The amount of tokens that have been redeemed from a tier, refunds are not counted
-     */
+    /// @notice The amount of tokens that have been redeemed from a tier, refunds are not counted
     mapping(uint256 => uint256) public override tokensRedeemedFrom;
 
     //*********************************************************************//
     // ------------------------- external views -------------------------- //
     //*********************************************************************//
 
-    /**
-     * @notice
-     * The name of the NFT.
-     *
-     * @return The name of the NFT.
-     */
+    /// @notice The name of the NFT.
+    /// @return The name of the NFT.
     function name() public view override(ERC721, IDefifaDelegate) returns (string memory) {
         return super.name();
     }
 
-    /**
-     * @notice
-     * The redemption weight for each tier.
-     *
-     * @return The array of weights, indexed by tier.
-     */
+    /// @notice The redemption weight for each tier.
+    /// @return The array of weights, indexed by tier.
     function tierRedemptionWeights() external view override returns (uint256[128] memory) {
         return _tierRedemptionWeights;
     }
 
-    /**
-     * @notice
-     * Returns the delegate of an account for specific tier.
-     *
-     * @param _account The account to check for a delegate of.
-     * @param _tier the tier to check within.
-     */
+    /// @notice Returns the delegate of an account for specific tier.
+    /// @param _account The account to check for a delegate of.
+    /// @param _tier the tier to check within.
     function getTierDelegate(address _account, uint256 _tier) external view override returns (address) {
         return _tierDelegation[_account][_tier];
     }
 
-    /**
-     * @notice
-     * Returns the current voting power of an address for a specific tier.
-     *
-     * @param _account The address to check.
-     * @param _tier The tier to check within.
-     */
+    /// @notice Returns the current voting power of an address for a specific tier.
+    /// @param _account The address to check.
+    /// @param _tier The tier to check within.
     function getTierVotes(address _account, uint256 _tier) external view override returns (uint256) {
         return _delegateTierCheckpoints[_account][_tier].latest();
     }
 
-    /**
-     * @notice
-     * Returns the past voting power of a specific address for a specific tier.
-     *
-     * @param _account The address to check.
-     * @param _tier The tier to check within.
-     * @param _blockNumber the blocknumber to check the voting power at.
-     */
+    /// @notice Returns the past voting power of a specific address for a specific tier.
+    /// @param _account The address to check.
+    /// @param _tier The tier to check within.
+    /// @param _blockNumber the blocknumber to check the voting power at.
     function getPastTierVotes(address _account, uint256 _tier, uint256 _blockNumber)
         external
         view
@@ -253,35 +155,22 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate {
         return _delegateTierCheckpoints[_account][_tier].getAtBlock(_blockNumber);
     }
 
-    /**
-     * @notice
-     * Returns the total amount of voting power that exists for a tier.
-     *
-     * @param _tier The tier to check.
-     */
+    /// @notice Returns the total amount of voting power that exists for a tier.
+    /// @param _tier The tier to check.
     function getTierTotalVotes(uint256 _tier) external view override returns (uint256) {
         return _totalTierCheckpoints[_tier].latest();
     }
 
-    /**
-     * @notice
-     * Returns the total amount of voting power that exists for a tier.
-     *
-     * @param _tier The tier to check.
-     * @param _blockNumber The blocknumber to check the total voting power at.
-     */
+    /// @notice Returns the total amount of voting power that has existed for a tier.
+    /// @param _tier The tier to check.
+    /// @param _blockNumber The blocknumber to check the total voting power at.
     function getPastTierTotalVotes(uint256 _tier, uint256 _blockNumber) external view override returns (uint256) {
         return _totalTierCheckpoints[_tier].getAtBlock(_blockNumber);
     }
 
-    /**
-     * @notice
-     * The first owner of each token ID, which corresponds to the address that originally contributed to the project to receive the NFT.
-     *
-     * @param _tokenId The ID of the token to get the first owner of.
-     *
-     * @return The first owner of the token.
-     */
+    /// @notice The first owner of each token ID, which corresponds to the address that originally contributed to the project to receive the NFT.
+    /// @param _tokenId The ID of the token to get the first owner of.
+    /// @return The first owner of the token.
     function firstOwnerOf(uint256 _tokenId) external view override returns (address) {
         // Get a reference to the first owner.
         address _storedFirstOwner = _firstOwnerOf[_tokenId];
@@ -297,42 +186,25 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate {
     // -------------------------- public views --------------------------- //
     //*********************************************************************//
 
-    /**
-     * @notice
-     * The total number of tokens owned by the given owner across all tiers.
-     *
-     * @param _owner The address to check the balance of.
-     *
-     * @return balance The number of tokens owned by the owner across all tiers.
-     */
+    /// @notice The total number of tokens owned by the given owner across all tiers.
+    /// @param _owner The address to check the balance of.
+    /// @return balance The number of tokens owned by the owner across all tiers.
     function balanceOf(address _owner) public view override returns (uint256 balance) {
         return store.balanceOf(address(this), _owner);
     }
 
-    /**
-     * @notice
-     * The metadata URI of the provided token ID.
-     *
-     * @dev
-     * Defer to the tokenUriResolver if set, otherwise, use the tokenUri set with the token's tier.
-     *
-     * @param _tokenId The ID of the token to get the tier URI for.
-     *
-     * @return The token URI corresponding with the tier or the tokenUriResolver URI.
-     */
+    /// @notice The metadata URI of the provided token ID.
+    /// @dev Defer to the tokenUriResolver if set, otherwise, use the tokenUri set with the token's tier.
+    /// @param _tokenId The ID of the token to get the tier URI for.
+    /// @return The token URI corresponding with the tier or the tokenUriResolver URI.
     function tokenURI(uint256 _tokenId) public view virtual override returns (string memory) {
         // Use the resolver.
         return store.tokenUriResolverOf(address(this)).getUri(_tokenId);
     }
 
-    /**
-     * @notice
-     * The cumulative weight the given token IDs have in redemptions compared to the `_totalRedemptionWeight`.
-     *
-     * @param _tokenIds The IDs of the tokens to get the cumulative redemption weight of.
-     *
-     * @return cumulativeWeight The weight.
-     */
+    /// @notice The cumulative weight the given token IDs have in redemptions compared to the `_totalRedemptionWeight`.
+    /// @param _tokenIds The IDs of the tokens to get the cumulative redemption weight of.
+    /// @return cumulativeWeight The weight.
     function redemptionWeightOf(uint256[] memory _tokenIds, JBRedeemParamsData calldata)
         public
         view
@@ -340,7 +212,6 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate {
         override
         returns (uint256 cumulativeWeight)
     {
-        // If the game is over, set the weight based on the scorecard results.
         // Keep a reference to the number of tokens being redeemed.
         uint256 _tokenCount = _tokenIds.length;
 
@@ -354,14 +225,9 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate {
         }
     }
 
-    /**
-     * @notice
-     * The weight the given token ID have in redemptions.
-     *
-     * @param _tokenId The ID of the token to get the redemption weight of.
-     *
-     * @return The weight.
-     */
+    /// @notice The weight the given token ID has in redemptions.
+    /// @param _tokenId The ID of the token to get the redemption weight of.
+    /// @return The weight.
     function redemptionWeightOf(uint256 _tokenId) public view override returns (uint256) {
         // Keep a reference to the token's tier ID.
         uint256 _tierId = store.tierIdOfToken(_tokenId);
@@ -369,7 +235,7 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate {
         // Keep a reference to the tier.
         JB721Tier memory _tier = store.tierOf(address(this), _tierId, false);
 
-        // Get the tier Id.
+        // Get the tier's weight.
         uint256 _weight = _tierRedemptionWeights[_tierId - 1];
 
         // If there's no weight there's nothing to redeem.
@@ -378,33 +244,22 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate {
         // If no tiers were minted, nothing to redeem.
         if (_tier.initialQuantity - _tier.remainingQuantity == 0) return 0;
 
-        // Calculate what percentage of the tier redemption amount a single token counts for.
+        // Calculate the percentage of the tier redemption amount a single token counts for.
         return
-        // Tier's are 1 indexed and are stored 0 indexed.
         _weight / (_tier.initialQuantity - _tier.remainingQuantity + tokensRedeemedFrom[_tierId]);
     }
 
-    /**
-     * @notice
-     * The cumulative weight that all token IDs have in redemptions.
-     *
-     * @return The total weight.
-     */
+    /// @notice The cumulative weight that all token IDs have in redemptions.
+    /// @return The total weight.
     function totalRedemptionWeight(JBRedeemParamsData calldata) public view virtual override returns (uint256) {
-        // Set the total weight as the total scorecard weight.
         return TOTAL_REDEMPTION_WEIGHT;
     }
 
-    /**
-     * @notice
-     * Part of IJBFundingCycleDataSource, this function gets called when a project's token holders redeem.
-     *
-     * @param _data The Juicebox standard project redemption data.
-     *
-     * @return reclaimAmount The amount that should be reclaimed from the treasury.
-     * @return memo The memo that should be forwarded to the event.
-     * @return delegateAllocations The amount to send to delegates instead of adding to the beneficiary.
-     */
+    /// @notice Part of IJBFundingCycleDataSource, this function gets called when a project's token holders redeem.
+    /// @param _data The Juicebox standard project redemption data.
+    /// @return reclaimAmount The amount that should be reclaimed from the treasury.
+    /// @return memo The memo that should be forwarded to the event.
+    /// @return delegateAllocations The amount to send to delegates instead of adding to the beneficiary.
     function redeemParams(JBRedeemParamsData calldata _data)
         public
         view
@@ -427,10 +282,10 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate {
         // Decode the metadata
         (,, uint256[] memory _decodedTokenIds) = abi.decode(_data.metadata, (bytes32, bytes4, uint256[]));
 
-        // Get the current funding cycle.
+        // Get the current gae phase.
         DefifaGamePhase _gamePhase = gamePhaseReporter.currentGamePhaseOf(_data.projectId);
 
-        // If the game is in its minting, refund, or No Contest phase, reclaim amount is the same as it cost to mint.
+        // If the game is in its minting, refund, or no contest phase, reclaim amount is the same as it costed to mint.
         if (
             _gamePhase == DefifaGamePhase.MINT || _gamePhase == DefifaGamePhase.REFUND
                 || _gamePhase == DefifaGamePhase.NO_CONTEST || _gamePhase == DefifaGamePhase.NO_CONTEST_INEVITABLE
@@ -449,7 +304,7 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate {
             return (reclaimAmount, _data.memo, delegateAllocations);
         }
 
-        // Return the weighted overflow, and this contract as the delegate so that tokens can be deleted.
+        // Return the weighted amount.
         return (
             PRBMath.mulDiv(
                 _data.overflow + amountRedeemed, redemptionWeightOf(_decodedTokenIds, _data), TOTAL_REDEMPTION_WEIGHT
@@ -459,15 +314,9 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate {
         );
     }
 
-    /**
-     * @notice
-     * Indicates if this contract adheres to the specified interface.
-     *
-     * @dev
-     * See {IERC165-supportsInterface}.
-     *
-     * @param _interfaceId The ID of the interface to check for adherence to.
-     */
+    /// @notice Indicates if this contract adheres to the specified interface.
+    /// @dev See {IERC165-supportsInterface}.
+    /// @param _interfaceId The ID of the interface to check for adherence to.
     function supportsInterface(bytes4 _interfaceId) public view override returns (bool) {
         return _interfaceId == type(IDefifaDelegate).interfaceId || super.supportsInterface(_interfaceId);
     }
@@ -480,23 +329,25 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate {
         codeOrigin = address(this);
     }
 
-    /**
-     * @param _gameId The ID of the project this contract's functionality applies to.
-     * @param _directory The directory of terminals and controllers for projects.
-     * @param _name The name of the token.
-     * @param _symbol The symbol that the token should be represented by.
-     * @param _fundingCycleStore A contract storing all funding cycle configurations.
-     * @param _baseUri A URI to use as a base for full token URIs.
-     * @param _tokenUriResolver A contract responsible for resolving the token URI for each token ID.
-     * @param _contractUri A URI where contract metadata can be found.
-     * @param _tiers The tiers to set.
-     * @param _currency The currency that the tier contribution floors are denoted in.
-     * @param _store A contract that stores the NFT's data.
-     * @param _flags A set of flags that help define how this contract works.
-     * @param _gamePhaseReporter The contract that reports the game phase.
-     * @param _gamePotReporter The contract that reports the game's pot.
-     * @param _defaultVotingDelegate The address that'll be set as the voting delegate by default.
-     */
+    //*********************************************************************//
+    // ----------------------- public transactions ----------------------- //
+    //*********************************************************************//
+
+    /// @notice Initialize a clone of this contract.
+    /// @param _gameId The ID of the project this contract's functionality applies to.
+    /// @param _directory The directory of terminals and controllers for projects.
+    /// @param _name The name of the token.
+    /// @param _symbol The symbol that the token should be represented by.
+    /// @param _fundingCycleStore A contract storing all funding cycle configurations.
+    /// @param _baseUri A URI to use as a base for full token URIs.
+    /// @param _tokenUriResolver A contract responsible for resolving the token URI for each token ID.
+    /// @param _contractUri A URI where contract metadata can be found.
+    /// @param _tiers The tiers to set.
+    /// @param _currency The currency that the tier contribution floors are denoted in.
+    /// @param _store A contract that stores the NFT's data.
+    /// @param _gamePhaseReporter The contract that reports the game phase.
+    /// @param _gamePotReporter The contract that reports the game's pot.
+    /// @param _defaultVotingDelegate The address that'll be set as the voting delegate by default.
     function initialize(
         uint256 _gameId,
         IJBDirectory _directory,
@@ -509,7 +360,6 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate {
         JB721TierParams[] memory _tiers,
         uint48 _currency,
         IJBTiered721DelegateStore _store,
-        JBTiered721Flags memory _flags,
         IDefifaGamePhaseReporter _gamePhaseReporter,
         IDefifaGamePotReporter _gamePotReporter,
         address _defaultVotingDelegate
@@ -523,6 +373,7 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate {
         // Initialize the superclass.
         JB721Delegate._initialize({_projectId: _gameId, _directory: _directory, _name: _name, _symbol: _symbol});
 
+        // Store stuff. 
         fundingCycleStore = _fundingCycleStore;
         store = _store;
         pricingCurrency = _currency;
@@ -541,14 +392,8 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate {
             _store.recordSetTokenUriResolver(_tokenUriResolver);
         }
 
-        // Record adding the provided tiers.
+        // Record the provided tiers.
         _store.recordAddTiers(_tiers);
-
-        // Set the flags if needed.
-        if (
-            _flags.lockReservedTokenChanges || _flags.lockVotingUnitChanges || _flags.lockManualMintingChanges
-                || _flags.preventOverspending
-        ) _store.recordFlags(_flags);
 
         // Transfer ownership to the initializer.
         _transferOwnership(msg.sender);
@@ -558,15 +403,9 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate {
     // ---------------------- external transactions ---------------------- //
     //*********************************************************************//
 
-    /**
-     * @notice
-     * Stores the redemption weights that should be used in the end game phase.
-     *
-     * @dev
-     * Only the contract's owner can set tier redemption weights.
-     *
-     * @param _tierWeights The tier weights to set.
-     */
+    /// @notice Stores the redemption weights that should be used in the end game phase.
+    /// @dev Only this contract's owner can set tier redemption weights.
+    /// @param _tierWeights The tier weights to set.
     function setTierRedemptionWeights(DefifaTierRedemptionWeight[] memory _tierWeights) external override onlyOwner {
         // Get a reference to the game phase.
         DefifaGamePhase _gamePhase = gamePhaseReporter.currentGamePhaseOf(projectId);
@@ -593,12 +432,21 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate {
         // Keep a reference to the number of tier weights.
         uint256 _numberOfTierWeights = _tierWeights.length;
 
+        // Keep a reference to the tier being iterated on.
+        JB721Tier memory _tier;
+
         for (uint256 _i; _i < _numberOfTierWeights;) {
+            // Get the tier.
+            _tier = store.tierOf(address(this), _tierWeights[_i].id, false);
+
+            // Can't set a redemption weight for tiers not in category 0.
+            if (_tier.category != 0) revert INVALID_TIER_ID();
+
             // Attempting to set the redemption weight for a tier that does not exist (yet) reverts.
-            if (_tierWeights[_i].id > _maxTierId) revert INVALID_TIER_ID();
+            if (_tier.id > _maxTierId) revert INVALID_TIER_ID();
 
             // Save the tier weight. Tier's are 1 indexed and should be stored 0 indexed.
-            _tierRedemptionWeights[_tierWeights[_i].id - 1] = _tierWeights[_i].redemptionWeight;
+            _tierRedemptionWeights[_tier.id - 1] = _tierWeights[_i].redemptionWeight;
 
             // Increment the cumulative amount.
             _cumulativeRedemptionWeight += _tierWeights[_i].redemptionWeight;
@@ -615,15 +463,9 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate {
         redemptionWeightIsSet = true;
     }
 
-    /**
-     * @notice
-     * Part of IJBRedeemDelegate, this function gets called when the token holder redeems. It will burn the specified NFTs to reclaim from the treasury to the _data.beneficiary.
-     *
-     * @dev
-     * This function will revert if the contract calling is not one of the project's terminals.
-     *
-     * @param _data The Juicebox standard project redemption data.
-     */
+    /// @notice Part of IJBRedeemDelegate, this function gets called when the token holder redeems. It will burn the specified NFTs to reclaim from the treasury to the _data.beneficiary.
+    /// @dev This function will revert if the contract calling is not one of the project's terminals.
+    /// @param _data The Juicebox standard project redemption data.
     function didRedeem(JBDidRedeemData calldata _data) external payable virtual override {
         // Make sure the caller is a terminal of the project, and the call is being made on behalf of an interaction with the correct project.
         if (
@@ -649,8 +491,8 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate {
         // Keep a reference to the token ID being iterated on.
         uint256 _tokenId;
 
-        // Keep track of whether the redemption is happening during the end phase.
-        bool _isScoring = gamePhaseReporter.currentGamePhaseOf(projectId) == DefifaGamePhase.SCORING;
+        // Keep track of whether the redemption is happening during the complete phase.
+        bool _isComplete = gamePhaseReporter.currentGamePhaseOf(projectId) == DefifaGamePhase.COMPLETE;
 
         // Iterate through all tokens, burning them if the owner is correct.
         for (uint256 _i; _i < _numberOfTokenIds;) {
@@ -664,7 +506,7 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate {
             _burn(_tokenId);
 
             unchecked {
-                if (_isScoring) ++tokensRedeemedFrom[store.tierIdOfToken(_tokenId)];
+                if (_isComplete) ++tokensRedeemedFrom[store.tierIdOfToken(_tokenId)];
                 ++_i;
             }
         }
@@ -672,16 +514,12 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate {
         // Call the hook.
         _didBurn(_decodedTokenIds);
 
-        // Increment the amount redeemed if this is the scoring phase.
-        if (_isScoring) amountRedeemed += _data.reclaimedAmount.value;
+        // Increment the amount redeemed if this is the complete phase.
+        if (_isComplete) amountRedeemed += _data.reclaimedAmount.value;
     }
 
-    /**
-     * @notice
-     * Mint reserved tokens within the tier for the provided value.
-     *
-     * @param _mintReservesForTiersData Contains information about how many reserved tokens to mint for each tier.
-     */
+    /// @notice Mint reserved tokens within the tier for the provided value.
+    /// @param _mintReservesForTiersData Contains information about how many reserved tokens to mint for each tier.
     function mintReservesFor(JBTiered721MintReservesForTiersData[] calldata _mintReservesForTiersData)
         external
         override
@@ -702,21 +540,15 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate {
         }
     }
 
-    /**
-     * @notice
-     * Delegates votes from the sender to `delegatee`.
-     *
-     * @param _setTierDelegatesData An array of tiers to set delegates for.
-     */
+    /// @notice Delegates votes.
+    /// @param _setTierDelegatesData An array of tiers to set delegates for.
     function setTierDelegates(JBTiered721SetTierDelegatesData[] memory _setTierDelegatesData)
         external
         virtual
         override
     {
         // Make sure the current game phase is the minting phase.
-        DefifaGamePhase _gamePhase = gamePhaseReporter.currentGamePhaseOf(projectId);
-
-        if (_gamePhase != DefifaGamePhase.MINT) revert DELEGATE_CHANGES_UNAVAILABLE_IN_THIS_PHASE();
+        if (gamePhaseReporter.currentGamePhaseOf(projectId) != DefifaGamePhase.MINT) revert DELEGATE_CHANGES_UNAVAILABLE_IN_THIS_PHASE();
 
         // Keep a reference to the number of tier delegates.
         uint256 _numberOfTierDelegates = _setTierDelegatesData.length;
@@ -728,7 +560,7 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate {
             // Reference the data being iterated on.
             _data = _setTierDelegatesData[_i];
 
-            // No active delegation to the address 0
+            // Make sure a delegate is specified.
             if (_data.delegatee == address(0)) revert DELEGATE_ADDRESS_ZERO();
 
             _delegateTier(msg.sender, _data.delegatee, _data.tierId);
@@ -739,17 +571,12 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate {
         }
     }
 
-    /**
-     * @notice
-     * Delegates votes from the sender to `delegatee`.
-     *
-     * @param _delegatee The account to delegate tier voting units to.
-     * @param _tierId The ID of the tier to delegate voting units for.
-     */
+    /// @notice Delegates votes.
+    /// @param _delegatee The account to delegate tier voting units to.
+    /// @param _tierId The ID of the tier to delegate voting units for.
     function setTierDelegate(address _delegatee, uint256 _tierId) public virtual override {
         // Make sure the current game phase is the minting phase.
-        DefifaGamePhase _gamePhase = gamePhaseReporter.currentGamePhaseOf(projectId);
-        if (_gamePhase != DefifaGamePhase.MINT) revert DELEGATE_CHANGES_UNAVAILABLE_IN_THIS_PHASE();
+        if (gamePhaseReporter.currentGamePhaseOf(projectId) != DefifaGamePhase.MINT) revert DELEGATE_CHANGES_UNAVAILABLE_IN_THIS_PHASE();
 
         _delegateTier(msg.sender, _delegatee, _tierId);
     }
@@ -758,21 +585,14 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate {
     // ----------------------- public transactions ----------------------- //
     //*********************************************************************//
 
-    /**
-     * @notice
-     * Mint reserved tokens within the tier for the provided value.
-     *
-     * @param _tierId The ID of the tier to mint within.
-     * @param _count The number of reserved tokens to mint.
-     */
+    /// @notice Mint reserved tokens within the tier for the provided value.
+    /// @param _tierId The ID of the tier to mint within.
+    /// @param _count The number of reserved tokens to mint.
     function mintReservesFor(uint256 _tierId, uint256 _count) public override {
-        // Get a reference to the project's current funding cycle.
-        JBFundingCycle memory _fundingCycle = fundingCycleStore.currentOf(projectId);
-
         // Minting reserves must not be paused.
         if (
             JBTiered721FundingCycleMetadataResolver.mintingReservesPaused(
-                (JBFundingCycleMetadataResolver.metadata(_fundingCycle))
+                (JBFundingCycleMetadataResolver.metadata(fundingCycleStore.currentOf(projectId)))
             )
         ) revert RESERVED_TOKEN_MINTING_PAUSED();
 
@@ -784,7 +604,7 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate {
 
         // Set the delegate as the beneficiary if the beneficiary hasn't already set a delegate.
         if (_oldDelegate == address(0)) {
-            _delegateTier(_reservedTokenBeneficiary, defaultVotingDelegate, _tierId);
+            _delegateTier(_reservedTokenBeneficiary, defaultVotingDelegate != address(0) ? defaultVotingDelegate : _reservedTokenBeneficiary, _tierId);
         }
 
         // Record the minted reserves for the tier.
@@ -820,6 +640,8 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate {
     // ------------------------ internal functions ----------------------- //
     //*********************************************************************//
 
+    /// @notice Process an incoming payment.
+    /// @param _data The Juicebox standard project payment data.
     function _processPayment(JBDidPayData calldata _data) internal override {
         // Make sure the game is being played in the correct currency.
         if (_data.amount.currency != pricingCurrency) revert WRONG_CURRENCY();
@@ -828,7 +650,6 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate {
         address _votingDelegate;
 
         // Skip the first 32 bytes which are used by the JB protocol to pass the paying project's ID when paying from a JBSplit.
-        // The address of the voting delegate for the mint is included in the next 32 bytes reserved for generic extension parameters.
         // Check the 4 bytes interfaceId to verify the metadata is intended for this contract.
         if (_data.metadata.length > 68 && bytes4(_data.metadata[64:68]) == type(IDefifaDelegate).interfaceId) {
             // Keep a reference to the the specific tier IDs to mint.
@@ -906,27 +727,18 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate {
         }
     }
 
-    /**
-     * @notice
-     * Gets the amount of voting units an address has for a particular tier.
-     *
-     * @param _account The account to get voting units for.
-     * @param _tierId The ID of the tier to get voting units for.
-     *
-     * @return The voting units.
-     */
+    /// @notice Gets the amount of voting units an address has for a particular tier.
+    /// @param _account The account to get voting units for.
+    /// @param _tierId The ID of the tier to get voting units for.
+    /// @return The voting units.
     function _getTierVotingUnits(address _account, uint256 _tierId) internal view virtual returns (uint256) {
         return store.tierVotingUnitsOf(address(this), _account, _tierId);
     }
 
-    /**
-     * @notice
-     * Delegate all of `account`'s voting units for the specified tier to `delegatee`.
-     *
-     * @param _account The account delegating tier voting units.
-     * @param _delegatee The account to delegate tier voting units to.
-     * @param _tierId The ID of the tier for which voting units are being transferred.
-     */
+    /// @notice Delegate all voting units for the specified tier.
+    /// @param _account The account delegating tier voting units.
+    /// @param _delegatee The account to delegate tier voting units to.
+    /// @param _tierId The ID of the tier for which voting units are being transferred.
     function _delegateTier(address _account, address _delegatee, uint256 _tierId) internal virtual {
         // Get the current delegatee
         address _oldDelegate = _tierDelegation[_account][_tierId];
@@ -940,15 +752,11 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate {
         _moveTierDelegateVotes(_oldDelegate, _delegatee, _tierId, _getTierVotingUnits(_account, _tierId));
     }
 
-    /**
-     * @notice
-     * Transfers, mints, or burns tier voting units. To register a mint, `from` should be zero. To register a burn, `to` should be zero. Total supply of voting units will be adjusted with mints and burns.
-     *
-     * @param _from The account to transfer tier voting units from.
-     * @param _to The account to transfer tier voting units to.
-     * @param _tierId The ID of the tier for which voting units are being transferred.
-     * @param _amount The amount of voting units to delegate.
-     */
+    /// @notice Transfers, mints, or burns tier voting units. To register a mint, `_from` should be zero. To register a burn, `_to` should be zero. Total supply of voting units will be adjusted with mints and burns.
+    /// @param _from The account to transfer tier voting units from.
+    /// @param _to The account to transfer tier voting units to.
+    /// @param _tierId The ID of the tier for which voting units are being transferred.
+    /// @param _amount The amount of voting units to delegate.
     function _transferTierVotingUnits(address _from, address _to, uint256 _tierId, uint256 _amount) internal virtual {
         // If minting, add to the total tier checkpoints.
         if (_from == address(0)) _totalTierCheckpoints[_tierId].push(_add, _amount);
@@ -960,15 +768,11 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate {
         _moveTierDelegateVotes(_tierDelegation[_from][_tierId], _tierDelegation[_to][_tierId], _tierId, _amount);
     }
 
-    /**
-     * @notice
-     * Moves delegated tier votes from one delegate to another.
-     *
-     * @param _from The account to transfer tier voting units from.
-     * @param _to The account to transfer tier voting units to.
-     * @param _tierId The ID of the tier for which voting units are being transferred.
-     * @param _amount The amount of voting units to delegate.
-     */
+    /// @notice Moves delegated tier votes from one delegate to another.
+    /// @param _from The account to transfer tier voting units from.
+    /// @param _to The account to transfer tier voting units to.
+    /// @param _tierId The ID of the tier for which voting units are being transferred.
+    /// @param _amount The amount of voting units to delegate.
     function _moveTierDelegateVotes(address _from, address _to, uint256 _tierId, uint256 _amount) internal {
         // Nothing to do if moving to the same account, or no amount is being moved.
         if (_from == _to || _amount == 0) return;
@@ -986,27 +790,18 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate {
         }
     }
 
-    /**
-     * @notice
-     * A function that will run when tokens are burned via redemption.
-     *
-     * @param _tokenIds The IDs of the tokens that were burned.
-     */
+    /// @notice A function that will run when tokens are burned via redemption.
+    /// @param _tokenIds The IDs of the tokens that were burned.
     function _didBurn(uint256[] memory _tokenIds) internal virtual override {
         // Add to burned counter.
         store.recordBurn(_tokenIds);
     }
 
-    /**
-     * @notice
-     * Mints a token in all provided tiers.
-     *
-     * @param _amount The amount to base the mints on. All mints' price floors must fit in this amount.
-     * @param _mintTierIds An array of tier IDs that are intended to be minted.
-     * @param _beneficiary The address to mint for.
-     *
-     * @return leftoverAmount The amount leftover after the mint.
-     */
+    /// @notice Mints a token in all provided tiers.
+    /// @param _amount The amount to base the mints on. All mints' price floors must fit in this amount.
+    /// @param _mintTierIds An array of tier IDs that are intended to be minted.
+    /// @param _beneficiary The address to mint for.
+    /// @return leftoverAmount The amount leftover after the mint.
     function _mintAll(uint256 _amount, uint16[] memory _mintTierIds, address _beneficiary)
         internal
         returns (uint256 leftoverAmount)
@@ -1043,14 +838,10 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate {
         }
     }
 
-    /**
-     * @notice
-     * User the hook to register the first owner if it's not yet registered.
-     *
-     * @param _from The address where the transfer is originating.
-     * @param _to The address to which the transfer is being made.
-     * @param _tokenId The ID of the token being transferred.
-     */
+    /// @notice User the hook to register the first owner if it's not yet registered.
+    /// @param _from The address where the transfer is originating.
+    /// @param _to The address to which the transfer is being made.
+    /// @param _tokenId The ID of the token being transferred.
     function _beforeTokenTransfer(address _from, address _to, uint256 _tokenId) internal virtual override {
         // Transferred must not be paused when not minting or burning.
         if (_from != address(0)) {
@@ -1077,14 +868,10 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate {
         super._beforeTokenTransfer(_from, _to, _tokenId);
     }
 
-    /**
-     * @notice
-     * Transfer voting units after the transfer of a token.
-     *
-     * @param _from The address where the transfer is originating.
-     * @param _to The address to which the transfer is being made.
-     * @param _tokenId The ID of the token being transferred.
-     */
+    /// @notice Transfer voting units after the transfer of a token.
+    /// @param _from The address where the transfer is originating.
+    /// @param _to The address to which the transfer is being made.
+    /// @param _tokenId The ID of the token being transferred.
     function _afterTokenTransfer(address _from, address _to, uint256 _tokenId) internal virtual override {
         // Get a reference to the tier.
         JB721Tier memory _tier = store.tierOfTokenId(address(this), _tokenId, false);
@@ -1098,14 +885,10 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate {
         super._afterTokenTransfer(_from, _to, _tokenId);
     }
 
-    /**
-     * @notice
-     *    handles the tier voting accounting
-     *
-     * @param _from The account to transfer voting units from.
-     * @param _to The account to transfer voting units to.
-     * @param _tier The tier the token ID is part of.
-     */
+    /// @notice Handles the tier voting accounting
+    /// @param _from The account to transfer voting units from.
+    /// @param _to The account to transfer voting units to.
+    /// @param _tier The tier the token ID is part of.
     function _afterTokenTransferAccounting(address _from, address _to, JB721Tier memory _tier) internal virtual {
         // Dont transfer on mint since the delegation will be transferred more efficiently in _processPayment.
         if (_from == address(0)) return;
