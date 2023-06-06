@@ -87,8 +87,8 @@ contract DefifaDeployer is
     /// @notice The original code for the Defifa delegate to base subsequent instances on.
     address public immutable override delegateCodeOrigin;
 
-    /// @notice The original code for the Defifa governor to base subsequent instances on.
-    address public immutable override governorCodeOrigin;
+    /// @notice The Defifa governor.
+    IDefifaGovernor public immutable override governor;
 
     /// @notice The original code for the Defifa token URI resolver to base subsequent instances on.
     address public immutable override tokenUriResolverCodeOrigin;
@@ -187,8 +187,8 @@ contract DefifaDeployer is
     //*********************************************************************//
 
     /// @param _delegateCodeOrigin The code of the Defifa delegate.
-    /// @param _governorCodeOrigin The code of the Defifa governor.
     /// @param _tokenUriResolverCodeOrigin The token URI resolver with which new projects should be deployed.
+    /// @param _governor The Defifa governor.
     /// @param _controller The controller to use to launch the game from.
     /// @param _delegatesRegistry The contract storing references to the deployer of each delegate.
     /// @param _protocolFeeProjectTokenAccount The address that should be forwarded JBX accumulated in this contract from game fund distributions.
@@ -196,8 +196,8 @@ contract DefifaDeployer is
     /// @param _owner The address that can change the fees.
     constructor(
         address _delegateCodeOrigin,
-        address _governorCodeOrigin,
         address _tokenUriResolverCodeOrigin,
+        IDefifaGovernor _governor,
         IJBController3_1 _controller,
         IJBDelegatesRegistry _delegatesRegistry,
         address _protocolFeeProjectTokenAccount,
@@ -205,8 +205,8 @@ contract DefifaDeployer is
         address _owner
     ) {
         delegateCodeOrigin = _delegateCodeOrigin;
-        governorCodeOrigin = _governorCodeOrigin;
         tokenUriResolverCodeOrigin = _tokenUriResolverCodeOrigin;
+        governor = _governor;
         controller = _controller;
         protocolFeeProjectTokenAccount = _protocolFeeProjectTokenAccount;
         delegatesRegistry = _delegatesRegistry;
@@ -222,11 +222,10 @@ contract DefifaDeployer is
     /// @notice Launches a new game owned by this contract with a DefifaDelegate attached.
     /// @param _launchProjectData Data necessary to fulfill the transaction to launch a game.
     /// @return gameId The ID of the newly configured game.
-    /// @return governor The address that governs the game.
     function launchGameWith(DefifaLaunchProjectData memory _launchProjectData)
         external
         override
-        returns (uint256 gameId, IDefifaGovernor governor)
+        returns (uint256 gameId)
     {
         // Start the game right after the mint and refund durations if it isnt provided.
         if (_launchProjectData.start == 0) {
@@ -389,7 +388,6 @@ contract DefifaDeployer is
         _queueMintPhase(_launchProjectData, address(_delegate));
 
         // Clone and initialize the new governor.
-        governor = IDefifaGovernor(Clones.clone(governorCodeOrigin));
         governor.initializeGame({
             _gameId: gameId,
             _attestationStartTime: uint256(_launchProjectData.votingStartTime),

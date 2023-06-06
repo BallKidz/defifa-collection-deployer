@@ -27,24 +27,25 @@ contract DeployMainnet is Script {
         // Deploy the codeOrigin for the delegate.
         DefifaDelegate _defifaDelegateCodeOrigin = new DefifaDelegate();
 
-        // Deploy the codeOrigin for the governor.
-        DefifaGovernor _defifaGovernorCodeOrigin = new DefifaGovernor(_controller, _blockTime);
-
         // Deploy the codeOrigin for the token uri resolver.
         DefifaTokenUriResolver _defifaTokenUriResolverCodeOrigin = new DefifaTokenUriResolver(_typeface);
 
+        // Deploy the governor.
+        DefifaGovernor _defifaGovernor = new DefifaGovernor(_controller, _blockTime);
+
         // Deploy the deployer.
         DefifaDeployer _defifaDeployer = new DefifaDeployer(
-      address(_defifaDelegateCodeOrigin),
-      address(_defifaGovernorCodeOrigin),
-      address(_defifaTokenUriResolverCodeOrigin),
-      _controller,
-      _delegateRegistry,
-      _defifaBallkidz,
-      _ballkidzProjectId,
-      _defifaBallkidz
-    );
+          address(_defifaDelegateCodeOrigin),
+          address(_defifaTokenUriResolverCodeOrigin),
+          _defifaGovernor,
+          _controller,
+          _delegateRegistry,
+          _defifaBallkidz,
+          _ballkidzProjectId,
+          _defifaBallkidz
+        );
 
+        _defifaGovernor.transferOwnership(address(_defifaDeployer));
         console.log(address(_defifaDeployer));
     }
 }
@@ -67,23 +68,25 @@ contract DeployGoerli is Script {
         // Deploy the codeOrigin for the delegate
         DefifaDelegate _defifaDelegateCodeOrigin = new DefifaDelegate();
 
-        // Deploy the codeOrigin for the governor.
-        DefifaGovernor _defifaGovernorCodeOrigin = new DefifaGovernor(_controller, _blockTime);
-
         // Deploy the codeOrigin for the token uri resolver.
         DefifaTokenUriResolver _defifaTokenUriResolverCodeOrigin = new DefifaTokenUriResolver(_typeface);
+
+        // Deploy the governor.
+        DefifaGovernor _defifaGovernor = new DefifaGovernor(_controller, _blockTime);
 
         // Deploy the deployer.
         DefifaDeployer _defifaDeployer = new DefifaDeployer(
           address(_defifaDelegateCodeOrigin),
-          address(_defifaGovernorCodeOrigin),
           address(_defifaTokenUriResolverCodeOrigin),
+          _defifaGovernor,
           _controller,
           _delegateRegistry,
           _defifaBallkidz,
           _ballkidzProjectId,
           _defifaBallkidz
         );
+
+        _defifaGovernor.transferOwnership(address(_defifaDeployer));
 
         console.log(address(_defifaDeployer));
     }

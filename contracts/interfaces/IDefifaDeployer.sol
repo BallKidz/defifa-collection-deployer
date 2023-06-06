@@ -26,9 +26,9 @@ interface IDefifaDeployer {
 
     function delegateCodeOrigin() external view returns (address);
 
-    function governorCodeOrigin() external view returns (address);
-
     function tokenUriResolverCodeOrigin() external view returns (address);
+
+    function governor() external view returns (IDefifaGovernor);
 
     function controller() external view returns (IJBController3_1);
 
@@ -46,7 +46,7 @@ interface IDefifaDeployer {
 
     function launchGameWith(DefifaLaunchProjectData calldata _launchProjectData)
         external
-        returns (uint256 projectId, IDefifaGovernor governor);
+        returns (uint256 gameId);
 
     function queueNextPhaseOf(uint256 _projectId) external returns (uint256 configuration);
 
