@@ -230,17 +230,23 @@ contract DefifaDeployer is
     {
         // Start the game right after the mint and refund durations if it isnt provided.
         if (_launchProjectData.start == 0) {
-            _launchProjectData.start = uint48(block.timestamp + _launchProjectData.mintDuration + _launchProjectData.refundDuration);
+            _launchProjectData.start =
+                uint48(block.timestamp + _launchProjectData.mintDuration + _launchProjectData.refundDuration);
         }
         // Start minting right away if a start time isn't provided.
-        else if (_launchProjectData.mintDuration == 0 && _launchProjectData.start > block.timestamp + _launchProjectData.refundDuration) {
-          _launchProjectData.mintDuration = uint48(_launchProjectData.start - (block.timestamp + _launchProjectData.refundDuration));
+        else if (
+            _launchProjectData.mintDuration == 0
+                && _launchProjectData.start > block.timestamp + _launchProjectData.refundDuration
+        ) {
+            _launchProjectData.mintDuration =
+                uint48(_launchProjectData.start - (block.timestamp + _launchProjectData.refundDuration));
         }
 
         // Make sure the provided gameplay timestamps are sequential and that there is a mint duration.
         if (
-            _launchProjectData.mintDuration == 0 ||
-            _launchProjectData.start > block.timestamp + _launchProjectData.refundDuration + _launchProjectData.mintDuration
+            _launchProjectData.mintDuration == 0
+                || _launchProjectData.start
+                    > block.timestamp + _launchProjectData.refundDuration + _launchProjectData.mintDuration
         ) revert INVALID_GAME_CONFIGURATION();
 
         // Get the game ID, optimistically knowing it will be one greater than the current count.

@@ -13,18 +13,8 @@ import "./interfaces/IDefifaDelegate.sol";
 import "./interfaces/IDefifaTokenUriResolver.sol";
 import "./libraries/DefifaFontImporter.sol";
 
-/**
- * @title
- *   DefifaDelegate
- *
- *   @notice
- *   Defifa default 721 token URI resolver.
- *
- *   @dev
- *   Adheres to -
- *   IDefifaTokenUriResolver: General interface for the methods in this contract that interact with the blockchain's state according to the protocol's rules.
- *   IJBTokenUriResolver: Interface to ensure compatibility with 721Delegates.
- */
+/// @title DefifaTokenUriResolver
+/// @notice Standard Token URIs for Defifa games.
 contract DefifaTokenUriResolver is IDefifaTokenUriResolver, IJBTokenUriResolver {
     using Strings for uint256;
     using SafeMath for uint256;
@@ -33,38 +23,25 @@ contract DefifaTokenUriResolver is IDefifaTokenUriResolver, IJBTokenUriResolver 
     // -------------------- private constant properties ------------------ //
     //*********************************************************************//
 
-    /**
-     * @notice
-     * The fidelity of the decimal returned in the NFT image.
-     */
+    /// @notice The fidelity of the decimal returned in the NFT image.
     uint256 private constant _IMG_DECIMAL_FIDELITY = 3;
 
     //*********************************************************************//
     // --------------------- private stored properties ------------------- //
     //*********************************************************************//
 
-    /**
-     * @notice
-     * The names of each tier.
-     *
-     * @dev _tierId The ID of the tier to get a name for.
-     */
+    /// @notice The names of each tier.
+    /// @dev _tierId The ID of the tier to get a name for.
     mapping(uint256 => string) private _tierNameOf;
 
     //*********************************************************************//
     // --------------- public immutable stored properties ---------------- //
     //*********************************************************************//
 
-    /**
-     * @notice
-     * The address of the origin 'DefifaGovernor', used to check in the init if the contract is the original or not
-     */
+    /// @notice The address of the origin 'DefifaGovernor', used to check in the init if the contract is the original or not
     address public immutable override codeOrigin;
 
-    /**
-     * @notice
-     * The typeface of the SVGs.
-     */
+    /// @notice The typeface of the SVGs.
     ITypeface public immutable override typeface;
 
     //*********************************************************************//

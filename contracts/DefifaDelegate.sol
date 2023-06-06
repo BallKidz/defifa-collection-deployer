@@ -245,8 +245,7 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate {
         if (_tier.initialQuantity - _tier.remainingQuantity == 0) return 0;
 
         // Calculate the percentage of the tier redemption amount a single token counts for.
-        return
-        _weight / (_tier.initialQuantity - _tier.remainingQuantity + tokensRedeemedFrom[_tierId]);
+        return _weight / (_tier.initialQuantity - _tier.remainingQuantity + tokensRedeemedFrom[_tierId]);
     }
 
     /// @notice The cumulative weight that all token IDs have in redemptions.
@@ -373,7 +372,7 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate {
         // Initialize the superclass.
         JB721Delegate._initialize({_projectId: _gameId, _directory: _directory, _name: _name, _symbol: _symbol});
 
-        // Store stuff. 
+        // Store stuff.
         fundingCycleStore = _fundingCycleStore;
         store = _store;
         pricingCurrency = _currency;
@@ -418,7 +417,11 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate {
 
         // Set the delegate as the beneficiary if the beneficiary hasn't already set a delegate.
         if (_oldDelegate == address(0)) {
-            _delegateTier(_reservedTokenBeneficiary, defaultVotingDelegate != address(0) ? defaultVotingDelegate : _reservedTokenBeneficiary, _tierId);
+            _delegateTier(
+                _reservedTokenBeneficiary,
+                defaultVotingDelegate != address(0) ? defaultVotingDelegate : _reservedTokenBeneficiary,
+                _tierId
+            );
         }
 
         // Record the minted reserves for the tier.
@@ -599,7 +602,9 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate {
         override
     {
         // Make sure the current game phase is the minting phase.
-        if (gamePhaseReporter.currentGamePhaseOf(projectId) != DefifaGamePhase.MINT) revert DELEGATE_CHANGES_UNAVAILABLE_IN_THIS_PHASE();
+        if (gamePhaseReporter.currentGamePhaseOf(projectId) != DefifaGamePhase.MINT) {
+            revert DELEGATE_CHANGES_UNAVAILABLE_IN_THIS_PHASE();
+        }
 
         // Keep a reference to the number of tier delegates.
         uint256 _numberOfTierDelegates = _setTierDelegatesData.length;
@@ -627,7 +632,9 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate {
     /// @param _tierId The ID of the tier to delegate voting units for.
     function setTierDelegate(address _delegatee, uint256 _tierId) public virtual override {
         // Make sure the current game phase is the minting phase.
-        if (gamePhaseReporter.currentGamePhaseOf(projectId) != DefifaGamePhase.MINT) revert DELEGATE_CHANGES_UNAVAILABLE_IN_THIS_PHASE();
+        if (gamePhaseReporter.currentGamePhaseOf(projectId) != DefifaGamePhase.MINT) {
+            revert DELEGATE_CHANGES_UNAVAILABLE_IN_THIS_PHASE();
+        }
 
         _delegateTier(msg.sender, _delegatee, _tierId);
     }

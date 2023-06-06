@@ -550,8 +550,8 @@ contract DefifaGovernorTest is TestBaseWorkflow {
         _terminals[0].pay{value: _cost}(_projectId, _cost, address(0), _refundUser, 0, true, "", metadata);
 
         vm.roll(block.number + 1);
-       
-        assertEq(_governor.MAX_VOTING_POWER_TIER() , _governor.getVotes(_refundUser, block.number - 1));
+
+        assertEq(_governor.MAX_VOTING_POWER_TIER(), _governor.getVotes(_refundUser, block.number - 1));
 
         // User should no longer have any funds
         assertEq(_refundUser.balance, 0);
@@ -563,8 +563,7 @@ contract DefifaGovernorTest is TestBaseWorkflow {
         bytes memory redemptionMetadata;
         {
             uint256[] memory redemptionId = new uint256[](1);
-            redemptionId[0] =
-                _generateTokenId(1, _tier.initialQuantity - _tier.remainingQuantity + 1 + _numberBurned);
+            redemptionId[0] = _generateTokenId(1, _tier.initialQuantity - _tier.remainingQuantity + 1 + _numberBurned);
             redemptionMetadata = abi.encode(bytes32(0), type(IDefifaDelegate).interfaceId, redemptionId);
         }
 
@@ -578,20 +577,20 @@ contract DefifaGovernorTest is TestBaseWorkflow {
             _beneficiary: payable(_refundUser),
             _memo: "imma out of here",
             _metadata: redemptionMetadata
-        });     
+        });
         vm.roll(block.number + 1);
-   
+
         assertEq(_refundUser.balance, _cost);
         assertEq(_delegate.balanceOf(_refundUser), 0);
 
-        assertEq(0 , _governor.getVotes(_refundUser, block.number - 1));
+        assertEq(0, _governor.getVotes(_refundUser, block.number - 1));
     }
 
     function testRevertsIfDelegationisDoneAfterMintPhase(
         uint8 nUsersWithWinningTier,
         uint8 winningTierExtraWeight,
         uint8 baseRedemptionWeight
-    ) public  {
+    ) public {
         uint256 nOfOtherTiers = 31;
         vm.assume(nUsersWithWinningTier > 1 && nUsersWithWinningTier < 100);
         uint256 totalWeight = baseRedemptionWeight * (nOfOtherTiers + 1) + winningTierExtraWeight;
@@ -1104,7 +1103,6 @@ contract DefifaGovernorTest is TestBaseWorkflow {
         }
         nft = DefifaDelegate(_fc.dataSource());
     }
-
 
     function mintAndRefund(DefifaDelegate _delegate, uint256 _projectId, uint256 _tierId) internal {
         JB721Tier memory _tier = _delegate.store().tierOf(address(_delegate), _tierId, false);

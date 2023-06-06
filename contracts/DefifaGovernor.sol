@@ -70,7 +70,7 @@ contract DefifaGovernor is Governor, GovernorCountingSimple, IDefifaGovernor {
     /// @return The state.
     function state(uint256 _proposalId) public view virtual override returns (ProposalState) {
         if (ratifiedProposal != 0) {
-          return ratifiedProposal == _proposalId ? ProposalState.Succeeded : ProposalState.Defeated;
+            return ratifiedProposal == _proposalId ? ProposalState.Succeeded : ProposalState.Defeated;
         }
 
         uint256 _snapshot = proposalSnapshot(_proposalId);
@@ -115,7 +115,7 @@ contract DefifaGovernor is Governor, GovernorCountingSimple, IDefifaGovernor {
         return (delegate.store().maxTierIdOf(address(delegate)) / 2) * MAX_VOTING_POWER_TIER;
     }
 
-    /// @notice The number of votes someone must have to submit a scorecard. 
+    /// @notice The number of votes someone must have to submit a scorecard.
     /// @return The proposal threshold.
     function proposalThreshold() public pure override(Governor) returns (uint256) {
         return 0;
@@ -161,7 +161,7 @@ contract DefifaGovernor is Governor, GovernorCountingSimple, IDefifaGovernor {
         __votingPeriod = _votingPeriod;
     }
 
-    /// @notice Only allow proposals through the scorecard submission process. 
+    /// @notice Only allow proposals through the scorecard submission process.
     /// @dev Required override.
     function propose(
         address[] memory _targets,
@@ -172,7 +172,7 @@ contract DefifaGovernor is Governor, GovernorCountingSimple, IDefifaGovernor {
         revert DISABLED();
     }
 
-    /// @notice Only allow executions through the scorecard submission process. 
+    /// @notice Only allow executions through the scorecard submission process.
     /// @dev Required override.
     function execute(
         address[] memory _targets,
@@ -180,9 +180,8 @@ contract DefifaGovernor is Governor, GovernorCountingSimple, IDefifaGovernor {
         bytes[] memory _calldatas,
         bytes32 _descriptionHash
     ) public payable virtual override returns (uint256) {
-      revert DISABLED();
+        revert DISABLED();
     }
-
 
     //*********************************************************************//
     // ---------------------- external transactions ---------------------- //
@@ -248,7 +247,11 @@ contract DefifaGovernor is Governor, GovernorCountingSimple, IDefifaGovernor {
     /// @notice Ratifies a scorecard that has been approved.
     /// @param _tierWeights The weights of each tier in the approved scorecard.
     /// @return proposalId The proposal ID.
-    function ratifyScorecard(DefifaTierRedemptionWeight[] calldata _tierWeights) external override returns (uint256 proposalId) {
+    function ratifyScorecard(DefifaTierRedemptionWeight[] calldata _tierWeights)
+        external
+        override
+        returns (uint256 proposalId)
+    {
         // Make sure a scorecard hasn't been ratified yet.
         if (ratifiedProposal != 0) revert ALREADY_RATIFIED();
 
@@ -370,7 +373,7 @@ contract DefifaGovernor is Governor, GovernorCountingSimple, IDefifaGovernor {
         return abi.encode(_ids);
     }
 
-    /// @notice Execute a proposal. 
+    /// @notice Execute a proposal.
     /// @dev Required override.
     function _execute(
         uint256 _proposalId,
@@ -379,10 +382,10 @@ contract DefifaGovernor is Governor, GovernorCountingSimple, IDefifaGovernor {
         bytes[] memory _calldatas,
         bytes32 _descriptionHash
     ) internal override(Governor) {
-      super._execute(_proposalId, _targets, _values, _calldatas, _descriptionHash);
+        super._execute(_proposalId, _targets, _values, _calldatas, _descriptionHash);
     }
 
-    /// @notice Proposal cancelations aren't allowed. 
+    /// @notice Proposal cancelations aren't allowed.
     /// @dev Required override.
     function _cancel(
         address[] memory _targets,
@@ -390,14 +393,14 @@ contract DefifaGovernor is Governor, GovernorCountingSimple, IDefifaGovernor {
         bytes[] memory _calldatas,
         bytes32 _descriptionHash
     ) internal override(Governor) returns (uint256) {
-      _targets;
-      _values;
-      _calldatas;
-      _descriptionHash;
-      revert DISABLED();
+        _targets;
+        _values;
+        _calldatas;
+        _descriptionHash;
+        revert DISABLED();
     }
 
-    /// @notice Proposal will be executed by this contract. 
+    /// @notice Proposal will be executed by this contract.
     /// @dev Required override.
     function _executor() internal view override(Governor) returns (address) {
         return super._executor();
