@@ -5,8 +5,8 @@ import "@paulrberg/contracts/math/PRBMath.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
-import "@jbx-protocol/juice-contracts-v3/contracts/interfaces/IJBTokenUriResolver.sol";
 import "@jbx-protocol/juice-contracts-v3/contracts/libraries/JBTokens.sol";
+import "@jbx-protocol/juice-721-delegate/contracts/interfaces/IJB721TokenUriResolver.sol";
 import "@jbx-protocol/juice-721-delegate/contracts/libraries/JBIpfsDecoder.sol";
 import "lib/base64/base64.sol";
 import "./interfaces/IDefifaDelegate.sol";
@@ -15,7 +15,7 @@ import "./libraries/DefifaFontImporter.sol";
 
 /// @title DefifaTokenUriResolver
 /// @notice Standard Token URIs for Defifa games.
-contract DefifaTokenUriResolver is IDefifaTokenUriResolver, IJBTokenUriResolver {
+contract DefifaTokenUriResolver is IDefifaTokenUriResolver, IJB721TokenUriResolver {
     using Strings for uint256;
     using SafeMath for uint256;
 
@@ -30,25 +30,14 @@ contract DefifaTokenUriResolver is IDefifaTokenUriResolver, IJBTokenUriResolver 
     // --------------- public immutable stored properties ---------------- //
     //*********************************************************************//
 
-    /// @notice The address of the origin 'DefifaGovernor', used to check in the init if the contract is the original or not
-    address public immutable override codeOrigin;
-
     /// @notice The typeface of the SVGs.
     ITypeface public immutable override typeface;
-
-    //*********************************************************************//
-    // -------------------- public stored properties --------------------- //
-    //*********************************************************************//
-
-    /// @notice The delegate being shown.
-    IDefifaDelegate public override delegate;
 
     //*********************************************************************//
     // -------------------------- constructor ---------------------------- //
     //*********************************************************************//
 
     constructor(ITypeface _typeface) {
-        codeOrigin = address(this);
         typeface = _typeface;
     }
 
@@ -56,25 +45,14 @@ contract DefifaTokenUriResolver is IDefifaTokenUriResolver, IJBTokenUriResolver 
     // ---------------------- external transactions ---------------------- //
     //*********************************************************************//
 
-    /// @notice Initializes the contract.
-    /// @param _delegate The Defifa delegate contract that this contract is showing.
-    function initialize(IDefifaDelegate _delegate) public virtual override {
-        // Make the original un-initializable.
-        if (address(this) == codeOrigin) revert();
-
-        // Stop re-initialization.
-        if (address(delegate) != address(0)) revert();
-
-        delegate = _delegate;
-    }
-
     /// @notice The metadata URI of the provided token ID.
     /// @dev Defer to the token's tier IPFS URI if set.
+    /// @param _nft The address of the nft the token URI should be oriented to.
     /// @param _tokenId The ID of the token to get the tier URI for.
     /// @return The token URI corresponding with the tier.
-    function getUri(uint256 _tokenId) external view override returns (string memory) {
+    function tokenUriOf(address _nft, uint256 _tokenId) external view override returns (string memory) {
         // Keep a reference to the delegate.
-        IDefifaDelegate _delegate = delegate;
+        IDefifaDelegate _delegate = IDefifaDelegate(_nft);
 
         // Get the game ID.
         uint256 _gameId = _delegate.projectId();
@@ -105,7 +83,7 @@ contract DefifaTokenUriResolver is IDefifaTokenUriResolver, IJBTokenUriResolver 
             JB721Tier memory _tier = _delegate.store().tierOfTokenId(address(_delegate), _tokenId, false);
 
             // Set the tier's name.
-            _team = delegate.tierNameOf(_tier.id);
+            _team = _delegate.tierNameOf(_tier.id);
 
             // Check to see if the tier has a URI. Return it if it does.
             if (_tier.encodedIPFSUri != bytes32(0)) {
@@ -130,14 +108,14 @@ contract DefifaTokenUriResolver is IDefifaTokenUriResolver, IJBTokenUriResolver 
 
             {
                 // Get a reference to the game phase.
-                DefifaGamePhase _gamePhase = delegate.gamePhaseReporter().currentGamePhaseOf(_gameId);
+                DefifaGamePhase _gamePhase = _delegate.gamePhaseReporter().currentGamePhaseOf(_gameId);
 
                 // Keep a reference to the game pot.
                 (uint256 _gamePot, address _gamePotToken, uint256 _gamePotDecimals) =
                     _delegate.gamePotReporter().currentGamePotOf(_gameId);
 
                 // Include the amount redeemed.
-                _gamePot = _gamePot + delegate.amountRedeemed();
+                _gamePot = _gamePot + _delegate.amountRedeemed();
 
                 // Set the pot text.
                 _potText = _formatBalance(_gamePot, _gamePotToken, _gamePotDecimals, _IMG_DECIMAL_FIDELITY);
@@ -195,7 +173,7 @@ contract DefifaTokenUriResolver is IDefifaTokenUriResolver, IJBTokenUriResolver 
                 " | POT: ",
                 _potText,
                 " | PLAYERS: ",
-                _delegate.store().totalSupply(address(_delegate)).toString(),
+                _delegate.store().totalSupplyOf(address(_delegate)).toString(),
                 "</text>",
                 '<text x="10" y="50" style="font-size:16px; font-family: Capsules-500; font-weight:500; fill: #ed017c;">',
                 _gamePhaseText,

@@ -3,7 +3,7 @@ pragma solidity ^0.8.0;
 
 import "@jbx-protocol/juice-721-delegate/contracts/interfaces/IJBTiered721DelegateStore.sol";
 import "@jbx-protocol/juice-contracts-v3/contracts/interfaces/IJBPaymentTerminal.sol";
-import "@jbx-protocol/juice-contracts-v3/contracts/interfaces/IJBTokenUriResolver.sol";
+import "@jbx-protocol/juice-721-delegate/contracts/interfaces/IJB721TokenUriResolver.sol";
 import "@jbx-protocol/juice-contracts-v3/contracts/structs/JBProjectMetadata.sol";
 import "@jbx-protocol/juice-contracts-v3/contracts/structs/JBSplit.sol";
 import "./DefifaTierParams.sol";
@@ -43,7 +43,7 @@ struct DefifaLaunchProjectData {
     uint256 votingStartTime;
     uint256 votingPeriod;
     address defaultVotingDelegate;
-    IJBTokenUriResolver defaultTokenUriResolver;
+    IJB721TokenUriResolver defaultTokenUriResolver;
     IJBPaymentTerminal terminal;
     IJBTiered721DelegateStore store;
 }

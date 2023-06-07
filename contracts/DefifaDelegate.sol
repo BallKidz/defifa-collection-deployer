@@ -212,7 +212,7 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate {
     /// @return The token URI corresponding with the tier or the tokenUriResolver URI.
     function tokenURI(uint256 _tokenId) public view virtual override returns (string memory) {
         // Use the resolver.
-        return store.tokenUriResolverOf(address(this)).getUri(_tokenId);
+        return store.tokenUriResolverOf(address(this)).tokenUriOf(address(this), _tokenId);
     }
 
     /// @notice The cumulative weight the given token IDs have in redemptions compared to the `_totalRedemptionWeight`.
@@ -368,7 +368,7 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate {
         string memory _symbol,
         IJBFundingCycleStore _fundingCycleStore,
         string memory _baseUri,
-        IJBTokenUriResolver _tokenUriResolver,
+        IJB721TokenUriResolver _tokenUriResolver,
         string memory _contractUri,
         JB721TierParams[] memory _tiers,
         uint48 _currency,
@@ -402,7 +402,7 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate {
         if (bytes(_contractUri).length != 0) contractURI = _contractUri;
 
         // Set the token URI resolver if provided.
-        if (_tokenUriResolver != IJBTokenUriResolver(address(0))) {
+        if (_tokenUriResolver != IJB721TokenUriResolver(address(0))) {
             _store.recordSetTokenUriResolver(_tokenUriResolver);
         }
 

@@ -50,8 +50,7 @@ contract SVGTest is Test {
 
     function testWithTierImage() public {
         DefifaDelegate _delegate = DefifaDelegate(Clones.clone(address(new DefifaDelegate())));
-        DefifaTokenUriResolver _resolver =
-            DefifaTokenUriResolver(Clones.clone(address(new DefifaTokenUriResolver(_typeface))));
+        DefifaTokenUriResolver _resolver = new DefifaTokenUriResolver(_typeface);
         GamePhaseReporter _gamePhaseReporter = new GamePhaseReporter();
         GamePotReporter _gamePotReporter = new GamePotReporter();
 
@@ -90,12 +89,10 @@ contract SVGTest is Test {
             _tierNames: _tierNames
         });
 
-        _resolver.initialize(_delegate);
-
         string[] memory inputs = new string[](3);
         inputs[0] = "node";
         inputs[1] = "./open.js";
-        inputs[2] = _resolver.getUri(1000000001);
+        inputs[2] = _resolver.tokenUriOf(address(_delegate), 1000000001);
         bytes memory res = vm.ffi(inputs);
         res;
         vm.ffi(inputs);
@@ -105,8 +102,7 @@ contract SVGTest is Test {
 
     function testWithOutTierImage() public {
         DefifaDelegate _delegate = DefifaDelegate(Clones.clone(address(new DefifaDelegate())));
-        DefifaTokenUriResolver _resolver =
-            DefifaTokenUriResolver(Clones.clone(address(new DefifaTokenUriResolver(_typeface))));
+        DefifaTokenUriResolver _resolver = new DefifaTokenUriResolver(_typeface);
         GamePhaseReporter _gamePhaseReporter = new GamePhaseReporter();
         GamePotReporter _gamePotReporter = new GamePotReporter();
 
@@ -146,12 +142,10 @@ contract SVGTest is Test {
             _tierNames: _tierNames
         });
 
-        _resolver.initialize(_delegate);
-
         string[] memory inputs = new string[](3);
         inputs[0] = "node";
         inputs[1] = "./open.js";
-        inputs[2] = _resolver.getUri(1000000000);
+        inputs[2] = _resolver.tokenUriOf(address(_delegate), 1000000000);
         bytes memory res = vm.ffi(inputs);
         res;
         vm.ffi(inputs);

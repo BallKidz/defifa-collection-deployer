@@ -95,7 +95,7 @@ interface IDefifaDelegate is IJB721Delegate {
         string memory _symbol,
         IJBFundingCycleStore _fundingCycleStore,
         string memory _baseUri,
-        IJBTokenUriResolver _tokenUriResolver,
+        IJB721TokenUriResolver _tokenUriResolver,
         string memory _contractUri,
         JB721TierParams[] memory _tiers,
         uint48 _currency,

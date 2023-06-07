@@ -828,7 +828,7 @@ import "@jbx-protocol/juice-721-delegate/contracts/JBTiered721DelegateStore.sol"
 //             votingPeriod: 100381,
 //             tiers: tierParams,
 //             ballkidzFeeProjectTokenAccount: payable(0x1000000000000000000000000000000000000000),
-//             defaultTokenUriResolver: IJBTokenUriResolver(address(0)),
+//             defaultTokenUriResolver: IJB721TokenUriResolver(address(0)),
 //             terminal: _jbETHPaymentTerminal,
 //             defaultVotingDelegate: address(0)
 //         });
@@ -1081,7 +1081,7 @@ import "@jbx-protocol/juice-721-delegate/contracts/JBTiered721DelegateStore.sol"
 //             votingStartTime: 0,
 //             votingPeriod: 100381,
 //             tiers: tierParams,
-//             defaultTokenUriResolver: IJBTokenUriResolver(address(0)),
+//             defaultTokenUriResolver: IJB721TokenUriResolver(address(0)),
 //             ballkidzFeeProjectTokenAccount: payable(0x1000000000000000000000000000000000000000),
 //             terminal: _jbETHPaymentTerminal,
 //             defaultVotingDelegate: address(0)

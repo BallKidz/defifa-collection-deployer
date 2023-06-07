@@ -27,8 +27,8 @@ contract DeployMainnet is Script {
         // Deploy the codeOrigin for the delegate.
         DefifaDelegate _defifaDelegateCodeOrigin = new DefifaDelegate();
 
-        // Deploy the codeOrigin for the token uri resolver.
-        DefifaTokenUriResolver _defifaTokenUriResolverCodeOrigin = new DefifaTokenUriResolver(_typeface);
+        // Deploy the token uri resolver.
+        DefifaTokenUriResolver _defifaTokenUriResolver = new DefifaTokenUriResolver(_typeface);
 
         // Deploy the governor.
         DefifaGovernor _defifaGovernor = new DefifaGovernor(_controller, _blockTime);
@@ -36,7 +36,7 @@ contract DeployMainnet is Script {
         // Deploy the deployer.
         DefifaDeployer _defifaDeployer = new DefifaDeployer(
           address(_defifaDelegateCodeOrigin),
-          address(_defifaTokenUriResolverCodeOrigin),
+          _defifaTokenUriResolver,
           _defifaGovernor,
           _controller,
           _delegateRegistry,
@@ -68,8 +68,8 @@ contract DeployGoerli is Script {
         // Deploy the codeOrigin for the delegate
         DefifaDelegate _defifaDelegateCodeOrigin = new DefifaDelegate();
 
-        // Deploy the codeOrigin for the token uri resolver.
-        DefifaTokenUriResolver _defifaTokenUriResolverCodeOrigin = new DefifaTokenUriResolver(_typeface);
+        // Deploy the token uri resolver.
+        DefifaTokenUriResolver _defifaTokenUriResolver = new DefifaTokenUriResolver(_typeface);
 
         // Deploy the governor.
         DefifaGovernor _defifaGovernor = new DefifaGovernor(_controller, _blockTime);
@@ -77,7 +77,7 @@ contract DeployGoerli is Script {
         // Deploy the deployer.
         DefifaDeployer _defifaDeployer = new DefifaDeployer(
           address(_defifaDelegateCodeOrigin),
-          address(_defifaTokenUriResolverCodeOrigin),
+          _defifaTokenUriResolver,
           _defifaGovernor,
           _controller,
           _delegateRegistry,

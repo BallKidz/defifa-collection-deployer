@@ -87,11 +87,11 @@ contract DefifaDeployer is
     /// @notice The original code for the Defifa delegate to base subsequent instances on.
     address public immutable override delegateCodeOrigin;
 
+    /// @notice The default Defifa token URI resolver.
+    IJB721TokenUriResolver public immutable override tokenUriResolver;
+
     /// @notice The Defifa governor.
     IDefifaGovernor public immutable override governor;
-
-    /// @notice The original code for the Defifa token URI resolver to base subsequent instances on.
-    address public immutable override tokenUriResolverCodeOrigin;
 
     /// @notice The controller with which new projects should be deployed.
     IJBController3_1 public immutable override controller;
@@ -187,7 +187,7 @@ contract DefifaDeployer is
     //*********************************************************************//
 
     /// @param _delegateCodeOrigin The code of the Defifa delegate.
-    /// @param _tokenUriResolverCodeOrigin The token URI resolver with which new projects should be deployed.
+    /// @param _tokenUriResolver The standard default token URI resolver.
     /// @param _governor The Defifa governor.
     /// @param _controller The controller to use to launch the game from.
     /// @param _delegatesRegistry The contract storing references to the deployer of each delegate.
@@ -196,7 +196,7 @@ contract DefifaDeployer is
     /// @param _owner The address that can change the fees.
     constructor(
         address _delegateCodeOrigin,
-        address _tokenUriResolverCodeOrigin,
+        IJB721TokenUriResolver _tokenUriResolver,
         IDefifaGovernor _governor,
         IJBController3_1 _controller,
         IJBDelegatesRegistry _delegatesRegistry,
@@ -205,7 +205,7 @@ contract DefifaDeployer is
         address _owner
     ) {
         delegateCodeOrigin = _delegateCodeOrigin;
-        tokenUriResolverCodeOrigin = _tokenUriResolverCodeOrigin;
+        tokenUriResolver = _tokenUriResolver;
         governor = _governor;
         controller = _controller;
         protocolFeeProjectTokenAccount = _protocolFeeProjectTokenAccount;
@@ -352,9 +352,9 @@ contract DefifaDeployer is
         DefifaDelegate _delegate = DefifaDelegate(Clones.clone(delegateCodeOrigin));
 
         // Use the default uri resolver if provided, else use the hardcoded generic default.
-        IJBTokenUriResolver _uriResolver = _launchProjectData.defaultTokenUriResolver != IJBTokenUriResolver(address(0))
+        IJB721TokenUriResolver _uriResolver = _launchProjectData.defaultTokenUriResolver != IJB721TokenUriResolver(address(0))
             ? _launchProjectData.defaultTokenUriResolver
-            : DefifaTokenUriResolver(Clones.clone(tokenUriResolverCodeOrigin));
+            : tokenUriResolver;
 
         _delegate.initialize({
             _gameId: gameId,
@@ -373,11 +373,6 @@ contract DefifaDeployer is
             _defaultVotingDelegate: _launchProjectData.defaultVotingDelegate,
             _tierNames: _tierNames
         });
-
-        // Initialize the fallback default uri resolver if needed.
-        if (_launchProjectData.defaultTokenUriResolver == IJBTokenUriResolver(address(0))) {
-            DefifaTokenUriResolver(address(_uriResolver)).initialize({_delegate: _delegate});
-        }
 
         // Make sure the provided terminal accepts the same currency as this game is being played in.
         if (!_launchProjectData.terminal.acceptsToken(_launchProjectData.token, gameId)) {

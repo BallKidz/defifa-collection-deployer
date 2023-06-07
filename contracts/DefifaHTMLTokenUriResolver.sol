@@ -2,7 +2,7 @@
 pragma solidity ^0.8.16;
 
 import "@openzeppelin/contracts/utils/Strings.sol";
-import "@jbx-protocol/juice-contracts-v3/contracts/interfaces/IJBTokenUriResolver.sol";
+import "@jbx-protocol/juice-721-delegate/contracts/interfaces/IJB721TokenUriResolver.sol";
 import "@jbx-protocol/juice-721-delegate/contracts/libraries/JBIpfsDecoder.sol";
 import "lib/base64/base64.sol";
 import "./interfaces/IDefifaDelegate.sol";
@@ -24,9 +24,9 @@ import {
  *   @dev
  *   Adheres to -
  *   IDefifaTokenUriResolver: General interface for the methods in this contract that interact with the blockchain's state according to the protocol's rules.
- *   IJBTokenUriResolver: Interface to ensure compatibility with 721Delegates.
+ *   IJB721TokenUriResolver: Interface to ensure compatibility with 721Delegates.
  */
-// contract DefifaHTMLTokenUriResolver is IDefifaTokenUriResolver, IJBTokenUriResolver {
+// contract DefifaHTMLTokenUriResolver is IDefifaTokenUriResolver, IJB721TokenUriResolver {
 //     using Strings for uint256;
 
 //     //*********************************************************************//
