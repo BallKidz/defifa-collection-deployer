@@ -245,7 +245,7 @@ contract DefifaDeployer is
         if (
             _launchProjectData.mintDuration == 0
                 || _launchProjectData.start
-                    > block.timestamp + _launchProjectData.refundDuration + _launchProjectData.mintDuration
+                    < block.timestamp + _launchProjectData.refundDuration + _launchProjectData.mintDuration
         ) revert INVALID_GAME_CONFIGURATION();
 
         // Get the game ID, optimistically knowing it will be one greater than the current count.
