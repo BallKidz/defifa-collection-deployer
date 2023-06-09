@@ -63,7 +63,7 @@ contract DefifaDeployer is
     mapping(uint256 => DefifaDistributionOpsData) internal _distributionOpsOf;
 
     /// @notice This contract current nonce, used for the registry initialized at 1 since the first contract deployed is the delegate
-    uint256 internal _nonce = 1;
+    uint256 internal _nonce;
 
     /// @notice If each game has been set to no contest.
     mapping(uint256 => bool) internal _noContestIsSet;
@@ -393,10 +393,7 @@ contract DefifaDeployer is
         _delegate.transferOwnership(address(governor));
 
         // Add the delegate to the registry, contract nonce starts at 1
-        delegatesRegistry.addDelegate(address(this), _nonce);
-
-        // Add three to the nonce because 3 contracts were deployed during this launch process.
-        _nonce = _nonce + 3;
+        delegatesRegistry.addDelegate(address(this), ++_nonce);
 
         emit LaunchGame(gameId, _delegate, governor, _uriResolver, msg.sender);
     }
