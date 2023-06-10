@@ -168,7 +168,12 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate {
     /// @notice Returns the total amount of voting power that has existed for a tier.
     /// @param _tier The tier to check.
     /// @param _blockNumber The blocknumber to check the total voting power at.
-    function getPastTierTotalAttestationsOf(uint256 _tier, uint256 _blockNumber) external view override returns (uint256) {
+    function getPastTierTotalAttestationsOf(uint256 _tier, uint256 _blockNumber)
+        external
+        view
+        override
+        returns (uint256)
+    {
         return _totalTierCheckpoints[_tier].getAtBlock(_blockNumber);
     }
 

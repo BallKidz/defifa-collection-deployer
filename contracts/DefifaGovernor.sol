@@ -82,7 +82,13 @@ contract DefifaGovernor is Ownable, IDefifaGovernor {
     /// @notice A value representing the contents of a scorecard.
     /// @param _gameDelegate The address where the game is being played.
     /// @param _calldata The calldata that will be sent if the scorecard is ratified.
-    function hashScorecardOf(address _gameDelegate, bytes memory _calldata) public pure virtual override returns (uint256) {
+    function hashScorecardOf(address _gameDelegate, bytes memory _calldata)
+        public
+        pure
+        virtual
+        override
+        returns (uint256)
+    {
         return uint256(keccak256(abi.encode(_gameDelegate, _calldata)));
     }
 
@@ -156,6 +162,50 @@ contract DefifaGovernor is Ownable, IDefifaGovernor {
             * MAX_VOTING_POWER_TIER;
     }
 
+    /// @notice Gets an account's voting power given a number of tiers to look through.
+    /// @param _gameId The ID of the game for which votes are being counted.
+    /// @param _account The account to get votes for.
+    /// @param _blockNumber The block number to measure votes from.
+    /// @return votingPower The amount of voting power.
+    function getAttestationWeight(uint256 _gameId, address _account, uint256 _blockNumber)
+        public
+        view
+        virtual
+        returns (uint256 votingPower)
+    {
+        // Get the game's current funding cycle along with its metadata.
+        (, JBFundingCycleMetadata memory _metadata) = controller.currentFundingCycleOf(_gameId);
+
+        // Keep a reference to the number of tiers.
+        // Get a reference to the number of tiers.
+        uint256 _numbeOfTiers = IDefifaDelegate(_metadata.dataSource).store().maxTierIdOf(_metadata.dataSource);
+
+        // Keep a reference to the tier being iterated on.
+        uint256 _tierId;
+
+        for (uint256 _i; _i < _numbeOfTiers;) {
+            // Tier's are 1 indexed;
+            _tierId = _i + 1;
+
+            // Keep a reference to the number of tier votes for the account.
+            uint256 _tierVotesForAccount =
+                IDefifaDelegate(_metadata.dataSource).getPastTierAttestationsOf(_account, _tierId, _blockNumber);
+
+            // If there is tier voting power, increment the result by the proportion of votes the account has to the total, multiplied by the tier's maximum vote power.
+            unchecked {
+                if (_tierVotesForAccount != 0) {
+                    votingPower += PRBMath.mulDiv(
+                        MAX_VOTING_POWER_TIER,
+                        _tierVotesForAccount,
+                        IDefifaDelegate(_metadata.dataSource).getPastTierTotalAttestationsOf(_tierId, _blockNumber)
+                    );
+                }
+            }
+
+            ++_i;
+        }
+    }
+
     //*********************************************************************//
     // -------------------------- constructor ---------------------------- //
     //*********************************************************************//
@@ -178,7 +228,6 @@ contract DefifaGovernor is Ownable, IDefifaGovernor {
         override
         onlyOwner
     {
-
         // Set a default attestation start time if needed.
         if (_attestationStartTime == 0) _attestationStartTime = block.timestamp;
 
@@ -241,9 +290,9 @@ contract DefifaGovernor is Ownable, IDefifaGovernor {
 
         uint256 _attestationStartTime = attestationStartTimeOf(_gameId);
         uint256 _timeUntilAttestationsBegin =
-            block.timestamp > _attestationStartTime ? block.timestamp : _attestationStartTime - block.timestamp;
+            block.timestamp > _attestationStartTime ? 0 : _attestationStartTime - block.timestamp;
         _scorecard.attestationsBegin = uint48(block.number + (_timeUntilAttestationsBegin / _blockTime));
-        _scorecard.gracePeriodEnds = uint48(attestationGracePeriodOf(_gameId) / _blockTime);
+        _scorecard.gracePeriodEnds = uint48(block.number + attestationGracePeriodOf(_gameId) / _blockTime);
 
         // Keep a reference to the default attestation delegate.
         address _defaultAttestationDelegate = IDefifaDelegate(_metadata.dataSource).defaultVotingDelegate();
@@ -253,7 +302,9 @@ contract DefifaGovernor is Ownable, IDefifaGovernor {
             defaultAttestationDelegateProposalOf[_gameId] = scorecardId;
         }
 
-        emit ScorecardSubmitted(_gameId, scorecardId, _tierWeights, msg.sender == _defaultAttestationDelegate, msg.sender);
+        emit ScorecardSubmitted(
+            _gameId, scorecardId, _tierWeights, msg.sender == _defaultAttestationDelegate, msg.sender
+        );
     }
 
     /// @notice Attests to a scorecard.
@@ -271,20 +322,20 @@ contract DefifaGovernor is Ownable, IDefifaGovernor {
             revert NOT_ALLOWED();
         }
 
-        // Get a reference to the attestation weight.
-        weight = _getAttestationWeight(_gameId, msg.sender, _scorecard.attestationsBegin);
-
         // Keep a reference to the attestations for the scorecard.
         DefifaAttestations storage _attestations = _scorecardAttestationsOf[_gameId][_scorecardId];
 
         // Make sure the account isn't attesting to the same scorecard again.
         if (_attestations.hasAttested[msg.sender]) revert ALREADY_ATTESTED();
 
-        // Store the fact that the account has attested to the scorecard.
-        _attestations.hasAttested[msg.sender] = true;
+        // Get a reference to the attestation weight.
+        weight = getAttestationWeight(_gameId, msg.sender, _scorecard.attestationsBegin);
 
         // Increase the attestationc count.
         _attestations.count += weight;
+
+        // Store the fact that the account has attested to the scorecard.
+        _attestations.hasAttested[msg.sender] = true;
 
         emit ScorecardAttested(_gameId, _scorecardId, weight, msg.sender);
     }
@@ -336,49 +387,5 @@ contract DefifaGovernor is Ownable, IDefifaGovernor {
     {
         // Build the calldata from the tier weights.
         return abi.encodeWithSelector(DefifaDelegate.setTierRedemptionWeightsTo.selector, (_tierWeights));
-    }
-
-    /// @notice Gets an account's voting power given a number of tiers to look through.
-    /// @param _gameId The ID of the game for which votes are being counted.
-    /// @param _account The account to get votes for.
-    /// @param _blockNumber The block number to measure votes from.
-    /// @return votingPower The amount of voting power.
-    function _getAttestationWeight(uint256 _gameId, address _account, uint256 _blockNumber)
-        internal
-        view
-        virtual
-        returns (uint256 votingPower)
-    {
-        // Get the game's current funding cycle along with its metadata.
-        (, JBFundingCycleMetadata memory _metadata) = controller.currentFundingCycleOf(_gameId);
-
-        // Keep a reference to the number of tiers.
-        // Get a reference to the number of tiers.
-        uint256 _numbeOfTiers = IDefifaDelegate(_metadata.dataSource).store().maxTierIdOf(_metadata.dataSource);
-
-        // Keep a reference to the tier being iterated on.
-        uint256 _tierId;
-
-        for (uint256 _i; _i < _numbeOfTiers;) {
-            // Tier's are 1 indexed;
-            _tierId = _i + 1;
-
-            // Keep a reference to the number of tier votes for the account.
-            uint256 _tierVotesForAccount =
-                IDefifaDelegate(_metadata.dataSource).getPastTierAttestationsOf(_account, _tierId, _blockNumber);
-
-            // If there is tier voting power, increment the result by the proportion of votes the account has to the total, multiplied by the tier's maximum vote power.
-            unchecked {
-                if (_tierVotesForAccount != 0) {
-                    votingPower += PRBMath.mulDiv(
-                        MAX_VOTING_POWER_TIER,
-                        _tierVotesForAccount,
-                        IDefifaDelegate(_metadata.dataSource).getPastTierTotalAttestationsOf(_tierId, _blockNumber)
-                    );
-                }
-            }
-
-            ++_i;
-        }
     }
 }

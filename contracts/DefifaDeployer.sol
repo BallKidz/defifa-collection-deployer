@@ -352,9 +352,8 @@ contract DefifaDeployer is
         DefifaDelegate _delegate = DefifaDelegate(Clones.clone(delegateCodeOrigin));
 
         // Use the default uri resolver if provided, else use the hardcoded generic default.
-        IJB721TokenUriResolver _uriResolver = _launchProjectData.defaultTokenUriResolver != IJB721TokenUriResolver(address(0))
-            ? _launchProjectData.defaultTokenUriResolver
-            : tokenUriResolver;
+        IJB721TokenUriResolver _uriResolver = _launchProjectData.defaultTokenUriResolver
+            != IJB721TokenUriResolver(address(0)) ? _launchProjectData.defaultTokenUriResolver : tokenUriResolver;
 
         _delegate.initialize({
             _gameId: gameId,

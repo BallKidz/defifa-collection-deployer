@@ -72,7 +72,10 @@ interface IDefifaDelegate is IJB721Delegate {
 
     function getTierAttestationsOf(address _account, uint256 _tier) external view returns (uint256);
 
-    function getPastTierAttestationsOf(address _account, uint256 _tier, uint256 _blockNumber) external view returns (uint256);
+    function getPastTierAttestationsOf(address _account, uint256 _tier, uint256 _blockNumber)
+        external
+        view
+        returns (uint256);
 
     function getTierTotalAttestationsOf(uint256 _tier) external view returns (uint256);
 

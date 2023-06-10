@@ -8,16 +8,16 @@ import "./IDefifaDelegate.sol";
 
 interface IDefifaGovernor {
     event ScorecardSubmitted(
-        uint256 indexed gameId, uint256 indexed scorecardId, DefifaTierRedemptionWeight[] tierWeights, bool isDefaultAttestationDelegate, address caller
+        uint256 indexed gameId,
+        uint256 indexed scorecardId,
+        DefifaTierRedemptionWeight[] tierWeights,
+        bool isDefaultAttestationDelegate,
+        address caller
     );
 
-    event ScorecardAttested(
-        uint256 indexed gameId, uint256 indexed scorecardId, uint256 weight, address caller
-    );
+    event ScorecardAttested(uint256 indexed gameId, uint256 indexed scorecardId, uint256 weight, address caller);
 
-    event ScorecardRatified(
-        uint256 indexed gameId, uint256 indexed scorecardId, address caller
-    );
+    event ScorecardRatified(uint256 indexed gameId, uint256 indexed scorecardId, address caller);
 
     function MAX_VOTING_POWER_TIER() external view returns (uint256);
 
@@ -30,6 +30,11 @@ interface IDefifaGovernor {
     function hashScorecardOf(address _gameDelegate, bytes memory _calldata) external returns (uint256);
 
     function stateOf(uint256 _gameId, uint256 _scorecardId) external view returns (DefifaScorecardState);
+
+    function getAttestationWeight(uint256 _gameId, address _account, uint256 _blockNumber)
+        external
+        view
+        returns (uint256 votingPower);
 
     function attestationStartTimeOf(uint256 _gameId) external view returns (uint256);
 
