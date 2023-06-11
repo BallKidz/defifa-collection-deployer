@@ -36,6 +36,10 @@ interface IDefifaGovernor {
         view
         returns (uint256 votingPower);
 
+    function attestationCountOf(uint256 _gameId, uint256 _scorecardId) external view returns (uint256);
+
+    function hasAttestedTo(uint256 _gameId, uint256 _scorecardId, address _account) external view returns (bool);
+
     function attestationStartTimeOf(uint256 _gameId) external view returns (uint256);
 
     function attestationGracePeriodOf(uint256 _gameId) external view returns (uint256);

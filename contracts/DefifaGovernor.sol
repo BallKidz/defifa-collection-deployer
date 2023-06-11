@@ -76,6 +76,27 @@ contract DefifaGovernor is Ownable, IDefifaGovernor {
     mapping(uint256 => uint256) public override ratifiedScorecardIdOf;
 
     //*********************************************************************//
+    // -------------------------- external views --------------------------- //
+    //*********************************************************************//
+
+    /// @notice The number of attestations the given scorecard has.
+    /// @param _gameId The ID of the game to which the scorecard belongs.
+    /// @param _scorecardId The ID of the scorecard to get attestations of.
+    /// @return The number of attestations the given scorecard has.
+    function attestationCountOf(uint256 _gameId, uint256 _scorecardId) external view returns (uint256) {
+      return _scorecardAttestationsOf[_gameId][_scorecardId].count;
+    }
+
+    /// @notice A flag indicating if the given account has already attested to the scorecard.
+    /// @param _gameId The ID of the game to which the scorecard belongs.
+    /// @param _scorecardId The ID of the scorecard to query attestations from.
+    /// @param _account The address to check the attestation status of.
+    /// @return A flag indicating if the given account has already attested to the scorecard.
+    function hasAttestedTo(uint256 _gameId, uint256 _scorecardId, address _account) external view returns (bool) {
+      return _scorecardAttestationsOf[_gameId][_scorecardId].hasAttested[_account];
+    }
+
+    //*********************************************************************//
     // -------------------------- public views --------------------------- //
     //*********************************************************************//
 
