@@ -181,13 +181,38 @@ contract DefifaGovernor is Ownable, IDefifaGovernor {
     }
 
     /// @notice The number of attestation units that must have participated in a proposal for it to be ratified.
+    /// @dev The quorum is 50% voting weight from all tiers that have been minted from.
     /// @return The quorum number of attestations.
     function quorum(uint256 _gameId) public view override returns (uint256) {
         // Get the game's current funding cycle along with its metadata.
         (, JBFundingCycleMetadata memory _metadata) = controller.currentFundingCycleOf(_gameId);
 
-        return (IDefifaDelegate(_metadata.dataSource).store().maxTierIdOf(_metadata.dataSource) / 2)
-            * MAX_ATTESTATION_POWER_TIER;
+        // Get a reference to the number of tiers.
+        uint256 _numbeOfTiers = IDefifaDelegate(_metadata.dataSource).store().maxTierIdOf(_metadata.dataSource);
+
+        // Keep a reference to the tier being iterated on.
+        JB721Tier memory _tier;
+
+        // Keep a reference to the total elligible tier weight.
+        uint256 _elligibleTierWeights;
+
+        for (uint256 _i; _i < _numbeOfTiers;) {
+            // Get a reference to the tier.
+            _tier =
+                IDefifaDelegate(_metadata.dataSource).store().tierOf(_metadata.dataSource, _i + 1, false);
+
+            // If there are tokens minted from the tier, take its voting power into consideration.
+            if (_tier.initialQuantity > _tier.remainingQuantity) {
+              _elligibleTierWeights += MAX_ATTESTATION_POWER_TIER;
+            }
+
+            unchecked {
+              ++_i;
+            }
+        }
+
+        // 50% of all minted tiers. 
+        return _elligibleTierWeights / 2;
     }
 
     /// @notice Gets an account's attestation power given a number of tiers to look through.
@@ -204,7 +229,6 @@ contract DefifaGovernor is Ownable, IDefifaGovernor {
         // Get the game's current funding cycle along with its metadata.
         (, JBFundingCycleMetadata memory _metadata) = controller.currentFundingCycleOf(_gameId);
 
-        // Keep a reference to the number of tiers.
         // Get a reference to the number of tiers.
         uint256 _numbeOfTiers = IDefifaDelegate(_metadata.dataSource).store().maxTierIdOf(_metadata.dataSource);
 
@@ -228,9 +252,8 @@ contract DefifaGovernor is Ownable, IDefifaGovernor {
                         IDefifaDelegate(_metadata.dataSource).getPastTierTotalAttestationUnitsOf(_tierId, _blockNumber)
                     );
                 }
+                ++_i;
             }
-
-            ++_i;
         }
     }
 
@@ -294,9 +317,12 @@ contract DefifaGovernor is Ownable, IDefifaGovernor {
         // Get the game's current funding cycle along with its metadata.
         (, JBFundingCycleMetadata memory _metadata) = controller.currentFundingCycleOf(_gameId);
 
+        // Keep a reference to the tier being iterated on.
+        JB721Tier memory _tier;
+
         for (uint256 _i; _i < _numberOfTierWeights;) {
             // Get a reference to the tier.
-            JB721Tier memory _tier =
+            _tier =
                 IDefifaDelegate(_metadata.dataSource).store().tierOf(_metadata.dataSource, _tierWeights[_i].id, false);
 
             // If there's a weight assigned to the tier, make sure there is a token backed by it.
