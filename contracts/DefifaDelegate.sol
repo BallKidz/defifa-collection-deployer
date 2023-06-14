@@ -1,13 +1,32 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.16;
 
-import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/utils/Checkpoints.sol";
-import "@jbx-protocol/juice-contracts-v3/contracts/libraries/JBFundingCycleMetadataResolver.sol";
-import "@jbx-protocol/juice-721-delegate/contracts/abstract/JB721Delegate.sol";
-import "@jbx-protocol/juice-721-delegate/contracts/libraries/JBTiered721FundingCycleMetadataResolver.sol";
-
-import "./interfaces/IDefifaDelegate.sol";
+import { PRBMath } from "@paulrberg/contracts/math/PRBMath.sol";
+import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
+import { Checkpoints } from "@openzeppelin/contracts/utils/Checkpoints.sol";
+import { JBFundingCycleMetadataResolver } from "@jbx-protocol/juice-contracts-v3/contracts/libraries/JBFundingCycleMetadataResolver.sol";
+import { JBRedeemParamsData } from "@jbx-protocol/juice-contracts-v3/contracts/structs/JBRedeemParamsData.sol";
+import { JBDidRedeemData } from "@jbx-protocol/juice-contracts-v3/contracts/structs/JBDidRedeemData.sol";
+import { JBDidPayData } from "@jbx-protocol/juice-contracts-v3/contracts/structs/JBDidPayData.sol";
+import { JBRedemptionDelegateAllocation } from "@jbx-protocol/juice-contracts-v3/contracts/structs/JBRedemptionDelegateAllocation.sol";
+import { JBFundingCycle } from "@jbx-protocol/juice-contracts-v3/contracts/structs/JBFundingCycle.sol";
+import { IJBFundingCycleStore } from "@jbx-protocol/juice-contracts-v3/contracts/interfaces/IJBFundingCycleStore.sol";
+import { IJBDirectory } from "@jbx-protocol/juice-contracts-v3/contracts/interfaces/IJBDirectory.sol";
+import { IJBPaymentTerminal } from "@jbx-protocol/juice-contracts-v3/contracts/interfaces/IJBPaymentTerminal.sol";
+import { ERC721 } from "@jbx-protocol/juice-721-delegate/contracts/abstract/ERC721.sol";
+import { JB721Delegate } from "@jbx-protocol/juice-721-delegate/contracts/abstract/JB721Delegate.sol";
+import { IJB721TokenUriResolver } from "@jbx-protocol/juice-721-delegate/contracts/interfaces/IJB721TokenUriResolver.sol";
+import { IJBTiered721DelegateStore } from "@jbx-protocol/juice-721-delegate/contracts/interfaces/IJBTiered721DelegateStore.sol";
+import { JBTiered721FundingCycleMetadataResolver } from "@jbx-protocol/juice-721-delegate/contracts/libraries/JBTiered721FundingCycleMetadataResolver.sol";
+import { JB721TierParams } from "@jbx-protocol/juice-721-delegate/contracts/structs/JB721TierParams.sol";
+import { JB721Tier } from "@jbx-protocol/juice-721-delegate/contracts/structs/JB721Tier.sol";
+import { JBTiered721MintReservesForTiersData } from "@jbx-protocol/juice-721-delegate/contracts/structs/JBTiered721MintReservesForTiersData.sol";
+import { JBTiered721SetTierDelegatesData } from "@jbx-protocol/juice-721-delegate/contracts/structs/JBTiered721SetTierDelegatesData.sol";
+import { IDefifaDelegate } from "./interfaces/IDefifaDelegate.sol";
+import { IDefifaGamePhaseReporter } from "./interfaces/IDefifaGamePhaseReporter.sol";
+import { IDefifaGamePotReporter } from "./interfaces/IDefifaGamePotReporter.sol";
+import { DefifaTierRedemptionWeight } from "./structs/DefifaTierRedemptionWeight.sol";
+import { DefifaGamePhase } from "./enums/DefifaGamePhase.sol";
 
 /// @title DefifaDelegate
 /// @notice A delegate that transforms Juicebox treasury interactions into a Defifa game.
@@ -107,8 +126,8 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate {
     /// @notice Contract metadata uri.
     string public override contractURI;
 
-    /// @notice The address that'll be set as the voting delegate by default.
-    address public override defaultVotingDelegate;
+    /// @notice The address that'll be set as the attestation delegate by default.
+    address public override defaultAttestationDelegate;
 
     /// @notice The amount that has been redeemed from ths game, refunds are not counted.
     uint256 public override amountRedeemed;
@@ -139,18 +158,18 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate {
         return _tierDelegation[_account][_tier];
     }
 
-    /// @notice Returns the current voting power of an address for a specific tier.
+    /// @notice Returns the current attestation power of an address for a specific tier.
     /// @param _account The address to check.
     /// @param _tier The tier to check within.
-    function getTierAttestationsOf(address _account, uint256 _tier) external view override returns (uint256) {
+    function getTierAttestationUnitsOf(address _account, uint256 _tier) external view override returns (uint256) {
         return _delegateTierCheckpoints[_account][_tier].latest();
     }
 
-    /// @notice Returns the past voting power of a specific address for a specific tier.
+    /// @notice Returns the past attestation units of a specific address for a specific tier.
     /// @param _account The address to check.
     /// @param _tier The tier to check within.
-    /// @param _blockNumber the blocknumber to check the voting power at.
-    function getPastTierAttestationsOf(address _account, uint256 _tier, uint256 _blockNumber)
+    /// @param _blockNumber the blocknumber to check the attestation power at.
+    function getPastTierAttestationUnitsOf(address _account, uint256 _tier, uint256 _blockNumber)
         external
         view
         override
@@ -159,16 +178,16 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate {
         return _delegateTierCheckpoints[_account][_tier].getAtBlock(_blockNumber);
     }
 
-    /// @notice Returns the total amount of voting power that exists for a tier.
+    /// @notice Returns the total amount of attestation units that exists for a tier.
     /// @param _tier The tier to check.
-    function getTierTotalAttestationsOf(uint256 _tier) external view override returns (uint256) {
+    function getTierTotalAttestationUnitsOf(uint256 _tier) external view override returns (uint256) {
         return _totalTierCheckpoints[_tier].latest();
     }
 
-    /// @notice Returns the total amount of voting power that has existed for a tier.
+    /// @notice Returns the total amount of attestation units that has existed for a tier.
     /// @param _tier The tier to check.
-    /// @param _blockNumber The blocknumber to check the total voting power at.
-    function getPastTierTotalAttestationsOf(uint256 _tier, uint256 _blockNumber)
+    /// @param _blockNumber The blocknumber to check the total attestation units at.
+    function getPastTierTotalAttestationUnitsOf(uint256 _tier, uint256 _blockNumber)
         external
         view
         override
@@ -364,7 +383,7 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate {
     /// @param _store A contract that stores the NFT's data.
     /// @param _gamePhaseReporter The contract that reports the game phase.
     /// @param _gamePotReporter The contract that reports the game's pot.
-    /// @param _defaultVotingDelegate The address that'll be set as the voting delegate by default.
+    /// @param _defaultAttestationDelegate The address that'll be set as the attestation delegate by default.
     /// @param _tierNames The names of each tier.
     function initialize(
         uint256 _gameId,
@@ -380,7 +399,7 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate {
         IJBTiered721DelegateStore _store,
         IDefifaGamePhaseReporter _gamePhaseReporter,
         IDefifaGamePotReporter _gamePotReporter,
-        address _defaultVotingDelegate,
+        address _defaultAttestationDelegate,
         string[] memory _tierNames
     ) public override {
         // Make the original un-initializable.
@@ -398,7 +417,7 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate {
         pricingCurrency = _currency;
         gamePhaseReporter = _gamePhaseReporter;
         gamePotReporter = _gamePotReporter;
-        defaultVotingDelegate = _defaultVotingDelegate;
+        defaultAttestationDelegate = _defaultAttestationDelegate;
 
         // Store the base URI if provided.
         if (bytes(_baseUri).length != 0) baseURI = _baseUri;
@@ -452,7 +471,7 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate {
         if (_oldDelegate == address(0)) {
             _delegateTier(
                 _reservedTokenBeneficiary,
-                defaultVotingDelegate != address(0) ? defaultVotingDelegate : _reservedTokenBeneficiary,
+                defaultAttestationDelegate != address(0) ? defaultAttestationDelegate : _reservedTokenBeneficiary,
                 _tierId
             );
         }
@@ -477,8 +496,8 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate {
             }
         }
 
-        // Transfer the voting units to the delegate.
-        _transferTierVotingUnits(
+        // Transfer the attestation units to the delegate.
+        _transferTierAttestationUnits(
             address(0),
             _reservedTokenBeneficiary,
             _tierId,
@@ -661,8 +680,8 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate {
     }
 
     /// @notice Delegate attestations.
-    /// @param _delegatee The account to delegate tier voting units to.
-    /// @param _tierId The ID of the tier to delegate voting units for.
+    /// @param _delegatee The account to delegate tier attestation units to.
+    /// @param _tierId The ID of the tier to delegate attestation units for.
     function setTierDelegateTo(address _delegatee, uint256 _tierId) public virtual override {
         // Make sure the current game phase is the minting phase.
         if (gamePhaseReporter.currentGamePhaseOf(projectId) != DefifaGamePhase.MINT) {
@@ -683,7 +702,7 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate {
         if (_data.amount.currency != pricingCurrency) revert WRONG_CURRENCY();
 
         // Keep a reference to the address that should be given attestations from this mint.
-        address _votingDelegate;
+        address _attestationDelegate;
 
         // Skip the first 32 bytes which are used by the JB protocol to pass the paying project's ID when paying from a JBSplit.
         // Check the 4 bytes interfaceId to verify the metadata is intended for this contract.
@@ -692,12 +711,12 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate {
             uint16[] memory _tierIdsToMint;
 
             // Decode the metadata.
-            (,,, _votingDelegate, _tierIdsToMint) =
+            (,,, _attestationDelegate, _tierIdsToMint) =
                 abi.decode(_data.metadata, (bytes32, bytes32, bytes4, address, uint16[]));
 
-            // Set the payer as the voting delegate by default.
-            if (_votingDelegate == address(0)) {
-                _votingDelegate = defaultVotingDelegate != address(0) ? defaultVotingDelegate : _data.payer;
+            // Set the payer as the attestation delegate by default.
+            if (_attestationDelegate == address(0)) {
+                _attestationDelegate = defaultAttestationDelegate != address(0) ? defaultAttestationDelegate : _data.payer;
             }
 
             // Make sure something is being minted.
@@ -706,47 +725,47 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate {
             // Keep a reference to the current tier ID.
             uint256 _currentTierId;
 
-            // Keep a reference to the number of voting units currently accumulated for the given tier.
-            uint256 _votingUnitsForCurrentTier;
+            // Keep a reference to the number of attestations units currently accumulated for the given tier.
+            uint256 _attestationUnitsForCurrentTier;
 
             // The price of the tier being iterated on.
-            uint256 _votingUnits;
+            uint256 _attestationUnits;
 
             // Keep a reference to the number of tiers.
             uint256 _numberOfTiers = _tierIdsToMint.length;
 
-            // Transfer voting power for each tier.
+            // Transfer attestation units for each tier.
             for (uint256 _i; _i < _numberOfTiers;) {
                 // Keep track of the current tier being iterated on and its price.
                 if (_currentTierId != _tierIdsToMint[_i]) {
                     // Make sure the tier IDs are passed in order.
                     if (_tierIdsToMint[_i] < _currentTierId) revert BAD_TIER_ORDER();
                     _currentTierId = _tierIdsToMint[_i];
-                    _votingUnits = store.tierOf(address(this), _currentTierId, false).votingUnits;
+                    _attestationUnits = store.tierOf(address(this), _currentTierId, false).votingUnits;
                 }
 
                 // Get a reference to the old delegate.
                 address _oldDelegate = _tierDelegation[_data.payer][_currentTierId];
 
                 // If there's either a new delegate or old delegate, increase the delegate weight.
-                if (_votingDelegate != address(0) || _oldDelegate != address(0)) {
-                    // Increment the total voting units for the tier based on price.
+                if (_attestationDelegate != address(0) || _oldDelegate != address(0)) {
+                    // Increment the total attestation units for the tier based on price.
                     if (_i < _numberOfTiers - 1 && _tierIdsToMint[_i + 1] == _currentTierId) {
-                        _votingUnitsForCurrentTier += _votingUnits;
-                        // Set the tier's total voting power.
+                        _attestationUnitsForCurrentTier += _attestationUnits;
+                        // Set the tier's total attestation units.
                     } else {
                         // Switch delegates if needed.
-                        if (_votingDelegate != address(0) && _votingDelegate != _oldDelegate) {
-                            _delegateTier(_data.payer, _votingDelegate, _currentTierId);
+                        if (_attestationDelegate != address(0) && _attestationDelegate != _oldDelegate) {
+                            _delegateTier(_data.payer, _attestationDelegate, _currentTierId);
                         }
 
-                        // Transfer the new voting units.
-                        _transferTierVotingUnits(
-                            address(0), _data.payer, _currentTierId, _votingUnitsForCurrentTier + _votingUnits
+                        // Transfer the new attestation units.
+                        _transferTierAttestationUnits(
+                            address(0), _data.payer, _currentTierId, _attestationUnitsForCurrentTier + _attestationUnits
                         );
 
                         // Reset the counter
-                        _votingUnitsForCurrentTier = 0;
+                        _attestationUnitsForCurrentTier = 0;
                     }
                 }
 
@@ -763,18 +782,18 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate {
         }
     }
 
-    /// @notice Gets the amount of voting units an address has for a particular tier.
-    /// @param _account The account to get voting units for.
-    /// @param _tierId The ID of the tier to get voting units for.
-    /// @return The voting units.
-    function _getTierVotingUnits(address _account, uint256 _tierId) internal view virtual returns (uint256) {
+    /// @notice Gets the amount of attestation units an address has for a particular tier.
+    /// @param _account The account to get attestation units for.
+    /// @param _tierId The ID of the tier to get attestation units for.
+    /// @return The attestation units.
+    function _getTierAttestationUnits(address _account, uint256 _tierId) internal view virtual returns (uint256) {
         return store.tierVotingUnitsOf(address(this), _account, _tierId);
     }
 
-    /// @notice Delegate all voting units for the specified tier.
-    /// @param _account The account delegating tier voting units.
-    /// @param _delegatee The account to delegate tier voting units to.
-    /// @param _tierId The ID of the tier for which voting units are being transferred.
+    /// @notice Delegate all attestation units for the specified tier.
+    /// @param _account The account delegating tier attestation units.
+    /// @param _delegatee The account to delegate tier attestation units to.
+    /// @param _tierId The ID of the tier for which attestation units are being transferred.
     function _delegateTier(address _account, address _delegatee, uint256 _tierId) internal virtual {
         // Get the current delegatee
         address _oldDelegate = _tierDelegation[_account][_tierId];
@@ -785,15 +804,15 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate {
         emit DelegateChanged(_account, _oldDelegate, _delegatee);
 
         // Move the attestations.
-        _moveTierDelegateAttestations(_oldDelegate, _delegatee, _tierId, _getTierVotingUnits(_account, _tierId));
+        _moveTierDelegateAttestations(_oldDelegate, _delegatee, _tierId, _getTierAttestationUnits(_account, _tierId));
     }
 
-    /// @notice Transfers, mints, or burns tier voting units. To register a mint, `_from` should be zero. To register a burn, `_to` should be zero. Total supply of voting units will be adjusted with mints and burns.
-    /// @param _from The account to transfer tier voting units from.
-    /// @param _to The account to transfer tier voting units to.
-    /// @param _tierId The ID of the tier for which voting units are being transferred.
-    /// @param _amount The amount of voting units to delegate.
-    function _transferTierVotingUnits(address _from, address _to, uint256 _tierId, uint256 _amount) internal virtual {
+    /// @notice Transfers, mints, or burns tier attestation units. To register a mint, `_from` should be zero. To register a burn, `_to` should be zero. Total supply of attestation units will be adjusted with mints and burns.
+    /// @param _from The account to transfer tier attestation units from.
+    /// @param _to The account to transfer tier attestation units to.
+    /// @param _tierId The ID of the tier for which attestation units are being transferred.
+    /// @param _amount The amount of attestation units to delegate.
+    function _transferTierAttestationUnits(address _from, address _to, uint256 _tierId, uint256 _amount) internal virtual {
         // If minting, add to the total tier checkpoints.
         if (_from == address(0)) _totalTierCheckpoints[_tierId].push(_add, _amount);
 
@@ -805,10 +824,10 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate {
     }
 
     /// @notice Moves delegated tier attestations from one delegate to another.
-    /// @param _from The account to transfer tier voting units from.
-    /// @param _to The account to transfer tier voting units to.
-    /// @param _tierId The ID of the tier for which voting units are being transferred.
-    /// @param _amount The amount of voting units to delegate.
+    /// @param _from The account to transfer tier attestation units from.
+    /// @param _to The account to transfer tier attestation units to.
+    /// @param _tierId The ID of the tier for which attestation units are being transferred.
+    /// @param _amount The amount of attestation units to delegate.
     function _moveTierDelegateAttestations(address _from, address _to, uint256 _tierId, uint256 _amount) internal {
         // Nothing to do if moving to the same account, or no amount is being moved.
         if (_from == _to || _amount == 0) return;
@@ -904,7 +923,7 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate {
         super._beforeTokenTransfer(_from, _to, _tokenId);
     }
 
-    /// @notice Transfer voting units after the transfer of a token.
+    /// @notice Transfer attestation units after the transfer of a token.
     /// @param _from The address where the transfer is originating.
     /// @param _to The address to which the transfer is being made.
     /// @param _tokenId The ID of the token being transferred.
@@ -915,22 +934,22 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate {
         // Record the transfer.
         store.recordTransferForTier(_tier.id, _from, _to);
 
-        // Handle any other accounting (ex. account for governance voting units)
+        // Handle any other accounting (ex. account for governance attestation units)
         _afterTokenTransferAccounting(_from, _to, _tier);
 
         super._afterTokenTransfer(_from, _to, _tokenId);
     }
 
-    /// @notice Handles the tier voting accounting
-    /// @param _from The account to transfer voting units from.
-    /// @param _to The account to transfer voting units to.
+    /// @notice Handles the tier attestation accounting
+    /// @param _from The account to transfer attestation units from.
+    /// @param _to The account to transfer attestation units to.
     /// @param _tier The tier the token ID is part of.
     function _afterTokenTransferAccounting(address _from, address _to, JB721Tier memory _tier) internal virtual {
         // Dont transfer on mint since the delegation will be transferred more efficiently in _processPayment.
         if (_from == address(0)) return;
 
-        // Transfer the voting units.
-        _transferTierVotingUnits(_from, _to, _tier.id, _tier.votingUnits);
+        // Transfer the attestation units.
+        _transferTierAttestationUnits(_from, _to, _tier.id, _tier.votingUnits);
     }
 
     // Utils OZ extension that is being reused for tier delegation.

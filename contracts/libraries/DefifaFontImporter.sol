@@ -3,6 +3,7 @@ pragma solidity ^0.8.16;
 
 import "lib/typeface/contracts/interfaces/ITypeface.sol";
 
+/// @notice Summon fonts.
 library DefifaFontImporter {
     // @notice Gets the Base64 encoded Capsules-500.otf typeface
     /// @return The Base64 encoded font file

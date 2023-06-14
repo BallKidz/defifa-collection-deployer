@@ -1,23 +1,43 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.16;
 
-import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/proxy/Clones.sol";
-import "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
-import "@openzeppelin/contracts/utils/Strings.sol";
-import "@jbx-protocol/juice-contracts-v3/contracts/libraries/JBConstants.sol";
-import "@jbx-protocol/juice-contracts-v3/contracts/libraries/JBTokens.sol";
-import "@jbx-protocol/juice-contracts-v3/contracts/libraries/JBSplitsGroups.sol";
-import "@jbx-protocol/juice-contracts-v3/contracts/structs/JBFundAccessConstraints.sol";
-import "@jbx-protocol/juice-contracts-v3/contracts/interfaces/IJBPayoutRedemptionPaymentTerminal3_1.sol";
-import "@jbx-protocol/juice-721-delegate/contracts/libraries/JBTiered721FundingCycleMetadataResolver.sol";
-import "./enums/DefifaGamePhase.sol";
-import "./interfaces/IDefifaDeployer.sol";
-import "./interfaces/IDefifaGamePhaseReporter.sol";
-import "./interfaces/IDefifaGamePotReporter.sol";
-import "./structs/DefifaDistributionOpsData.sol";
-import "./DefifaDelegate.sol";
-import "./DefifaTokenUriResolver.sol";
+import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
+import { Clones } from "@openzeppelin/contracts/proxy/Clones.sol";
+import { IERC721Receiver } from "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
+import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
+import { JBConstants } from "@jbx-protocol/juice-contracts-v3/contracts/libraries/JBConstants.sol";
+import { JBTokens } from "@jbx-protocol/juice-contracts-v3/contracts/libraries/JBTokens.sol";
+import { JBSplitsGroups } from "@jbx-protocol/juice-contracts-v3/contracts/libraries/JBSplitsGroups.sol";
+import { JBFundAccessConstraints } from "@jbx-protocol/juice-contracts-v3/contracts/structs/JBFundAccessConstraints.sol";
+import { JBFundingCycle } from "@jbx-protocol/juice-contracts-v3/contracts/structs/JBFundingCycle.sol";
+import { JBFundingCycleMetadata } from "@jbx-protocol/juice-contracts-v3/contracts/structs/JBFundingCycleMetadata.sol";
+import { JBFundingCycleData } from "@jbx-protocol/juice-contracts-v3/contracts/structs/JBFundingCycleData.sol";
+import { JBGlobalFundingCycleMetadata } from "@jbx-protocol/juice-contracts-v3/contracts/structs/JBGlobalFundingCycleMetadata.sol";
+import { JBGroupedSplits } from "@jbx-protocol/juice-contracts-v3/contracts/structs/JBGroupedSplits.sol";
+import { JBSplit } from "@jbx-protocol/juice-contracts-v3/contracts/structs/JBSplit.sol";
+import { IJBPayoutRedemptionPaymentTerminal3_1 } from "@jbx-protocol/juice-contracts-v3/contracts/interfaces/IJBPayoutRedemptionPaymentTerminal3_1.sol";
+import { IJBSplitAllocator } from "@jbx-protocol/juice-contracts-v3/contracts/interfaces/IJBSplitAllocator.sol";
+import { IJBSingleTokenPaymentTerminal } from "@jbx-protocol/juice-contracts-v3/contracts/interfaces/IJBSingleTokenPaymentTerminal.sol";
+import { IJBController3_1 } from "@jbx-protocol/juice-contracts-v3/contracts/interfaces/IJBController3_1.sol";
+import { IJBFundingCycleBallot } from "@jbx-protocol/juice-contracts-v3/contracts/interfaces/IJBFundingCycleBallot.sol";
+import { IJBPaymentTerminal } from "@jbx-protocol/juice-contracts-v3/contracts/interfaces/IJBPaymentTerminal.sol";
+import { JBTiered721FundingCycleMetadataResolver } from "@jbx-protocol/juice-721-delegate/contracts/libraries/JBTiered721FundingCycleMetadataResolver.sol";
+import { IJB721TokenUriResolver } from "@jbx-protocol/juice-721-delegate/contracts/interfaces/IJB721TokenUriResolver.sol";
+import { JB721TierParams } from "@jbx-protocol/juice-721-delegate/contracts/structs/JB721TierParams.sol";
+import { JBTiered721FundingCycleMetadata } from "@jbx-protocol/juice-721-delegate/contracts/structs/JBTiered721FundingCycleMetadata.sol";
+import { IJBDelegatesRegistry } from "@jbx-protocol/juice-delegates-registry/src/interfaces/IJBDelegatesRegistry.sol";
+import { DefifaGamePhase } from "./enums/DefifaGamePhase.sol";
+import { IDefifaDeployer } from "./interfaces/IDefifaDeployer.sol";
+import { IDefifaDelegate } from "./interfaces/IDefifaDelegate.sol";
+import { IDefifaGamePhaseReporter } from "./interfaces/IDefifaGamePhaseReporter.sol";
+import { IDefifaGamePotReporter } from "./interfaces/IDefifaGamePotReporter.sol";
+import { IDefifaGovernor } from "./interfaces/IDefifaGovernor.sol";
+import { DefifaDistributionOpsData } from "./structs/DefifaDistributionOpsData.sol";
+import { DefifaLaunchProjectData } from "./structs/DefifaLaunchProjectData.sol";
+import { DefifaTierParams } from "./structs/DefifaTierParams.sol";
+import { DefifaTimeData } from "./structs/DefifaTimeData.sol";
+import { DefifaDelegate } from "./DefifaDelegate.sol";
+import { DefifaTokenUriResolver } from "./DefifaTokenUriResolver.sol";
 
 /// @title DefifaDeployer
 /// @notice Deploys and manages Defifa games.
@@ -369,7 +389,7 @@ contract DefifaDeployer is
             _store: _launchProjectData.store,
             _gamePhaseReporter: this,
             _gamePotReporter: this,
-            _defaultVotingDelegate: _launchProjectData.defaultVotingDelegate,
+            _defaultAttestationDelegate: _launchProjectData.defaultAttestationDelegate,
             _tierNames: _tierNames
         });
 
@@ -383,9 +403,9 @@ contract DefifaDeployer is
 
         // Clone and initialize the new governor.
         governor.initializeGame({
-            _gameId: gameId,
-            _attestationStartTime: uint256(_launchProjectData.votingStartTime),
-            _attestationGracePeriod: uint256(_launchProjectData.votingPeriod)
+            gameId: gameId,
+            attestationStartTime: uint256(_launchProjectData.attestationStartTime),
+            attestationGracePeriod: uint256(_launchProjectData.attestationGracePeriod)
         });
 
         // Transfer ownership to the specified owner.

@@ -1,13 +1,19 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.16;
 
-import "@paulrberg/contracts/math/PRBMath.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/utils/Address.sol";
-import "./interfaces/IDefifaGovernor.sol";
-import "./structs/DefifaScorecard.sol";
-import "./structs/DefifaAttestations.sol";
-import "./DefifaDelegate.sol";
+import { PRBMath } from "@paulrberg/contracts/math/PRBMath.sol";
+import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
+import { Address } from "@openzeppelin/contracts/utils/Address.sol";
+import { JBFundingCycleMetadata } from "@jbx-protocol/juice-contracts-v3/contracts/structs/JBFundingCycleMetadata.sol";
+import { IJBController3_1 } from "@jbx-protocol/juice-contracts-v3/contracts/interfaces/IJBController3_1.sol";
+import { JB721Tier } from "@jbx-protocol/juice-721-delegate/contracts/structs/JB721Tier.sol";
+import { IDefifaDelegate } from "./interfaces/IDefifaDelegate.sol";
+import { IDefifaGovernor } from "./interfaces/IDefifaGovernor.sol";
+import { DefifaScorecard } from "./structs/DefifaScorecard.sol";
+import { DefifaAttestations } from "./structs/DefifaAttestations.sol";
+import { DefifaTierRedemptionWeight } from "./structs/DefifaTierRedemptionWeight.sol";
+import { DefifaScorecardState } from "./enums/DefifaScorecardState.sol";
+import { DefifaDelegate } from "./DefifaDelegate.sol";
 
 /// @title DefifaGovernor
 /// @notice Manages the ratification of Defifa scorecards.
@@ -45,16 +51,16 @@ contract DefifaGovernor is Ownable, IDefifaGovernor {
     // --------------------- internal stored properties ------------------ //
     //*********************************************************************//
 
-    /// @notice The time the vote will be active for once it has started, measured in seconds.
-    /// _gameId The ID of the game for which the voting period applies.
+    /// @notice The scorecard information, packed into a uint256.
+    /// _gameId The ID of the game for which the scorecard info applies.
     mapping(uint256 => uint256) internal _packedScorecardInfoOf;
 
     //*********************************************************************//
     // ------------------------ public constants ------------------------- //
     //*********************************************************************//
 
-    /// @notice The max voting power each tier has if every token within the tier votes.
-    uint256 public constant override MAX_VOTING_POWER_TIER = 1_000_000_000;
+    /// @notice The max attestation power each tier has if every token within the tier attestations.
+    uint256 public constant override MAX_ATTESTATION_POWER_TIER = 1_000_000_000;
 
     //*********************************************************************//
     // --------------- public immutable stored properties ---------------- //
@@ -67,8 +73,8 @@ contract DefifaGovernor is Ownable, IDefifaGovernor {
     // -------------------- public stored properties --------------------- //
     //*********************************************************************//
 
-    /// @notice The latest proposal submitted by the default voting delegate.
-    /// _gameId The ID of the game of the default voting delegate proposal.
+    /// @notice The latest proposal submitted by the default attestation delegate.
+    /// _gameId The ID of the game of the default attestation delegate proposal.
     mapping(uint256 => uint256) public override defaultAttestationDelegateProposalOf;
 
     /// @notice The scorecard that has been ratified.
@@ -102,15 +108,15 @@ contract DefifaGovernor is Ownable, IDefifaGovernor {
 
     /// @notice A value representing the contents of a scorecard.
     /// @param _gameDelegate The address where the game is being played.
-    /// @param _calldata The calldata that will be sent if the scorecard is ratified.
-    function hashScorecardOf(address _gameDelegate, bytes memory _calldata)
+    /// @param _data The calldata that will be sent if the scorecard is ratified.
+    function hashScorecardOf(address _gameDelegate, bytes memory _data)
         public
         pure
         virtual
         override
         returns (uint256)
     {
-        return uint256(keccak256(abi.encode(_gameDelegate, _calldata)));
+        return uint256(keccak256(abi.encode(_gameDelegate, _data)));
     }
 
     /// @notice The state of a proposal.
@@ -166,33 +172,33 @@ contract DefifaGovernor is Ownable, IDefifaGovernor {
     }
 
     /// @notice The amount of time that must go by before a scorecard can be ratified.
-    /// @param _gameId The ID of the game to get the voting period of.
-    /// @return The voting period in number of blocks.
+    /// @param _gameId The ID of the game to get the attestation period of.
+    /// @return The attestation period in number of blocks.
     function attestationGracePeriodOf(uint256 _gameId) public view override returns (uint256) {
         // attestation grace period in bits 48-95 (48 bits).
         return uint256(uint48(_packedScorecardInfoOf[_gameId] >> 48));
     }
 
-    /// @notice The number of voting units that must have participated in a proposal for it to be ratified.
-    /// @return The quorum number of votes.
+    /// @notice The number of attestation units that must have participated in a proposal for it to be ratified.
+    /// @return The quorum number of attestations.
     function quorum(uint256 _gameId) public view override returns (uint256) {
         // Get the game's current funding cycle along with its metadata.
         (, JBFundingCycleMetadata memory _metadata) = controller.currentFundingCycleOf(_gameId);
 
         return (IDefifaDelegate(_metadata.dataSource).store().maxTierIdOf(_metadata.dataSource) / 2)
-            * MAX_VOTING_POWER_TIER;
+            * MAX_ATTESTATION_POWER_TIER;
     }
 
-    /// @notice Gets an account's voting power given a number of tiers to look through.
-    /// @param _gameId The ID of the game for which votes are being counted.
-    /// @param _account The account to get votes for.
-    /// @param _blockNumber The block number to measure votes from.
-    /// @return votingPower The amount of voting power.
+    /// @notice Gets an account's attestation power given a number of tiers to look through.
+    /// @param _gameId The ID of the game for which attestations are being counted.
+    /// @param _account The account to get attestations for.
+    /// @param _blockNumber The block number to measure attestations from.
+    /// @return attestationPower The amount of attestation power of an account.
     function getAttestationWeight(uint256 _gameId, address _account, uint256 _blockNumber)
         public
         view
         virtual
-        returns (uint256 votingPower)
+        returns (uint256 attestationPower)
     {
         // Get the game's current funding cycle along with its metadata.
         (, JBFundingCycleMetadata memory _metadata) = controller.currentFundingCycleOf(_gameId);
@@ -208,17 +214,17 @@ contract DefifaGovernor is Ownable, IDefifaGovernor {
             // Tier's are 1 indexed;
             _tierId = _i + 1;
 
-            // Keep a reference to the number of tier votes for the account.
-            uint256 _tierVotesForAccount =
-                IDefifaDelegate(_metadata.dataSource).getPastTierAttestationsOf(_account, _tierId, _blockNumber);
+            // Keep a reference to the number of tier attestations for the account.
+            uint256 _tierAttestationUnitsForAccount =
+                IDefifaDelegate(_metadata.dataSource).getPastTierAttestationUnitsOf(_account, _tierId, _blockNumber);
 
-            // If there is tier voting power, increment the result by the proportion of votes the account has to the total, multiplied by the tier's maximum vote power.
+            // If there is tier attestation power, increment the result by the proportion of attestations the account has to the total, multiplied by the tier's maximum attestation power.
             unchecked {
-                if (_tierVotesForAccount != 0) {
-                    votingPower += PRBMath.mulDiv(
-                        MAX_VOTING_POWER_TIER,
-                        _tierVotesForAccount,
-                        IDefifaDelegate(_metadata.dataSource).getPastTierTotalAttestationsOf(_tierId, _blockNumber)
+                if (_tierAttestationUnitsForAccount != 0) {
+                    attestationPower += PRBMath.mulDiv(
+                        MAX_ATTESTATION_POWER_TIER,
+                        _tierAttestationUnitsForAccount,
+                        IDefifaDelegate(_metadata.dataSource).getPastTierTotalAttestationUnitsOf(_tierId, _blockNumber)
                     );
                 }
             }
@@ -316,7 +322,7 @@ contract DefifaGovernor is Ownable, IDefifaGovernor {
         _scorecard.gracePeriodEnds = uint48(block.number + attestationGracePeriodOf(_gameId) / _blockTime);
 
         // Keep a reference to the default attestation delegate.
-        address _defaultAttestationDelegate = IDefifaDelegate(_metadata.dataSource).defaultVotingDelegate();
+        address _defaultAttestationDelegate = IDefifaDelegate(_metadata.dataSource).defaultAttestationDelegate();
 
         // If the scorecard is being sent from the default attestation delegate, store it.
         if (msg.sender == _defaultAttestationDelegate) {

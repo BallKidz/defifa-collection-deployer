@@ -1,17 +1,20 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.16;
 
-import "@paulrberg/contracts/math/PRBMath.sol";
-import "@openzeppelin/contracts/utils/Strings.sol";
-import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
-import "@openzeppelin/contracts/utils/math/SafeMath.sol";
-import "@jbx-protocol/juice-contracts-v3/contracts/libraries/JBTokens.sol";
-import "@jbx-protocol/juice-721-delegate/contracts/interfaces/IJB721TokenUriResolver.sol";
-import "@jbx-protocol/juice-721-delegate/contracts/libraries/JBIpfsDecoder.sol";
 import "lib/base64/base64.sol";
-import "./interfaces/IDefifaDelegate.sol";
-import "./interfaces/IDefifaTokenUriResolver.sol";
-import "./libraries/DefifaFontImporter.sol";
+import { PRBMath } from "@paulrberg/contracts/math/PRBMath.sol";
+import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
+import { IERC20Metadata } from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
+import { SafeMath } from "@openzeppelin/contracts/utils/math/SafeMath.sol";
+import { JBTokens } from "@jbx-protocol/juice-contracts-v3/contracts/libraries/JBTokens.sol";
+import { IJB721TokenUriResolver } from "@jbx-protocol/juice-721-delegate/contracts/interfaces/IJB721TokenUriResolver.sol";
+import { JBIpfsDecoder } from "@jbx-protocol/juice-721-delegate/contracts/libraries/JBIpfsDecoder.sol";
+import { JB721Tier } from "@jbx-protocol/juice-721-delegate/contracts/structs/JB721Tier.sol";
+import { ITypeface } from "lib/typeface/contracts/interfaces/ITypeface.sol";
+import { IDefifaDelegate } from "./interfaces/IDefifaDelegate.sol";
+import { IDefifaTokenUriResolver } from "./interfaces/IDefifaTokenUriResolver.sol";
+import { DefifaFontImporter } from "./libraries/DefifaFontImporter.sol";
+import { DefifaGamePhase } from "./enums/DefifaGamePhase.sol";
 
 /// @title DefifaTokenUriResolver
 /// @notice Standard Token URIs for Defifa games.
@@ -172,7 +175,7 @@ contract DefifaTokenUriResolver is IDefifaTokenUriResolver, IJB721TokenUriResolv
                 _gameId.toString(),
                 " | POT: ",
                 _potText,
-                " | PLAYERS: ",
+                " | MINTS: ",
                 _delegate.store().totalSupplyOf(address(_delegate)).toString(),
                 "</text>",
                 '<text x="10" y="50" style="font-size:16px; font-family: Capsules-500; font-weight:500; fill: #ed017c;">',
@@ -207,7 +210,7 @@ contract DefifaTokenUriResolver is IDefifaTokenUriResolver, IJB721TokenUriResolv
                 '<text x="10" y="455" style="font-size:16px; font-family: Capsules-500; font-weight:500; fill: #c0b3f1;">RARITY: ',
                 _rarityText,
                 "</text>",
-                '<text x="10" y="480" style="font-size:16px; font-family: Capsules-500; font-weight:500; fill: #c0b3f1;">VALUE: ',
+                '<text x="10" y="480" style="font-size:16px; font-family: Capsules-500; font-weight:500; fill: #c0b3f1;">BACKED BY: ',
                 _valueText,
                 "</text>",
                 "</svg>"

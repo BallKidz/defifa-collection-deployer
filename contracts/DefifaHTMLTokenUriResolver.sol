@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.16;
 
-import "@openzeppelin/contracts/utils/Strings.sol";
-import "@jbx-protocol/juice-721-delegate/contracts/interfaces/IJB721TokenUriResolver.sol";
-import "@jbx-protocol/juice-721-delegate/contracts/libraries/JBIpfsDecoder.sol";
 import "lib/base64/base64.sol";
-import "./interfaces/IDefifaDelegate.sol";
-import "./interfaces/IDefifaTokenUriResolver.sol";
-import "./libraries/DefifaFontImporter.sol";
+import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
+import { IJB721TokenUriResolver } from "@jbx-protocol/juice-721-delegate/contracts/interfaces/IJB721TokenUriResolver.sol";
+import { JBIpfsDecoder } from "@jbx-protocol/juice-721-delegate/contracts/libraries/JBIpfsDecoder.sol";
+import { IDefifaDelegate } from "./interfaces/IDefifaDelegate.sol";
+import { IDefifaTokenUriResolver } from "./interfaces/IDefifaTokenUriResolver.sol";
+import { DefifaFontImporter } from "./libraries/DefifaFontImporter.sol";
 import {
     IScriptyBuilder,
     InlineScriptRequest,

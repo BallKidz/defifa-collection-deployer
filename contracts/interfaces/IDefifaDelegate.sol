@@ -1,17 +1,19 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.16;
 
-import "@jbx-protocol/juice-contracts-v3/contracts/interfaces/IJBPrices.sol";
-import "@jbx-protocol/juice-721-delegate/contracts/interfaces/IJB721Delegate.sol";
-import "@jbx-protocol/juice-721-delegate/contracts/interfaces/IJBTiered721DelegateStore.sol";
-import "@jbx-protocol/juice-721-delegate/contracts/structs/JB721TierParams.sol";
-import "@jbx-protocol/juice-721-delegate/contracts/structs/JBTiered721SetTierDelegatesData.sol";
-import "@jbx-protocol/juice-721-delegate/contracts/structs/JBTiered721MintReservesForTiersData.sol";
-import "@jbx-protocol/juice-721-delegate/contracts/structs/JBTiered721MintForTiersData.sol";
-import "@jbx-protocol/juice-721-delegate/contracts/structs/JB721PricingParams.sol";
-import "./../structs/DefifaTierRedemptionWeight.sol";
-import "./IDefifaGamePhaseReporter.sol";
-import "./IDefifaGamePotReporter.sol";
+import { IJBFundingCycleStore } from "@jbx-protocol/juice-contracts-v3/contracts/interfaces/IJBFundingCycleStore.sol";
+import { IJBDirectory } from "@jbx-protocol/juice-contracts-v3/contracts/interfaces/IJBDirectory.sol";
+import { IJB721Delegate } from "@jbx-protocol/juice-721-delegate/contracts/interfaces/IJB721Delegate.sol";
+import { IJBTiered721DelegateStore } from  "@jbx-protocol/juice-721-delegate/contracts/interfaces/IJBTiered721DelegateStore.sol";
+import { IJB721TokenUriResolver } from "@jbx-protocol/juice-721-delegate/contracts/interfaces/IJB721TokenUriResolver.sol";
+import { JB721TierParams } from "@jbx-protocol/juice-721-delegate/contracts/structs/JB721TierParams.sol";
+import { JBTiered721SetTierDelegatesData } from "@jbx-protocol/juice-721-delegate/contracts/structs/JBTiered721SetTierDelegatesData.sol";
+import { JBTiered721MintReservesForTiersData } from "@jbx-protocol/juice-721-delegate/contracts/structs/JBTiered721MintReservesForTiersData.sol";
+import { JBTiered721MintForTiersData } from "@jbx-protocol/juice-721-delegate/contracts/structs/JBTiered721MintForTiersData.sol";
+import { JB721PricingParams } from "@jbx-protocol/juice-721-delegate/contracts/structs/JB721PricingParams.sol";
+import { DefifaTierRedemptionWeight } from "./../structs/DefifaTierRedemptionWeight.sol";
+import { IDefifaGamePhaseReporter } from "./IDefifaGamePhaseReporter.sol";
+import { IDefifaGamePotReporter } from "./IDefifaGamePotReporter.sol";
 
 interface IDefifaDelegate is IJB721Delegate {
     event Mint(
@@ -36,7 +38,7 @@ interface IDefifaDelegate is IJB721Delegate {
 
     function name() external view returns (string memory);
 
-    function redemptionWeightOf(uint256 _tokenId) external view returns (uint256);
+    function redemptionWeightOf(uint256 tokenId) external view returns (uint256);
 
     function tierRedemptionWeights() external view returns (uint256[128] memory);
 
@@ -54,58 +56,58 @@ interface IDefifaDelegate is IJB721Delegate {
 
     function amountRedeemed() external view returns (uint256);
 
-    function tierNameOf(uint256 _tierId) external view returns (string memory);
+    function tierNameOf(uint256 tierId) external view returns (string memory);
 
-    function tokensRedeemedFrom(uint256 _tierId) external view returns (uint256);
+    function tokensRedeemedFrom(uint256 tierId) external view returns (uint256);
 
     function pricingCurrency() external view returns (uint256);
 
-    function firstOwnerOf(uint256 _tokenId) external view returns (address);
+    function firstOwnerOf(uint256 tokenId) external view returns (address);
 
     function baseURI() external view returns (string memory);
 
     function contractURI() external view returns (string memory);
 
-    function defaultVotingDelegate() external view returns (address);
+    function defaultAttestationDelegate() external view returns (address);
 
-    function getTierDelegateOf(address _account, uint256 _tier) external view returns (address);
+    function getTierDelegateOf(address account, uint256 tier) external view returns (address);
 
-    function getTierAttestationsOf(address _account, uint256 _tier) external view returns (uint256);
+    function getTierAttestationUnitsOf(address account, uint256 tier) external view returns (uint256);
 
-    function getPastTierAttestationsOf(address _account, uint256 _tier, uint256 _blockNumber)
+    function getPastTierAttestationUnitsOf(address account, uint256 tier, uint256 blockNumber)
         external
         view
         returns (uint256);
 
-    function getTierTotalAttestationsOf(uint256 _tier) external view returns (uint256);
+    function getTierTotalAttestationUnitsOf(uint256 tier) external view returns (uint256);
 
-    function getPastTierTotalAttestationsOf(uint256 _tier, uint256 _blockNumber) external view returns (uint256);
+    function getPastTierTotalAttestationUnitsOf(uint256 tier, uint256 blockNumber) external view returns (uint256);
 
-    function setTierDelegateTo(address _delegatee, uint256 _tierId) external;
+    function setTierDelegateTo(address delegatee, uint256 tierId) external;
 
-    function setTierDelegatesTo(JBTiered721SetTierDelegatesData[] memory _setTierDelegatesData) external;
+    function setTierDelegatesTo(JBTiered721SetTierDelegatesData[] memory setTierDelegatesData) external;
 
-    function setTierRedemptionWeightsTo(DefifaTierRedemptionWeight[] memory _tierWeights) external;
+    function setTierRedemptionWeightsTo(DefifaTierRedemptionWeight[] memory tierWeights) external;
 
-    function mintReservesFor(JBTiered721MintReservesForTiersData[] memory _mintReservesForTiersData) external;
+    function mintReservesFor(JBTiered721MintReservesForTiersData[] memory mintReservesForTiersData) external;
 
-    function mintReservesFor(uint256 _tierId, uint256 _count) external;
+    function mintReservesFor(uint256 tierId, uint256 count) external;
 
     function initialize(
-        uint256 _gameId,
-        IJBDirectory _directory,
-        string memory _name,
-        string memory _symbol,
-        IJBFundingCycleStore _fundingCycleStore,
-        string memory _baseUri,
-        IJB721TokenUriResolver _tokenUriResolver,
-        string memory _contractUri,
-        JB721TierParams[] memory _tiers,
-        uint48 _currency,
-        IJBTiered721DelegateStore _store,
-        IDefifaGamePhaseReporter _gamePhaseReporter,
-        IDefifaGamePotReporter _gamePotReporter,
-        address _defaultVotingDelegate,
-        string[] memory _tierNames
+        uint256 gameId,
+        IJBDirectory directory,
+        string memory name,
+        string memory symbol,
+        IJBFundingCycleStore fundingCycleStore,
+        string memory baseUri,
+        IJB721TokenUriResolver tokenUriResolver,
+        string memory contractUri,
+        JB721TierParams[] memory tiers,
+        uint48 currency,
+        IJBTiered721DelegateStore store,
+        IDefifaGamePhaseReporter gamePhaseReporter,
+        IDefifaGamePotReporter gamePotReporter,
+        address defaultAttestationDelegate,
+        string[] memory tierNames
     ) external;
 }

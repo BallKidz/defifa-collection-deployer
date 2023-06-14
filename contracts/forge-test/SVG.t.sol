@@ -9,9 +9,12 @@ import "@jbx-protocol/juice-contracts-v3/contracts/interfaces/IJBDirectory.sol";
 import "@jbx-protocol/juice-contracts-v3/contracts/interfaces/IJBController.sol";
 import "@jbx-protocol/juice-contracts-v3/contracts/interfaces/IJBFundingCycleStore.sol";
 import "@jbx-protocol/juice-721-delegate/contracts/interfaces/IJBTiered721DelegateStore.sol";
+import "@jbx-protocol/juice-721-delegate/contracts/interfaces/IJB721TokenUriResolver.sol";
 import "../DefifaDelegate.sol";
 import "../DefifaTokenUriResolver.sol";
 import "../interfaces/IDefifaGamePhaseReporter.sol";
+import "../interfaces/IDefifaGamePhaseReporter.sol";
+import "../interfaces/IDefifaDelegate.sol";
 
 // import {CapsulesTypeface} from "../lib/capsules/contracts/CapsulesTypeface.sol";
 
@@ -49,10 +52,10 @@ contract SVGTest is Test {
     }
 
     function testWithTierImage() public {
-        DefifaDelegate _delegate = DefifaDelegate(Clones.clone(address(new DefifaDelegate())));
-        DefifaTokenUriResolver _resolver = new DefifaTokenUriResolver(_typeface);
-        GamePhaseReporter _gamePhaseReporter = new GamePhaseReporter();
-        GamePotReporter _gamePotReporter = new GamePotReporter();
+        IDefifaDelegate _delegate = DefifaDelegate(Clones.clone(address(new DefifaDelegate())));
+        IJB721TokenUriResolver _resolver = new DefifaTokenUriResolver(_typeface);
+        IDefifaGamePhaseReporter _gamePhaseReporter = new GamePhaseReporter();
+        IDefifaGamePotReporter _gamePotReporter = new GamePotReporter();
 
         JB721TierParams[] memory _tiers = new JB721TierParams[](1);
         _tiers[0] = JB721TierParams({
@@ -72,21 +75,21 @@ contract SVGTest is Test {
         _tierNames[0] = "lakers win. no one scores over 40pts.";
 
         _delegate.initialize({
-            _gameId: 12345,
-            _directory: _directory,
-            _name: "Example collection",
-            _symbol: "EX",
-            _fundingCycleStore: _fundingCycleStore,
-            _baseUri: "",
-            _tokenUriResolver: _resolver,
-            _contractUri: "",
-            _tiers: _tiers,
-            _currency: 1,
-            _store: _store,
-            _gamePhaseReporter: _gamePhaseReporter,
-            _gamePotReporter: _gamePotReporter,
-            _defaultVotingDelegate: address(0),
-            _tierNames: _tierNames
+            gameId: 12345,
+            directory: _directory,
+            name: "Example collection",
+            symbol: "EX",
+            fundingCycleStore: _fundingCycleStore,
+            baseUri: "",
+            tokenUriResolver: _resolver,
+            contractUri: "",
+            tiers: _tiers,
+            currency: 1,
+            store: _store,
+            gamePhaseReporter: _gamePhaseReporter,
+            gamePotReporter: _gamePotReporter,
+            defaultAttestationDelegate: address(0),
+            tierNames: _tierNames
         });
 
         string[] memory inputs = new string[](3);
@@ -101,10 +104,10 @@ contract SVGTest is Test {
     event K(bytes4 k);
 
     function testWithOutTierImage() public {
-        DefifaDelegate _delegate = DefifaDelegate(Clones.clone(address(new DefifaDelegate())));
+        IDefifaDelegate _delegate = DefifaDelegate(Clones.clone(address(new DefifaDelegate())));
         DefifaTokenUriResolver _resolver = new DefifaTokenUriResolver(_typeface);
-        GamePhaseReporter _gamePhaseReporter = new GamePhaseReporter();
-        GamePotReporter _gamePotReporter = new GamePotReporter();
+        IDefifaGamePhaseReporter _gamePhaseReporter = new GamePhaseReporter();
+        IDefifaGamePotReporter _gamePotReporter = new GamePotReporter();
 
         JB721TierParams[] memory _tiers = new JB721TierParams[](1);
         _tiers[0] = JB721TierParams({
@@ -125,21 +128,21 @@ contract SVGTest is Test {
         _tierNames[0] = "D in 4";
 
         _delegate.initialize({
-            _gameId: 123,
-            _directory: _directory,
-            _name: "NBA Finals (1)",
-            _symbol: "DEFIFA: EXAMPLE",
-            _fundingCycleStore: _fundingCycleStore,
-            _baseUri: "",
-            _tokenUriResolver: _resolver,
-            _contractUri: "",
-            _tiers: _tiers,
-            _currency: 1,
-            _store: _store,
-            _gamePhaseReporter: _gamePhaseReporter,
-            _gamePotReporter: _gamePotReporter,
-            _defaultVotingDelegate: address(0),
-            _tierNames: _tierNames
+            gameId: 123,
+            directory: _directory,
+            name: "NBA Finals (1)",
+            symbol: "DEFIFA: EXAMPLE",
+            fundingCycleStore: _fundingCycleStore,
+            baseUri: "",
+            tokenUriResolver: _resolver,
+            contractUri: "",
+            tiers: _tiers,
+            currency: 1,
+            store: _store,
+            gamePhaseReporter: _gamePhaseReporter,
+            gamePotReporter: _gamePotReporter,
+            defaultAttestationDelegate: address(0),
+            tierNames: _tierNames
         });
 
         string[] memory inputs = new string[](3);

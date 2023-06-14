@@ -1,15 +1,15 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import "@jbx-protocol/juice-721-delegate/contracts/interfaces/IJBTiered721DelegateDeployer.sol";
-import "@jbx-protocol/juice-contracts-v3/contracts/interfaces/IJBController3_1.sol";
-import "@jbx-protocol/juice-721-delegate/contracts/interfaces/IJB721TokenUriResolver.sol";
-import "@jbx-protocol/juice-delegates-registry/src/interfaces/IJBDelegatesRegistry.sol";
-import "../structs/DefifaLaunchProjectData.sol";
-import "../structs/DefifaTimeData.sol";
-import "../structs/DefifaDistributionOpsData.sol";
-import "./IDefifaDelegate.sol";
-import "./IDefifaGovernor.sol";
+import { IJBTiered721DelegateDeployer } from "@jbx-protocol/juice-721-delegate/contracts/interfaces/IJBTiered721DelegateDeployer.sol";
+import { IJBController3_1 } from "@jbx-protocol/juice-contracts-v3/contracts/interfaces/IJBController3_1.sol";
+import { IJB721TokenUriResolver } from "@jbx-protocol/juice-721-delegate/contracts/interfaces/IJB721TokenUriResolver.sol";
+import { IJBDelegatesRegistry } from "@jbx-protocol/juice-delegates-registry/src/interfaces/IJBDelegatesRegistry.sol";
+import { DefifaLaunchProjectData } from "../structs/DefifaLaunchProjectData.sol";
+import { DefifaTimeData } from "../structs/DefifaTimeData.sol";
+import { DefifaDistributionOpsData } from "../structs/DefifaDistributionOpsData.sol";
+import { IDefifaDelegate } from "./IDefifaDelegate.sol";
+import { IDefifaGovernor} from "./IDefifaGovernor.sol";
 
 interface IDefifaDeployer {
     event LaunchGame(
