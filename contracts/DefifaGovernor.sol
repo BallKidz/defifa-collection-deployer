@@ -103,22 +103,22 @@ contract DefifaGovernor is Ownable, IDefifaGovernor {
         return _scorecardAttestationsOf[_gameId][_scorecardId].hasAttested[_account];
     }
 
-    //*********************************************************************//
-    // -------------------------- public views --------------------------- //
-    //*********************************************************************//
-
-    /// @notice A value representing the contents of a scorecard.
+    /// @notice The ID of a scorecard representing the provided tier weights.
     /// @param _gameDelegate The address where the game is being played.
-    /// @param _data The calldata that will be sent if the scorecard is ratified.
-    function hashScorecardOf(address _gameDelegate, bytes memory _data)
-        public
+    /// @param _tierWeights The weights of each tier in the scorecard.
+    function scorecardIdOf(address _gameDelegate, DefifaTierRedemptionWeight[] calldata _tierWeights)
+        external 
         pure
         virtual
         override
         returns (uint256)
     {
-        return uint256(keccak256(abi.encode(_gameDelegate, _data)));
+        return _hashScorecardOf(_gameDelegate, _buildScorecardCalldataFor(_tierWeights)); 
     }
+
+    //*********************************************************************//
+    // -------------------------- public views --------------------------- //
+    //*********************************************************************//
 
     /// @notice The state of a proposal.
     /// @param _gameId The ID of the game to get a proposal state of.
@@ -336,7 +336,7 @@ contract DefifaGovernor is Ownable, IDefifaGovernor {
         }
 
         // Hash the scorecard.
-        scorecardId = hashScorecardOf(_metadata.dataSource, _buildScorecardCalldataFor(_tierWeights));
+        scorecardId = _hashScorecardOf(_metadata.dataSource, _buildScorecardCalldataFor(_tierWeights));
 
         // Store the scorecard
         DefifaScorecard storage _scorecard = _scorecardOf[_gameId][scorecardId];
@@ -412,7 +412,7 @@ contract DefifaGovernor is Ownable, IDefifaGovernor {
         bytes memory _calldata = _buildScorecardCalldataFor(_tierWeights);
 
         // Attempt to execute the proposal.
-        scorecardId = hashScorecardOf(_metadata.dataSource, _calldata);
+        scorecardId = _hashScorecardOf(_metadata.dataSource, _calldata);
 
         // Make sure the proposal being ratified has suceeded.
         if (stateOf(_gameId, scorecardId) != DefifaScorecardState.SUCCEEDED) revert NOT_ALLOWED();
@@ -445,4 +445,17 @@ contract DefifaGovernor is Ownable, IDefifaGovernor {
         // Build the calldata from the tier weights.
         return abi.encodeWithSelector(DefifaDelegate.setTierRedemptionWeightsTo.selector, (_tierWeights));
     }
+
+    /// @notice A value representing the contents of a scorecard.
+    /// @param _gameDelegate The address where the game is being played.
+    /// @param _calldata The calldata that will be sent if the scorecard is ratified.
+    function _hashScorecardOf(address _gameDelegate, bytes memory _calldata)
+        internal 
+        pure
+        virtual
+        returns (uint256)
+    {
+        return uint256(keccak256(abi.encode(_gameDelegate, _calldata)));
+    }
+
 }
