@@ -1,43 +1,55 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.16;
 
-import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
-import { Clones } from "@openzeppelin/contracts/proxy/Clones.sol";
-import { IERC721Receiver } from "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
-import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
-import { JBConstants } from "@jbx-protocol/juice-contracts-v3/contracts/libraries/JBConstants.sol";
-import { JBTokens } from "@jbx-protocol/juice-contracts-v3/contracts/libraries/JBTokens.sol";
-import { JBSplitsGroups } from "@jbx-protocol/juice-contracts-v3/contracts/libraries/JBSplitsGroups.sol";
-import { JBFundAccessConstraints } from "@jbx-protocol/juice-contracts-v3/contracts/structs/JBFundAccessConstraints.sol";
-import { JBFundingCycle } from "@jbx-protocol/juice-contracts-v3/contracts/structs/JBFundingCycle.sol";
-import { JBFundingCycleMetadata } from "@jbx-protocol/juice-contracts-v3/contracts/structs/JBFundingCycleMetadata.sol";
-import { JBFundingCycleData } from "@jbx-protocol/juice-contracts-v3/contracts/structs/JBFundingCycleData.sol";
-import { JBGlobalFundingCycleMetadata } from "@jbx-protocol/juice-contracts-v3/contracts/structs/JBGlobalFundingCycleMetadata.sol";
-import { JBGroupedSplits } from "@jbx-protocol/juice-contracts-v3/contracts/structs/JBGroupedSplits.sol";
-import { JBSplit } from "@jbx-protocol/juice-contracts-v3/contracts/structs/JBSplit.sol";
-import { IJBPayoutRedemptionPaymentTerminal3_1 } from "@jbx-protocol/juice-contracts-v3/contracts/interfaces/IJBPayoutRedemptionPaymentTerminal3_1.sol";
-import { IJBSplitAllocator } from "@jbx-protocol/juice-contracts-v3/contracts/interfaces/IJBSplitAllocator.sol";
-import { IJBSingleTokenPaymentTerminal } from "@jbx-protocol/juice-contracts-v3/contracts/interfaces/IJBSingleTokenPaymentTerminal.sol";
-import { IJBController3_1 } from "@jbx-protocol/juice-contracts-v3/contracts/interfaces/IJBController3_1.sol";
-import { IJBFundingCycleBallot } from "@jbx-protocol/juice-contracts-v3/contracts/interfaces/IJBFundingCycleBallot.sol";
-import { IJBPaymentTerminal } from "@jbx-protocol/juice-contracts-v3/contracts/interfaces/IJBPaymentTerminal.sol";
-import { JBTiered721FundingCycleMetadataResolver } from "@jbx-protocol/juice-721-delegate/contracts/libraries/JBTiered721FundingCycleMetadataResolver.sol";
-import { IJB721TokenUriResolver } from "@jbx-protocol/juice-721-delegate/contracts/interfaces/IJB721TokenUriResolver.sol";
-import { JB721TierParams } from "@jbx-protocol/juice-721-delegate/contracts/structs/JB721TierParams.sol";
-import { JBTiered721FundingCycleMetadata } from "@jbx-protocol/juice-721-delegate/contracts/structs/JBTiered721FundingCycleMetadata.sol";
-import { IJBDelegatesRegistry } from "@jbx-protocol/juice-delegates-registry/src/interfaces/IJBDelegatesRegistry.sol";
-import { DefifaGamePhase } from "./enums/DefifaGamePhase.sol";
-import { IDefifaDeployer } from "./interfaces/IDefifaDeployer.sol";
-import { IDefifaDelegate } from "./interfaces/IDefifaDelegate.sol";
-import { IDefifaGamePhaseReporter } from "./interfaces/IDefifaGamePhaseReporter.sol";
-import { IDefifaGamePotReporter } from "./interfaces/IDefifaGamePotReporter.sol";
-import { IDefifaGovernor } from "./interfaces/IDefifaGovernor.sol";
-import { DefifaDistributionOpsData } from "./structs/DefifaDistributionOpsData.sol";
-import { DefifaLaunchProjectData } from "./structs/DefifaLaunchProjectData.sol";
-import { DefifaTierParams } from "./structs/DefifaTierParams.sol";
-import { DefifaTimeData } from "./structs/DefifaTimeData.sol";
-import { DefifaDelegate } from "./DefifaDelegate.sol";
-import { DefifaTokenUriResolver } from "./DefifaTokenUriResolver.sol";
+import {PRBMath} from "@paulrberg/contracts/math/PRBMath.sol";
+import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+import {Address} from "@openzeppelin/contracts/utils/Address.sol";
+import {Clones} from "@openzeppelin/contracts/proxy/Clones.sol";
+import {IERC721Receiver} from "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
+import {JBConstants} from "@jbx-protocol/juice-contracts-v3/contracts/libraries/JBConstants.sol";
+import {JBTokens} from "@jbx-protocol/juice-contracts-v3/contracts/libraries/JBTokens.sol";
+import {JBSplitsGroups} from "@jbx-protocol/juice-contracts-v3/contracts/libraries/JBSplitsGroups.sol";
+import {JBFundAccessConstraints} from "@jbx-protocol/juice-contracts-v3/contracts/structs/JBFundAccessConstraints.sol";
+import {JBFundingCycle} from "@jbx-protocol/juice-contracts-v3/contracts/structs/JBFundingCycle.sol";
+import {JBSplitAllocationData} from "@jbx-protocol/juice-contracts-v3/contracts/structs/JBSplitAllocationData.sol";
+import {JBFundingCycleMetadata} from "@jbx-protocol/juice-contracts-v3/contracts/structs/JBFundingCycleMetadata.sol";
+import {JBFundingCycleData} from "@jbx-protocol/juice-contracts-v3/contracts/structs/JBFundingCycleData.sol";
+import {JBGlobalFundingCycleMetadata} from
+    "@jbx-protocol/juice-contracts-v3/contracts/structs/JBGlobalFundingCycleMetadata.sol";
+import {JBGroupedSplits} from "@jbx-protocol/juice-contracts-v3/contracts/structs/JBGroupedSplits.sol";
+import {JBSplit} from "@jbx-protocol/juice-contracts-v3/contracts/structs/JBSplit.sol";
+import {IJBAllowanceTerminal3_1} from
+    "@jbx-protocol/juice-contracts-v3/contracts/interfaces/IJBAllowanceTerminal3_1.sol";
+import {IJBDirectory} from "@jbx-protocol/juice-contracts-v3/contracts/interfaces/IJBDirectory.sol";
+import {IJBPayoutRedemptionPaymentTerminal3_1} from
+    "@jbx-protocol/juice-contracts-v3/contracts/interfaces/IJBPayoutRedemptionPaymentTerminal3_1.sol";
+import {IJBSplitAllocator} from "@jbx-protocol/juice-contracts-v3/contracts/interfaces/IJBSplitAllocator.sol";
+import {IJBSingleTokenPaymentTerminal} from
+    "@jbx-protocol/juice-contracts-v3/contracts/interfaces/IJBSingleTokenPaymentTerminal.sol";
+import {IJBController3_1} from "@jbx-protocol/juice-contracts-v3/contracts/interfaces/IJBController3_1.sol";
+import {IJBFundingCycleBallot} from "@jbx-protocol/juice-contracts-v3/contracts/interfaces/IJBFundingCycleBallot.sol";
+import {IJBPaymentTerminal} from "@jbx-protocol/juice-contracts-v3/contracts/interfaces/IJBPaymentTerminal.sol";
+import {JBTiered721FundingCycleMetadataResolver} from
+    "@jbx-protocol/juice-721-delegate/contracts/libraries/JBTiered721FundingCycleMetadataResolver.sol";
+import {IJB721TokenUriResolver} from "@jbx-protocol/juice-721-delegate/contracts/interfaces/IJB721TokenUriResolver.sol";
+import {JB721TierParams} from "@jbx-protocol/juice-721-delegate/contracts/structs/JB721TierParams.sol";
+import {JBTiered721FundingCycleMetadata} from
+    "@jbx-protocol/juice-721-delegate/contracts/structs/JBTiered721FundingCycleMetadata.sol";
+import {IJBDelegatesRegistry} from "@jbx-protocol/juice-delegates-registry/src/interfaces/IJBDelegatesRegistry.sol";
+import {DefifaGamePhase} from "./enums/DefifaGamePhase.sol";
+import {IDefifaDeployer} from "./interfaces/IDefifaDeployer.sol";
+import {IDefifaDelegate} from "./interfaces/IDefifaDelegate.sol";
+import {IDefifaGamePhaseReporter} from "./interfaces/IDefifaGamePhaseReporter.sol";
+import {IDefifaGamePotReporter} from "./interfaces/IDefifaGamePotReporter.sol";
+import {IDefifaGovernor} from "./interfaces/IDefifaGovernor.sol";
+import {DefifaLaunchProjectData} from "./structs/DefifaLaunchProjectData.sol";
+import {DefifaTierParams} from "./structs/DefifaTierParams.sol";
+import {DefifaOpsData} from "./structs/DefifaOpsData.sol";
+import {DefifaDelegate} from "./DefifaDelegate.sol";
+import {DefifaTokenUriResolver} from "./DefifaTokenUriResolver.sol";
 
 /// @title DefifaDeployer
 /// @notice Deploys and manages Defifa games.
@@ -49,14 +61,18 @@ contract DefifaDeployer is
     IERC721Receiver
 {
     using Strings for uint256;
+    using SafeERC20 for IERC20;
 
     //*********************************************************************//
     // --------------------------- custom errors ------------------------- //
     //*********************************************************************//
 
+    error CANT_FULFILL_YET();
     error GAME_OVER();
     error INVALID_FEE_PERCENT();
     error INVALID_GAME_CONFIGURATION();
+    error INCORRECT_DECIMAL_AMOUNT();
+    error TERMINAL_NOT_FOUND();
     error PHASE_ALREADY_QUEUED();
     error SPLITS_DONT_ADD_UP();
     error UNEXPECTED_TERMINAL_CURRENCY();
@@ -75,12 +91,8 @@ contract DefifaDeployer is
     // ----------------------- internal properties ----------------------- //
     //*********************************************************************//
 
-    /// @notice Start time of the 2nd fc when re-configuring the fc.
-    mapping(uint256 => DefifaTimeData) internal _timesFor;
-
-    /// @notice Distribution operations variables for a game.
-    /// @dev Includes the payment terminal being used, the distribution limit, and wether or not fees should be held.
-    mapping(uint256 => DefifaDistributionOpsData) internal _distributionOpsOf;
+    /// @notice The game's ops.
+    mapping(uint256 => DefifaOpsData) internal _opsOf;
 
     /// @notice This contract current nonce, used for the registry initialized at 1 since the first contract deployed is the delegate
     uint256 internal _nonce;
@@ -89,16 +101,12 @@ contract DefifaDeployer is
     mapping(uint256 => bool) internal _noContestIsSet;
 
     //*********************************************************************//
-    // ------------------------ public constants ------------------------- //
+    // ------------------ public immutable properties -------------------- //
     //*********************************************************************//
 
-    /// @notice The domain relative to which splits are stored.
+    /// @notice The group relative to which splits are stored.
     /// @dev This could be any fixed number.
-    uint256 public constant override SPLIT_DOMAIN = 0;
-
-    //*********************************************************************//
-    // --------------- public immutable stored properties ---------------- //
-    //*********************************************************************//
+    uint256 public immutable override splitGroup;
 
     /// @notice The project ID relative to which splits are stored.
     /// @dev The owner of this project ID must give this contract operator permissions over the SET_SPLITS operation.
@@ -130,22 +138,29 @@ contract DefifaDeployer is
     /// @dev This is equal to 100 divided by the fee percent.
     uint256 public override feeDivisor = 20;
 
+    /// @notice A flag indicating if a game's commitments have been fulfilled.
+    /// @dev The ID of the game to check.
+    mapping(uint256 => bool) public override hasFulfilledCommitments;
+
     //*********************************************************************//
     // ------------------------- external views -------------------------- //
     //*********************************************************************//
 
     /// @notice The game times.
     /// @param _gameId The ID of the game for which the game times apply.
-    /// @return The game times.
-    function timesFor(uint256 _gameId) external view override returns (DefifaTimeData memory) {
-        return _timesFor[_gameId];
+    /// @return The game's start time, as a unix timestamp.
+    /// @return The game's minting period duration, in seconds.
+    /// @return The game's refund period duration, in seconds.
+    function timesFor(uint256 _gameId) external view override returns (uint48, uint24, uint24) {
+        DefifaOpsData memory _ops = _opsOf[_gameId];
+        return (_ops.start, _ops.mintPeriodDuration, _ops.refundPeriodDuration);
     }
 
-    /// @notice The distribution ops.
-    /// @param _gameId The ID of the game for which the distribution ops apply.
-    /// @return The distribution ops.
-    function distributionOpsOf(uint256 _gameId) external view override returns (DefifaDistributionOpsData memory) {
-        return _distributionOpsOf[_gameId];
+    /// @notice The token of a gmae.
+    /// @param _gameId The ID of the game to get the token of.
+    /// @return The game's token.
+    function tokenOf(uint256 _gameId) external view override returns (address) {
+        return _opsOf[_gameId].token;
     }
 
     /// @notice The current pot the game is being played with.
@@ -154,38 +169,18 @@ contract DefifaDeployer is
     /// @return The token address the game's pot is measured in.
     /// @return The number of decimals included in the amount.
     function currentGamePotOf(uint256 _gameId) external view returns (uint256, address, uint256) {
-        // Get a reference to the distribution ops being used by the project.
-        DefifaDistributionOpsData memory _ops = _distributionOpsOf[_gameId];
+        // Get a reference to the token being used by the project.
+        address _token = _opsOf[_gameId].token;
 
         // Get a reference to the terminal.
-        address _terminal = address(_ops.terminal);
+        IJBPaymentTerminal _terminal = controller.directory().primaryTerminalOf(_gameId, _token);
 
         // Get the current balance.
-        uint256 _pot = IJBPayoutRedemptionPaymentTerminal3_1(_terminal).store().currentOverflowOf(
-            IJBSingleTokenPaymentTerminal(_terminal), _gameId
+        uint256 _pot = IJBPayoutRedemptionPaymentTerminal3_1(address(_terminal)).store().currentOverflowOf(
+            IJBSingleTokenPaymentTerminal(address(_terminal)), _gameId
         );
 
-        return (
-            _pot, IJBSingleTokenPaymentTerminal(_terminal).token(), IJBSingleTokenPaymentTerminal(_terminal).decimals()
-        );
-    }
-
-    /// @notice Returns the number of the game phase.
-    /// @dev The game phase corresponds to the game's current funding cycle number.
-    /// @param _gameId The ID of the game to get the phase number of.
-    /// @return The game phase.
-    function currentGamePhaseOf(uint256 _gameId) external view override returns (DefifaGamePhase) {
-        // Get the project's current funding cycle along with its metadata.
-        (JBFundingCycle memory _currentFundingCycle, JBFundingCycleMetadata memory _metadata) =
-            controller.currentFundingCycleOf(_gameId);
-
-        if (_currentFundingCycle.number == 0) return DefifaGamePhase.COUNTDOWN;
-        if (_currentFundingCycle.number == 1) return DefifaGamePhase.MINT;
-        if (_noContestIsSet[_gameId]) return DefifaGamePhase.NO_CONTEST;
-        if (_noContestInevitable(_gameId, _currentFundingCycle)) return DefifaGamePhase.NO_CONTEST_INEVITABLE;
-        if (_currentFundingCycle.number == 2 && _timesFor[_gameId].refundDuration != 0) return DefifaGamePhase.REFUND;
-        if (IDefifaDelegate(_metadata.dataSource).redemptionWeightIsSet()) return DefifaGamePhase.COMPLETE;
-        return DefifaGamePhase.SCORING;
+        return (_pot, _token, IJBSingleTokenPaymentTerminal(address(_terminal)).decimals());
     }
 
     /// @notice Whether or not the next phase still needs queuing.
@@ -200,6 +195,30 @@ contract DefifaDeployer is
         // If the configurations are the same and the game hasn't ended, queueing is still needed.
         return _currentFundingCycle.duration != 0
             && _currentFundingCycle.configuration == _queuedFundingCycle.configuration;
+    }
+
+    //*********************************************************************//
+    // -------------------------- public views --------------------------- //
+    //*********************************************************************//
+
+    /// @notice Returns the number of the game phase.
+    /// @dev The game phase corresponds to the game's current funding cycle number.
+    /// @param _gameId The ID of the game to get the phase number of.
+    /// @return The game phase.
+    function currentGamePhaseOf(uint256 _gameId) public view override returns (DefifaGamePhase) {
+        // Get the project's current funding cycle along with its metadata.
+        (JBFundingCycle memory _currentFundingCycle, JBFundingCycleMetadata memory _metadata) =
+            controller.currentFundingCycleOf(_gameId);
+
+        if (_currentFundingCycle.number == 0) return DefifaGamePhase.COUNTDOWN;
+        if (_currentFundingCycle.number == 1) return DefifaGamePhase.MINT;
+        if (_noContestIsSet[_gameId]) return DefifaGamePhase.NO_CONTEST;
+        if (_noContestInevitable(_gameId, _currentFundingCycle)) return DefifaGamePhase.NO_CONTEST_INEVITABLE;
+        if (_currentFundingCycle.number == 2 && _opsOf[_gameId].refundPeriodDuration != 0) {
+            return DefifaGamePhase.REFUND;
+        }
+        if (IDefifaDelegate(_metadata.dataSource).redemptionWeightIsSet()) return DefifaGamePhase.COMPLETE;
+        return DefifaGamePhase.SCORING;
     }
 
     //*********************************************************************//
@@ -231,7 +250,7 @@ contract DefifaDeployer is
         protocolFeeProjectTokenAccount = _protocolFeeProjectTokenAccount;
         delegatesRegistry = _delegatesRegistry;
         ballkidzProjectId = _ballkidzProjectId;
-
+        splitGroup = uint256(uint160(address(this)));
         _transferOwnership(_owner);
     }
 
@@ -249,23 +268,24 @@ contract DefifaDeployer is
     {
         // Start the game right after the mint and refund durations if it isnt provided.
         if (_launchProjectData.start == 0) {
-            _launchProjectData.start =
-                uint48(block.timestamp + _launchProjectData.mintDuration + _launchProjectData.refundDuration);
+            _launchProjectData.start = uint48(
+                block.timestamp + _launchProjectData.mintPeriodDuration + _launchProjectData.refundPeriodDuration
+            );
         }
         // Start minting right away if a start time isn't provided.
         else if (
-            _launchProjectData.mintDuration == 0
-                && _launchProjectData.start > block.timestamp + _launchProjectData.refundDuration
+            _launchProjectData.mintPeriodDuration == 0
+                && _launchProjectData.start > block.timestamp + _launchProjectData.refundPeriodDuration
         ) {
-            _launchProjectData.mintDuration =
-                uint48(_launchProjectData.start - (block.timestamp + _launchProjectData.refundDuration));
+            _launchProjectData.mintPeriodDuration =
+                uint24(_launchProjectData.start - (block.timestamp + _launchProjectData.refundPeriodDuration));
         }
 
         // Make sure the provided gameplay timestamps are sequential and that there is a mint duration.
         if (
-            _launchProjectData.mintDuration == 0
+            _launchProjectData.mintPeriodDuration == 0
                 || _launchProjectData.start
-                    < block.timestamp + _launchProjectData.refundDuration + _launchProjectData.mintDuration
+                    < block.timestamp + _launchProjectData.refundPeriodDuration + _launchProjectData.mintPeriodDuration
         ) revert INVALID_GAME_CONFIGURATION();
 
         // Get the game ID, optimistically knowing it will be one greater than the current count.
@@ -273,58 +293,33 @@ contract DefifaDeployer is
 
         {
             // Store the timestamps that'll define the game phases.
-            _timesFor[gameId] = DefifaTimeData({
-                mintDuration: _launchProjectData.mintDuration,
-                refundDuration: _launchProjectData.refundDuration,
+            _opsOf[gameId] = DefifaOpsData({
+                token: _launchProjectData.token,
+                mintPeriodDuration: _launchProjectData.mintPeriodDuration,
+                refundPeriodDuration: _launchProjectData.refundPeriodDuration,
                 start: _launchProjectData.start
             });
 
-            // Store the terminal and distribution limit.
-            _distributionOpsOf[gameId] = DefifaDistributionOpsData({
-                terminal: _launchProjectData.terminal,
-                distributionLimit: _launchProjectData.distributionLimit,
-                token: _launchProjectData.token
+            // Keep a reference to the split percent.
+            uint256 _feePercent = JBConstants.SPLITS_TOTAL_PERCENT / feeDivisor;
+
+            // Add a split for the Ballkidz fee.
+            _launchProjectData.splits[_launchProjectData.splits.length] = JBSplit({
+                preferClaimed: true,
+                preferAddToBalance: false,
+                percent: _feePercent,
+                projectId: ballkidzProjectId,
+                beneficiary: _launchProjectData.ballkidzFeeProjectTokenAccount,
+                lockedUntil: 0,
+                allocator: _launchProjectData.ballkidzFeeProjectTokenAllocator
             });
 
-            // Keep a reference to the number of splits.
-            uint256 _numberOfSplits = _launchProjectData.splits.length;
+            // Store the splits.
+            JBGroupedSplits[] memory _groupedSplits = new JBGroupedSplits[](1);
+            _groupedSplits[0] = JBGroupedSplits({group: splitGroup, splits: _launchProjectData.splits});
 
-            if (_numberOfSplits != 0) {
-                // Keep a reference to the split percent.
-                uint256 _feePercent = JBConstants.SPLITS_TOTAL_PERCENT / feeDivisor;
-
-                // Keep a reference to the total percent of splits being set.
-                uint256 _totalSplitPercent;
-                for (uint256 _i; _i < _numberOfSplits;) {
-                    _totalSplitPercent += _launchProjectData.splits[_i].percent;
-                    unchecked {
-                        ++_i;
-                    }
-                }
-
-                // Make sure the splits leave room for the fee.
-                if (_totalSplitPercent != JBConstants.SPLITS_TOTAL_PERCENT - _feePercent) {
-                    revert SPLITS_DONT_ADD_UP();
-                }
-
-                // Add a split for the Ballkidz fee.
-                _launchProjectData.splits[_launchProjectData.splits.length] = JBSplit({
-                    preferClaimed: false,
-                    preferAddToBalance: false,
-                    percent: _feePercent,
-                    projectId: ballkidzProjectId,
-                    beneficiary: _launchProjectData.ballkidzFeeProjectTokenAccount,
-                    lockedUntil: 0,
-                    allocator: IJBSplitAllocator(address(0))
-                });
-
-                // Store the splits. They'll be used when queueing phase 2.
-                JBGroupedSplits[] memory _groupedSplits = new JBGroupedSplits[](1);
-                _groupedSplits[0] = JBGroupedSplits({group: gameId, splits: _launchProjectData.splits});
-
-                // This contract must have SET_SPLITS operator permissions.
-                controller.splitsStore().set(ballkidzProjectId, SPLIT_DOMAIN, _groupedSplits);
-            }
+            // This contract must have SET_SPLITS operator permissions.
+            controller.splitsStore().set(ballkidzProjectId, gameId, _groupedSplits);
         }
 
         // Keep track of the number of tiers.
@@ -393,13 +388,13 @@ contract DefifaDeployer is
             _tierNames: _tierNames
         });
 
+        // Queue the mint phase of the game.
+        _queueMintPhase(_launchProjectData, address(_delegate));
+
         // Make sure the provided terminal accepts the same currency as this game is being played in.
         if (!_launchProjectData.terminal.acceptsToken(_launchProjectData.token, gameId)) {
             revert UNEXPECTED_TERMINAL_CURRENCY();
         }
-
-        // Queue the mint phase of the game.
-        _queueMintPhase(_launchProjectData, address(_delegate));
 
         // Clone and initialize the new governor.
         governor.initializeGame({
@@ -442,7 +437,7 @@ contract DefifaDeployer is
         }
 
         // Queue the next phase of the game.
-        if (_currentFundingCycle.number == 1 && _timesFor[_gameId].refundDuration != 0) {
+        if (_currentFundingCycle.number == 1 && _opsOf[_gameId].refundPeriodDuration != 0) {
             return _queueRefundPhase(_gameId, _metadata.dataSource);
         } else {
             return _queueGamePhase(_gameId, _metadata.dataSource);
@@ -460,6 +455,145 @@ contract DefifaDeployer is
             protocolFeeProjectTokenAccount,
             controller.tokenStore().unclaimedBalanceOf(address(this), _PROTOCOL_FEE_PROJECT)
         );
+    }
+
+    /// @notice Fulfill split amounts between all splits for a game.
+    /// @param _gameId The ID of the game to fulfill splits for.
+    function fulfillCommitmentsOf(uint256 _gameId) external virtual override {
+        // Make sure commitments haven't already been fulfilled.
+        if (hasFulfilledCommitments[_gameId]) return;
+
+        // Make sure the game's commitments can be fulfilled.
+        {
+            DefifaGamePhase _currentGamePhase = currentGamePhaseOf(_gameId);
+            if (_currentGamePhase != DefifaGamePhase.SCORING && _currentGamePhase != DefifaGamePhase.COMPLETE) {
+                revert CANT_FULFILL_YET();
+            }
+        }
+
+        // Set the flag to prevent duplicate fulfillments.
+        hasFulfilledCommitments[_gameId] = true;
+
+        // Get the splits for the game.
+        JBSplit[] memory _splits = controller.splitsStore().splitsOf(ballkidzProjectId, _gameId, splitGroup);
+
+        // Get a reference to the token being used by the game.
+        address _token = _opsOf[_gameId].token;
+
+        // Keep a reference to the directory.
+        IJBDirectory _directory = controller.directory();
+
+        // Get a reference to the terminal being used.
+        IJBPaymentTerminal _terminal = _directory.primaryTerminalOf(_gameId, _token);
+
+        // Get the current pot.
+        uint256 _pot = IJBPayoutRedemptionPaymentTerminal3_1(address(_terminal)).store().currentOverflowOf(
+            IJBSingleTokenPaymentTerminal(address(_terminal)), _gameId
+        );
+
+        // Get the decimals that make up the pot fixed point number.
+        uint256 _decimals = IJBSingleTokenPaymentTerminal(address(_terminal)).decimals();
+
+        // Distribute the overflow allowance.
+        uint256 _leftoverAmount = IJBAllowanceTerminal3_1(address(_terminal)).useAllowanceOf({
+            _projectId: _gameId,
+            _amount: _pot,
+            _currency: _terminal.currencyForToken(_token),
+            _token: _token,
+            _minReturnedTokens: _pot,
+            _beneficiary: payable(address(this)),
+            _memo: string.concat("Settling Defifa game #", _gameId.toString()),
+            _metadata: bytes("")
+        });
+
+        // Settle between all splits.
+        for (uint256 i; i < _splits.length;) {
+            // Get a reference to the split being iterated on.
+            JBSplit memory _split = _splits[i];
+
+            // The amount to send towards the split.
+            uint256 _splitAmount = PRBMath.mulDiv(_pot, _split.percent, JBConstants.SPLITS_TOTAL_PERCENT);
+
+            if (_splitAmount > 0) {
+                // Transfer tokens to the split.
+                // If there's an allocator set, transfer to its `allocate` function.
+                if (_split.allocator != IJBSplitAllocator(address(0))) {
+                    // Create the data to send to the allocator.
+                    JBSplitAllocationData memory _data = JBSplitAllocationData(
+                        _token, _splitAmount, _terminal.decimalsForToken(_token), _gameId, 0, _split
+                    );
+
+                    // Approve the `_amount` of tokens for the split allocator to transfer tokens from this contract.
+                    if (_token != JBTokens.ETH) {
+                        IERC20(_token).safeApprove(address(_split.allocator), _splitAmount);
+                    }
+
+                    // If the token is ETH, send it in msg.value.
+                    uint256 _payableValue = _token == JBTokens.ETH ? _splitAmount : 0;
+
+                    // Trigger the allocator's `allocate` function.
+                    _split.allocator.allocate{value: _payableValue}(_data);
+
+                    // Otherwise, if a project is specified, make a payment to it.
+                } else if (_split.projectId != 0) {
+                    if (_split.preferAddToBalance) {
+                        _addToBalanceOf(
+                            _directory,
+                            _split.projectId,
+                            _token,
+                            _splitAmount,
+                            _terminal.decimalsForToken(_token),
+                            string.concat("Payout from Defifa game #", _gameId.toString()),
+                            bytes("")
+                        );
+                    } else {
+                        _pay(
+                            _directory,
+                            _split.projectId,
+                            _token,
+                            _splitAmount,
+                            _terminal.decimalsForToken(_token),
+                            _split.beneficiary != address(0) ? _split.beneficiary : protocolFeeProjectTokenAccount,
+                            0,
+                            _split.preferClaimed,
+                            string.concat("Payout from Defifa game #", _gameId.toString()),
+                            bytes("")
+                        );
+                    }
+                } else {
+                    // Transfer the ETH.
+                    if (_token == JBTokens.ETH) {
+                        Address.sendValue(
+                            // Get a reference to the address receiving the tokens. If there's a beneficiary, send the funds directly to the beneficiary. Otherwise send to protocolFeeProjectTokenAccount.
+                            _split.beneficiary != address(0)
+                                ? _split.beneficiary
+                                : payable(protocolFeeProjectTokenAccount),
+                            _splitAmount
+                        );
+                    }
+                    // Or, transfer the ERC20.
+                    else {
+                        IERC20(_token).safeTransfer(
+                            // Get a reference to the address receiving the tokens. If there's a beneficiary, send the funds directly to the beneficiary. Otherwise send to protocolFeeProjectTokenAccount.
+                            _split.beneficiary != address(0) ? _split.beneficiary : protocolFeeProjectTokenAccount,
+                            _splitAmount
+                        );
+                    }
+                }
+
+                // Subtract from the amount to be sent to the beneficiary.
+                _leftoverAmount = _leftoverAmount - _splitAmount;
+            }
+
+            emit DistributeToSplit(_split, _splitAmount, protocolFeeProjectTokenAccount, msg.sender);
+
+            unchecked {
+                ++i;
+            }
+        }
+
+        // Add leftover amount back into the game's pot.
+        _addToBalanceOf(_directory, _gameId, _token, _leftoverAmount, _decimals, "Pot", bytes(""));
     }
 
     /// @notice Allow this contract's owner to change the publishing fee.
@@ -496,7 +630,7 @@ contract DefifaDeployer is
             address(this),
             _launchProjectData.projectMetadata,
             JBFundingCycleData({
-                duration: _launchProjectData.mintDuration,
+                duration: _launchProjectData.mintPeriodDuration,
                 // Don't mint project tokens.
                 weight: 0,
                 discountRate: 0,
@@ -533,7 +667,7 @@ contract DefifaDeployer is
                     })
                     )
             }),
-            _launchProjectData.start - _launchProjectData.mintDuration - _launchProjectData.refundDuration,
+            _launchProjectData.start - _launchProjectData.mintPeriodDuration - _launchProjectData.refundPeriodDuration,
             new JBGroupedSplits[](0),
             new JBFundAccessConstraints[](0),
             _terminals,
@@ -547,13 +681,13 @@ contract DefifaDeployer is
     /// @param _dataSource The data source to use.
     /// @return configuration The configuration of the funding cycle that was successfully reconfigured.
     function _queueRefundPhase(uint256 _gameId, address _dataSource) internal returns (uint256 configuration) {
-        // Get a reference to the time data.
-        DefifaTimeData memory _times = _timesFor[_gameId];
+        // Get a reference to the game's ops.
+        DefifaOpsData memory _ops = _opsOf[_gameId];
 
         return controller.reconfigureFundingCyclesOf(
             _gameId,
             JBFundingCycleData({
-                duration: _times.refundDuration,
+                duration: _ops.refundPeriodDuration,
                 // Don't mint project tokens.
                 weight: 0,
                 discountRate: 0,
@@ -605,33 +739,23 @@ contract DefifaDeployer is
     /// @param _dataSource The data source to use.
     /// @return configuration The configuration of the funding cycle that was successfully reconfigured.
     function _queueGamePhase(uint256 _gameId, address _dataSource) internal returns (uint256 configuration) {
-        // Get a reference to the terminal being used by the project.
-        DefifaDistributionOpsData memory _ops = _distributionOpsOf[_gameId];
+        // Get a reference to the token being used by the project.
+        address _token = _opsOf[_gameId].token;
+
+        // Get a reference to the terminal.
+        IJBPaymentTerminal _terminal = controller.directory().primaryTerminalOf(_gameId, _token);
 
         // Set fund access constraints.
         JBFundAccessConstraints[] memory fundAccessConstraints = new JBFundAccessConstraints[](1);
         fundAccessConstraints[0] = JBFundAccessConstraints({
-            terminal: _ops.terminal,
-            token: _ops.token,
-            distributionLimit: _ops.distributionLimit,
-            distributionLimitCurrency: _ops.terminal.currencyForToken(_ops.token),
-            overflowAllowance: 0,
-            overflowAllowanceCurrency: 0
+            terminal: _terminal,
+            token: _token,
+            distributionLimit: 0,
+            distributionLimitCurrency: 0,
+            // Allow a max overflow allowance so that this contract can pull funds to distribute to splits and for fees.
+            overflowAllowance: type(uint232).max,
+            overflowAllowanceCurrency: _terminal.currencyForToken(_token)
         });
-
-        // Fetch splits.
-        JBSplit[] memory _splits = controller.splitsStore().splitsOf(ballkidzProjectId, SPLIT_DOMAIN, _gameId);
-
-        // Make a group split for ETH payouts.
-        JBGroupedSplits[] memory _groupedSplits;
-
-        if (_splits.length != 0) {
-            _groupedSplits = new JBGroupedSplits[](1);
-            uint256 _group = _ops.token == JBTokens.ETH ? JBSplitsGroups.ETH_PAYOUT : uint160(_ops.token);
-            _groupedSplits[0] = JBGroupedSplits({group: _group, splits: _splits});
-        } else {
-            _groupedSplits = new JBGroupedSplits[](0);
-        }
 
         configuration = controller.reconfigureFundingCyclesOf(
             _gameId,
@@ -672,7 +796,7 @@ contract DefifaDeployer is
                     )
             }),
             0, // mustStartAtOrAfter should be ASAP
-            _groupedSplits,
+            new JBGroupedSplits[](0),
             fundAccessConstraints,
             "Defifa scoring phase."
         );
@@ -754,5 +878,93 @@ contract DefifaDeployer is
         if (_currentFundingCycle.number != _previouslyConfiguredFundingCycle.number + 1) return true;
 
         return false;
+    }
+
+    /// @notice Make a payment to the specified project.
+    /// @param _directory The directory to look for a project's terminal in.
+    /// @param _projectId The ID of the project that is being paid.
+    /// @param _token The token being paid in.
+    /// @param _amount The amount of tokens being paid, as a fixed point number.
+    /// @param _decimals The number of decimals in the `_amount` fixed point number.
+    /// @param _beneficiary The address who will receive tokens from the payment.
+    /// @param _minReturnedTokens The minimum number of project tokens expected in return, as a fixed point number with 18 decimals.
+    /// @param _preferClaimedTokens A flag indicating whether the request prefers to mint project tokens into the beneficiaries wallet rather than leaving them unclaimed. This is only possible if the project has an attached token contract. Leaving them unclaimed saves gas.
+    /// @param _memo A memo to pass along to the emitted event, and passed along the the funding cycle's data source and delegate.  A data source can alter the memo before emitting in the event and forwarding to the delegate.
+    /// @param _metadata Bytes to send along to the data source and delegate, if provided.
+    function _pay(
+        IJBDirectory _directory,
+        uint256 _projectId,
+        address _token,
+        uint256 _amount,
+        uint256 _decimals,
+        address _beneficiary,
+        uint256 _minReturnedTokens,
+        bool _preferClaimedTokens,
+        string memory _memo,
+        bytes memory _metadata
+    ) internal virtual {
+        // Find the terminal for the specified project.
+        IJBPaymentTerminal _terminal = _directory.primaryTerminalOf(_projectId, _token);
+
+        // There must be a terminal.
+        if (_terminal == IJBPaymentTerminal(address(0))) revert TERMINAL_NOT_FOUND();
+
+        // The amount's decimals must match the terminal's expected decimals.
+        if (_terminal.decimalsForToken(_token) != _decimals) revert INCORRECT_DECIMAL_AMOUNT();
+
+        // Approve the `_amount` of tokens from the destination terminal to transfer tokens from this contract.
+        if (_token != JBTokens.ETH) IERC20(_token).safeApprove(address(_terminal), _amount);
+
+        // If the token is ETH, send it in msg.value.
+        uint256 _payableValue = _token == JBTokens.ETH ? _amount : 0;
+
+        // Send funds to the terminal.
+        // If the token is ETH, send it in msg.value.
+        _terminal.pay{value: _payableValue}(
+            _projectId,
+            _amount, // ignored if the token is JBTokens.ETH.
+            _token,
+            _beneficiary,
+            _minReturnedTokens,
+            _preferClaimedTokens,
+            _memo,
+            _metadata
+        );
+    }
+
+    /// @notice Add to the balance of the specified project.
+    /// @param _directory The directory to look for a project's terminal in.
+    /// @param _projectId The ID of the project that is being paid.
+    /// @param _token The token being paid in.
+    /// @param _amount The amount of tokens being paid, as a fixed point number. If the token is ETH, this is ignored and msg.value is used in its place.
+    /// @param _decimals The number of decimals in the `_amount` fixed point number. If the token is ETH, this is ignored and 18 is used in its place, which corresponds to the amount of decimals expected in msg.value.
+    /// @param _memo A memo to pass along to the emitted event.
+    /// @param _metadata Extra data to pass along to the terminal.
+    function _addToBalanceOf(
+        IJBDirectory _directory,
+        uint256 _projectId,
+        address _token,
+        uint256 _amount,
+        uint256 _decimals,
+        string memory _memo,
+        bytes memory _metadata
+    ) internal virtual {
+        // Find the terminal for the specified project.
+        IJBPaymentTerminal _terminal = _directory.primaryTerminalOf(_projectId, _token);
+
+        // There must be a terminal.
+        if (_terminal == IJBPaymentTerminal(address(0))) revert TERMINAL_NOT_FOUND();
+
+        // The amount's decimals must match the terminal's expected decimals.
+        if (_terminal.decimalsForToken(_token) != _decimals) revert INCORRECT_DECIMAL_AMOUNT();
+
+        // Approve the `_amount` of tokens from the destination terminal to transfer tokens from this contract.
+        if (_token != JBTokens.ETH) IERC20(_token).safeApprove(address(_terminal), _amount);
+
+        // If the token is ETH, send it in msg.value.
+        uint256 _payableValue = _token == JBTokens.ETH ? _amount : 0;
+
+        // Add to balance so tokens don't get issued.
+        _terminal.addToBalanceOf{value: _payableValue}(_projectId, _amount, _token, _memo, _metadata);
     }
 }

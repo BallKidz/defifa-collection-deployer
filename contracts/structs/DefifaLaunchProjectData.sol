@@ -1,13 +1,15 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import { IJBTiered721DelegateStore } from "@jbx-protocol/juice-721-delegate/contracts/interfaces/IJBTiered721DelegateStore.sol";
-import { IJBPaymentTerminal } from "@jbx-protocol/juice-contracts-v3/contracts/interfaces/IJBPaymentTerminal.sol";
-import { IJB721TokenUriResolver } from "@jbx-protocol/juice-721-delegate/contracts/interfaces/IJB721TokenUriResolver.sol";
-import { JBProjectMetadata } from "@jbx-protocol/juice-contracts-v3/contracts/structs/JBProjectMetadata.sol";
-import { JBSplit } from "@jbx-protocol/juice-contracts-v3/contracts/structs/JBSplit.sol";
-import { DefifaTierParams } from "./DefifaTierParams.sol";
-import { DefifaTimeData } from "./DefifaTimeData.sol";
+import {IJBPaymentTerminal} from "@jbx-protocol/juice-contracts-v3/contracts/interfaces/IJBPaymentTerminal.sol";
+import {IJBSplitAllocator} from "@jbx-protocol/juice-contracts-v3/contracts/interfaces/IJBSplitAllocator.sol";
+import {JBProjectMetadata} from "@jbx-protocol/juice-contracts-v3/contracts/structs/JBProjectMetadata.sol";
+import {JBSplit} from "@jbx-protocol/juice-contracts-v3/contracts/structs/JBSplit.sol";
+import {IJBTiered721DelegateStore} from
+    "@jbx-protocol/juice-721-delegate/contracts/interfaces/IJBTiered721DelegateStore.sol";
+import {IJB721TokenUriResolver} from "@jbx-protocol/juice-721-delegate/contracts/interfaces/IJB721TokenUriResolver.sol";
+import {DefifaTierParams} from "./DefifaTierParams.sol";
+import {DefifaOpsData} from "./DefifaOpsData.sol";
 
 /// @custom:member name The name of the game being created.
 /// @custom:member projectMetadata Metadata to associate with the project within a particular domain.
@@ -15,12 +17,13 @@ import { DefifaTimeData } from "./DefifaTimeData.sol";
 /// @custom:member baseUri The URI base to prepend onto any tier token URIs.
 /// @custom:member tiers Parameters describing the tiers.
 /// @custom:member token The token the game is played with.
-/// @custom:member mintDuration The duration of the game's mint phase, measured in seconds.
-/// @custom:member refundDuration The time between the mint phase and the start time when mint's are no longer open but refunds are still allowed, measured in seconds.
+/// @custom:member mintPeriodDuration The duration of the game's mint phase, measured in seconds.
+/// @custom:member refundPeriodDuration The time between the mint phase and the start time when mint's are no longer open but refunds are still allowed, measured in seconds.
 /// @custom:member start The time at which the game should start, measured in seconds.
 /// @custom:member splits Splits to distribute funds between during the game's scoring phase.
 /// @custom:member distributionLimit The amount of funds to distribute from the pot during the game's scoring phase.
 /// @custom:member ballkidzFeeProjectTokenAccount The address that should be sent $DEFIFA tokens that are minted from paying the fee.
+/// @custom:member ballkidzFeeProjectTokenAllocator The allocator that should be sent $DEFIFA tokens that are minted from paying the fee. If provided, the `ballkidzFeeProjectTokenAccount` will be sent in the split data to the allocator.
 /// @custom:member attestationStartTime The time the attestations will start for all submitted scorecards, measured in seconds. If in the past, scorecards will start accepting attestations right away.
 /// @custom:member attestationGracePeriod The time period the attestations must be active for once it has started even if it has already reached quorum, measured in seconds.
 /// @custom:member defaultAttestationDelegate The address that'll be set as the attestation delegate by default.
@@ -34,12 +37,12 @@ struct DefifaLaunchProjectData {
     string baseUri;
     DefifaTierParams[] tiers;
     address token;
-    uint48 mintDuration;
-    uint48 refundDuration;
+    uint24 mintPeriodDuration;
+    uint24 refundPeriodDuration;
     uint48 start;
     JBSplit[] splits;
-    uint88 distributionLimit;
     address payable ballkidzFeeProjectTokenAccount;
+    IJBSplitAllocator ballkidzFeeProjectTokenAllocator;
     uint256 attestationStartTime;
     uint256 attestationGracePeriod;
     address defaultAttestationDelegate;

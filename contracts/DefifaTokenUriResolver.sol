@@ -2,19 +2,19 @@
 pragma solidity ^0.8.16;
 
 import "lib/base64/base64.sol";
-import { PRBMath } from "@paulrberg/contracts/math/PRBMath.sol";
-import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
-import { IERC20Metadata } from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
-import { SafeMath } from "@openzeppelin/contracts/utils/math/SafeMath.sol";
-import { JBTokens } from "@jbx-protocol/juice-contracts-v3/contracts/libraries/JBTokens.sol";
-import { IJB721TokenUriResolver } from "@jbx-protocol/juice-721-delegate/contracts/interfaces/IJB721TokenUriResolver.sol";
-import { JBIpfsDecoder } from "@jbx-protocol/juice-721-delegate/contracts/libraries/JBIpfsDecoder.sol";
-import { JB721Tier } from "@jbx-protocol/juice-721-delegate/contracts/structs/JB721Tier.sol";
-import { ITypeface } from "lib/typeface/contracts/interfaces/ITypeface.sol";
-import { IDefifaDelegate } from "./interfaces/IDefifaDelegate.sol";
-import { IDefifaTokenUriResolver } from "./interfaces/IDefifaTokenUriResolver.sol";
-import { DefifaFontImporter } from "./libraries/DefifaFontImporter.sol";
-import { DefifaGamePhase } from "./enums/DefifaGamePhase.sol";
+import {PRBMath} from "@paulrberg/contracts/math/PRBMath.sol";
+import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
+import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
+import {SafeMath} from "@openzeppelin/contracts/utils/math/SafeMath.sol";
+import {JBTokens} from "@jbx-protocol/juice-contracts-v3/contracts/libraries/JBTokens.sol";
+import {IJB721TokenUriResolver} from "@jbx-protocol/juice-721-delegate/contracts/interfaces/IJB721TokenUriResolver.sol";
+import {JBIpfsDecoder} from "@jbx-protocol/juice-721-delegate/contracts/libraries/JBIpfsDecoder.sol";
+import {JB721Tier} from "@jbx-protocol/juice-721-delegate/contracts/structs/JB721Tier.sol";
+import {ITypeface} from "lib/typeface/contracts/interfaces/ITypeface.sol";
+import {IDefifaDelegate} from "./interfaces/IDefifaDelegate.sol";
+import {IDefifaTokenUriResolver} from "./interfaces/IDefifaTokenUriResolver.sol";
+import {DefifaFontImporter} from "./libraries/DefifaFontImporter.sol";
+import {DefifaGamePhase} from "./enums/DefifaGamePhase.sol";
 
 /// @title DefifaTokenUriResolver
 /// @notice Standard Token URIs for Defifa games.
@@ -136,7 +136,7 @@ contract DefifaTokenUriResolver is IDefifaTokenUriResolver, IJB721TokenUriResolv
                 } else if (_gamePhase == DefifaGamePhase.SCORING) {
                     _gamePhaseText = "Awaiting scorecard approval.";
                 } else if (_gamePhase == DefifaGamePhase.COMPLETE) {
-                    _gamePhaseText = "Scorecard approved. Burn to claim reward.";
+                    _gamePhaseText = "Scorecard locked in. Burn to claim reward.";
                 }
 
                 // Keep a reference to the number of tokens outstanding from this tier.

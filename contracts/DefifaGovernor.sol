@@ -1,19 +1,20 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.16;
 
-import { PRBMath } from "@paulrberg/contracts/math/PRBMath.sol";
-import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
-import { Address } from "@openzeppelin/contracts/utils/Address.sol";
-import { JBFundingCycleMetadata } from "@jbx-protocol/juice-contracts-v3/contracts/structs/JBFundingCycleMetadata.sol";
-import { IJBController3_1 } from "@jbx-protocol/juice-contracts-v3/contracts/interfaces/IJBController3_1.sol";
-import { JB721Tier } from "@jbx-protocol/juice-721-delegate/contracts/structs/JB721Tier.sol";
-import { IDefifaDelegate } from "./interfaces/IDefifaDelegate.sol";
-import { IDefifaGovernor } from "./interfaces/IDefifaGovernor.sol";
-import { DefifaScorecard } from "./structs/DefifaScorecard.sol";
-import { DefifaAttestations } from "./structs/DefifaAttestations.sol";
-import { DefifaTierRedemptionWeight } from "./structs/DefifaTierRedemptionWeight.sol";
-import { DefifaScorecardState } from "./enums/DefifaScorecardState.sol";
-import { DefifaDelegate } from "./DefifaDelegate.sol";
+import {PRBMath} from "@paulrberg/contracts/math/PRBMath.sol";
+import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+import {Address} from "@openzeppelin/contracts/utils/Address.sol";
+import {JBFundingCycleMetadata} from "@jbx-protocol/juice-contracts-v3/contracts/structs/JBFundingCycleMetadata.sol";
+import {IJBController3_1} from "@jbx-protocol/juice-contracts-v3/contracts/interfaces/IJBController3_1.sol";
+import {JB721Tier} from "@jbx-protocol/juice-721-delegate/contracts/structs/JB721Tier.sol";
+import {IDefifaDelegate} from "./interfaces/IDefifaDelegate.sol";
+import {IDefifaGovernor} from "./interfaces/IDefifaGovernor.sol";
+import {IDefifaDeployer} from "./interfaces/IDefifaDeployer.sol";
+import {DefifaScorecard} from "./structs/DefifaScorecard.sol";
+import {DefifaAttestations} from "./structs/DefifaAttestations.sol";
+import {DefifaTierRedemptionWeight} from "./structs/DefifaTierRedemptionWeight.sol";
+import {DefifaScorecardState} from "./enums/DefifaScorecardState.sol";
+import {DefifaDelegate} from "./DefifaDelegate.sol";
 
 /// @title DefifaGovernor
 /// @notice Manages the ratification of Defifa scorecards.
@@ -90,7 +91,7 @@ contract DefifaGovernor is Ownable, IDefifaGovernor {
     /// @param _scorecardId The ID of the scorecard to get attestations of.
     /// @return The number of attestations the given scorecard has.
     function attestationCountOf(uint256 _gameId, uint256 _scorecardId) external view returns (uint256) {
-      return _scorecardAttestationsOf[_gameId][_scorecardId].count;
+        return _scorecardAttestationsOf[_gameId][_scorecardId].count;
     }
 
     /// @notice A flag indicating if the given account has already attested to the scorecard.
@@ -99,7 +100,7 @@ contract DefifaGovernor is Ownable, IDefifaGovernor {
     /// @param _account The address to check the attestation status of.
     /// @return A flag indicating if the given account has already attested to the scorecard.
     function hasAttestedTo(uint256 _gameId, uint256 _scorecardId, address _account) external view returns (bool) {
-      return _scorecardAttestationsOf[_gameId][_scorecardId].hasAttested[_account];
+        return _scorecardAttestationsOf[_gameId][_scorecardId].hasAttested[_account];
     }
 
     //*********************************************************************//
@@ -396,6 +397,9 @@ contract DefifaGovernor is Ownable, IDefifaGovernor {
         // Execute the scorecard.
         (bool success, bytes memory returndata) = _metadata.dataSource.call(_calldata);
         Address.verifyCallResult(success, returndata, "BAD_SCORECARD");
+
+        // Fulfill any commitments for the game.
+        IDefifaDeployer(controller.projects().ownerOf(_gameId)).fulfillCommitmentsOf(_gameId);
 
         emit ScorecardRatified(_gameId, scorecardId, msg.sender);
     }

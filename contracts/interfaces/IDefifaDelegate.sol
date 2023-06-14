@@ -1,19 +1,23 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.16;
 
-import { IJBFundingCycleStore } from "@jbx-protocol/juice-contracts-v3/contracts/interfaces/IJBFundingCycleStore.sol";
-import { IJBDirectory } from "@jbx-protocol/juice-contracts-v3/contracts/interfaces/IJBDirectory.sol";
-import { IJB721Delegate } from "@jbx-protocol/juice-721-delegate/contracts/interfaces/IJB721Delegate.sol";
-import { IJBTiered721DelegateStore } from  "@jbx-protocol/juice-721-delegate/contracts/interfaces/IJBTiered721DelegateStore.sol";
-import { IJB721TokenUriResolver } from "@jbx-protocol/juice-721-delegate/contracts/interfaces/IJB721TokenUriResolver.sol";
-import { JB721TierParams } from "@jbx-protocol/juice-721-delegate/contracts/structs/JB721TierParams.sol";
-import { JBTiered721SetTierDelegatesData } from "@jbx-protocol/juice-721-delegate/contracts/structs/JBTiered721SetTierDelegatesData.sol";
-import { JBTiered721MintReservesForTiersData } from "@jbx-protocol/juice-721-delegate/contracts/structs/JBTiered721MintReservesForTiersData.sol";
-import { JBTiered721MintForTiersData } from "@jbx-protocol/juice-721-delegate/contracts/structs/JBTiered721MintForTiersData.sol";
-import { JB721PricingParams } from "@jbx-protocol/juice-721-delegate/contracts/structs/JB721PricingParams.sol";
-import { DefifaTierRedemptionWeight } from "./../structs/DefifaTierRedemptionWeight.sol";
-import { IDefifaGamePhaseReporter } from "./IDefifaGamePhaseReporter.sol";
-import { IDefifaGamePotReporter } from "./IDefifaGamePotReporter.sol";
+import {IJBFundingCycleStore} from "@jbx-protocol/juice-contracts-v3/contracts/interfaces/IJBFundingCycleStore.sol";
+import {IJBDirectory} from "@jbx-protocol/juice-contracts-v3/contracts/interfaces/IJBDirectory.sol";
+import {IJB721Delegate} from "@jbx-protocol/juice-721-delegate/contracts/interfaces/IJB721Delegate.sol";
+import {IJBTiered721DelegateStore} from
+    "@jbx-protocol/juice-721-delegate/contracts/interfaces/IJBTiered721DelegateStore.sol";
+import {IJB721TokenUriResolver} from "@jbx-protocol/juice-721-delegate/contracts/interfaces/IJB721TokenUriResolver.sol";
+import {JB721TierParams} from "@jbx-protocol/juice-721-delegate/contracts/structs/JB721TierParams.sol";
+import {JBTiered721SetTierDelegatesData} from
+    "@jbx-protocol/juice-721-delegate/contracts/structs/JBTiered721SetTierDelegatesData.sol";
+import {JBTiered721MintReservesForTiersData} from
+    "@jbx-protocol/juice-721-delegate/contracts/structs/JBTiered721MintReservesForTiersData.sol";
+import {JBTiered721MintForTiersData} from
+    "@jbx-protocol/juice-721-delegate/contracts/structs/JBTiered721MintForTiersData.sol";
+import {JB721PricingParams} from "@jbx-protocol/juice-721-delegate/contracts/structs/JB721PricingParams.sol";
+import {DefifaTierRedemptionWeight} from "./../structs/DefifaTierRedemptionWeight.sol";
+import {IDefifaGamePhaseReporter} from "./IDefifaGamePhaseReporter.sol";
+import {IDefifaGamePotReporter} from "./IDefifaGamePotReporter.sol";
 
 interface IDefifaDelegate is IJB721Delegate {
     event Mint(

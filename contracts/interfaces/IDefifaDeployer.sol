@@ -1,15 +1,16 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import { IJBTiered721DelegateDeployer } from "@jbx-protocol/juice-721-delegate/contracts/interfaces/IJBTiered721DelegateDeployer.sol";
-import { IJBController3_1 } from "@jbx-protocol/juice-contracts-v3/contracts/interfaces/IJBController3_1.sol";
-import { IJB721TokenUriResolver } from "@jbx-protocol/juice-721-delegate/contracts/interfaces/IJB721TokenUriResolver.sol";
-import { IJBDelegatesRegistry } from "@jbx-protocol/juice-delegates-registry/src/interfaces/IJBDelegatesRegistry.sol";
-import { DefifaLaunchProjectData } from "../structs/DefifaLaunchProjectData.sol";
-import { DefifaTimeData } from "../structs/DefifaTimeData.sol";
-import { DefifaDistributionOpsData } from "../structs/DefifaDistributionOpsData.sol";
-import { IDefifaDelegate } from "./IDefifaDelegate.sol";
-import { IDefifaGovernor} from "./IDefifaGovernor.sol";
+import {IJBTiered721DelegateDeployer} from
+    "@jbx-protocol/juice-721-delegate/contracts/interfaces/IJBTiered721DelegateDeployer.sol";
+import {IJBController3_1} from "@jbx-protocol/juice-contracts-v3/contracts/interfaces/IJBController3_1.sol";
+import {JBSplit} from "@jbx-protocol/juice-contracts-v3/contracts/structs/JBSplit.sol";
+import {IJB721TokenUriResolver} from "@jbx-protocol/juice-721-delegate/contracts/interfaces/IJB721TokenUriResolver.sol";
+import {IJBDelegatesRegistry} from "@jbx-protocol/juice-delegates-registry/src/interfaces/IJBDelegatesRegistry.sol";
+import {DefifaLaunchProjectData} from "../structs/DefifaLaunchProjectData.sol";
+import {DefifaOpsData} from "../structs/DefifaOpsData.sol";
+import {IDefifaDelegate} from "./IDefifaDelegate.sol";
+import {IDefifaGovernor} from "./IDefifaGovernor.sol";
 
 interface IDefifaDeployer {
     event LaunchGame(
@@ -20,7 +21,9 @@ interface IDefifaDeployer {
         address caller
     );
 
-    function SPLIT_DOMAIN() external view returns (uint256);
+    event DistributeToSplit(JBSplit split, uint256 amount, address defaultBeneficiary, address caller);
+
+    function splitGroup() external view returns (uint256);
 
     function ballkidzProjectId() external view returns (uint256);
 
@@ -38,9 +41,11 @@ interface IDefifaDeployer {
 
     function feeDivisor() external view returns (uint256);
 
-    function timesFor(uint256 _gameId) external view returns (DefifaTimeData memory);
+    function hasFulfilledCommitments(uint256 _gameID) external view returns (bool);
 
-    function distributionOpsOf(uint256 _gameId) external view returns (DefifaDistributionOpsData memory);
+    function timesFor(uint256 _gameId) external view returns (uint48, uint24, uint24);
+
+    function tokenOf(uint256 _gameId) external view returns (address);
 
     function nextPhaseNeedsQueueing(uint256 _gameId) external view returns (bool);
 
@@ -49,4 +54,6 @@ interface IDefifaDeployer {
     function queueNextPhaseOf(uint256 _projectId) external returns (uint256 configuration);
 
     function claimProtocolProjectToken() external;
+
+    function fulfillCommitmentsOf(uint256 _gameId) external;
 }

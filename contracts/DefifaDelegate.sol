@@ -1,32 +1,38 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.16;
 
-import { PRBMath } from "@paulrberg/contracts/math/PRBMath.sol";
-import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
-import { Checkpoints } from "@openzeppelin/contracts/utils/Checkpoints.sol";
-import { JBFundingCycleMetadataResolver } from "@jbx-protocol/juice-contracts-v3/contracts/libraries/JBFundingCycleMetadataResolver.sol";
-import { JBRedeemParamsData } from "@jbx-protocol/juice-contracts-v3/contracts/structs/JBRedeemParamsData.sol";
-import { JBDidRedeemData } from "@jbx-protocol/juice-contracts-v3/contracts/structs/JBDidRedeemData.sol";
-import { JBDidPayData } from "@jbx-protocol/juice-contracts-v3/contracts/structs/JBDidPayData.sol";
-import { JBRedemptionDelegateAllocation } from "@jbx-protocol/juice-contracts-v3/contracts/structs/JBRedemptionDelegateAllocation.sol";
-import { JBFundingCycle } from "@jbx-protocol/juice-contracts-v3/contracts/structs/JBFundingCycle.sol";
-import { IJBFundingCycleStore } from "@jbx-protocol/juice-contracts-v3/contracts/interfaces/IJBFundingCycleStore.sol";
-import { IJBDirectory } from "@jbx-protocol/juice-contracts-v3/contracts/interfaces/IJBDirectory.sol";
-import { IJBPaymentTerminal } from "@jbx-protocol/juice-contracts-v3/contracts/interfaces/IJBPaymentTerminal.sol";
-import { ERC721 } from "@jbx-protocol/juice-721-delegate/contracts/abstract/ERC721.sol";
-import { JB721Delegate } from "@jbx-protocol/juice-721-delegate/contracts/abstract/JB721Delegate.sol";
-import { IJB721TokenUriResolver } from "@jbx-protocol/juice-721-delegate/contracts/interfaces/IJB721TokenUriResolver.sol";
-import { IJBTiered721DelegateStore } from "@jbx-protocol/juice-721-delegate/contracts/interfaces/IJBTiered721DelegateStore.sol";
-import { JBTiered721FundingCycleMetadataResolver } from "@jbx-protocol/juice-721-delegate/contracts/libraries/JBTiered721FundingCycleMetadataResolver.sol";
-import { JB721TierParams } from "@jbx-protocol/juice-721-delegate/contracts/structs/JB721TierParams.sol";
-import { JB721Tier } from "@jbx-protocol/juice-721-delegate/contracts/structs/JB721Tier.sol";
-import { JBTiered721MintReservesForTiersData } from "@jbx-protocol/juice-721-delegate/contracts/structs/JBTiered721MintReservesForTiersData.sol";
-import { JBTiered721SetTierDelegatesData } from "@jbx-protocol/juice-721-delegate/contracts/structs/JBTiered721SetTierDelegatesData.sol";
-import { IDefifaDelegate } from "./interfaces/IDefifaDelegate.sol";
-import { IDefifaGamePhaseReporter } from "./interfaces/IDefifaGamePhaseReporter.sol";
-import { IDefifaGamePotReporter } from "./interfaces/IDefifaGamePotReporter.sol";
-import { DefifaTierRedemptionWeight } from "./structs/DefifaTierRedemptionWeight.sol";
-import { DefifaGamePhase } from "./enums/DefifaGamePhase.sol";
+import {PRBMath} from "@paulrberg/contracts/math/PRBMath.sol";
+import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+import {Checkpoints} from "@openzeppelin/contracts/utils/Checkpoints.sol";
+import {JBFundingCycleMetadataResolver} from
+    "@jbx-protocol/juice-contracts-v3/contracts/libraries/JBFundingCycleMetadataResolver.sol";
+import {JBRedeemParamsData} from "@jbx-protocol/juice-contracts-v3/contracts/structs/JBRedeemParamsData.sol";
+import {JBDidRedeemData} from "@jbx-protocol/juice-contracts-v3/contracts/structs/JBDidRedeemData.sol";
+import {JBDidPayData} from "@jbx-protocol/juice-contracts-v3/contracts/structs/JBDidPayData.sol";
+import {JBRedemptionDelegateAllocation} from
+    "@jbx-protocol/juice-contracts-v3/contracts/structs/JBRedemptionDelegateAllocation.sol";
+import {JBFundingCycle} from "@jbx-protocol/juice-contracts-v3/contracts/structs/JBFundingCycle.sol";
+import {IJBFundingCycleStore} from "@jbx-protocol/juice-contracts-v3/contracts/interfaces/IJBFundingCycleStore.sol";
+import {IJBDirectory} from "@jbx-protocol/juice-contracts-v3/contracts/interfaces/IJBDirectory.sol";
+import {IJBPaymentTerminal} from "@jbx-protocol/juice-contracts-v3/contracts/interfaces/IJBPaymentTerminal.sol";
+import {ERC721} from "@jbx-protocol/juice-721-delegate/contracts/abstract/ERC721.sol";
+import {JB721Delegate} from "@jbx-protocol/juice-721-delegate/contracts/abstract/JB721Delegate.sol";
+import {IJB721TokenUriResolver} from "@jbx-protocol/juice-721-delegate/contracts/interfaces/IJB721TokenUriResolver.sol";
+import {IJBTiered721DelegateStore} from
+    "@jbx-protocol/juice-721-delegate/contracts/interfaces/IJBTiered721DelegateStore.sol";
+import {JBTiered721FundingCycleMetadataResolver} from
+    "@jbx-protocol/juice-721-delegate/contracts/libraries/JBTiered721FundingCycleMetadataResolver.sol";
+import {JB721TierParams} from "@jbx-protocol/juice-721-delegate/contracts/structs/JB721TierParams.sol";
+import {JB721Tier} from "@jbx-protocol/juice-721-delegate/contracts/structs/JB721Tier.sol";
+import {JBTiered721MintReservesForTiersData} from
+    "@jbx-protocol/juice-721-delegate/contracts/structs/JBTiered721MintReservesForTiersData.sol";
+import {JBTiered721SetTierDelegatesData} from
+    "@jbx-protocol/juice-721-delegate/contracts/structs/JBTiered721SetTierDelegatesData.sol";
+import {IDefifaDelegate} from "./interfaces/IDefifaDelegate.sol";
+import {IDefifaGamePhaseReporter} from "./interfaces/IDefifaGamePhaseReporter.sol";
+import {IDefifaGamePotReporter} from "./interfaces/IDefifaGamePotReporter.sol";
+import {DefifaTierRedemptionWeight} from "./structs/DefifaTierRedemptionWeight.sol";
+import {DefifaGamePhase} from "./enums/DefifaGamePhase.sol";
 
 /// @title DefifaDelegate
 /// @notice A delegate that transforms Juicebox treasury interactions into a Defifa game.
@@ -716,7 +722,8 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate {
 
             // Set the payer as the attestation delegate by default.
             if (_attestationDelegate == address(0)) {
-                _attestationDelegate = defaultAttestationDelegate != address(0) ? defaultAttestationDelegate : _data.payer;
+                _attestationDelegate =
+                    defaultAttestationDelegate != address(0) ? defaultAttestationDelegate : _data.payer;
             }
 
             // Make sure something is being minted.
@@ -812,7 +819,10 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate {
     /// @param _to The account to transfer tier attestation units to.
     /// @param _tierId The ID of the tier for which attestation units are being transferred.
     /// @param _amount The amount of attestation units to delegate.
-    function _transferTierAttestationUnits(address _from, address _to, uint256 _tierId, uint256 _amount) internal virtual {
+    function _transferTierAttestationUnits(address _from, address _to, uint256 _tierId, uint256 _amount)
+        internal
+        virtual
+    {
         // If minting, add to the total tier checkpoints.
         if (_from == address(0)) _totalTierCheckpoints[_tierId].push(_add, _amount);
 
