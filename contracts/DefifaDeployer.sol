@@ -601,7 +601,7 @@ contract DefifaDeployer is
     /// @param _percent The percent fee to charge.
     function changeFee(uint256 _percent) external onlyOwner {
         // Make sure the fee is not greater than 5%.
-        if (_percent > 5) revert INVALID_FEE_PERCENT();
+        if (_percent > 10) revert INVALID_FEE_PERCENT();
 
         // Set the fee divisor.
         feeDivisor = 100 / _percent;
