@@ -303,8 +303,23 @@ contract DefifaDeployer is
             // Keep a reference to the split percent.
             uint256 _feePercent = JBConstants.SPLITS_TOTAL_PERCENT / feeDivisor;
 
+            // Keep a reference to the number of splits.
+            uint256 _numberOfSplits = _launchProjectData.splits.length;
+
+            // Make a new splits where fees will be added to.
+            JBSplit[] memory _splits = new JBSplit[](_launchProjectData.splits.length + 1);
+
+            // Copy the splits over.
+            for (uint256 _i; _i < _numberOfSplits;) {
+              // Copy the split over.
+              _splits[_i] = _launchProjectData.splits[_i];  
+              unchecked {
+                ++_i;
+              }
+            }
+
             // Add a split for the Ballkidz fee.
-            _launchProjectData.splits[_launchProjectData.splits.length] = JBSplit({
+            _splits[_numberOfSplits] = JBSplit({
                 preferClaimed: true,
                 preferAddToBalance: false,
                 percent: _feePercent,
@@ -316,9 +331,9 @@ contract DefifaDeployer is
 
             // Store the splits.
             JBGroupedSplits[] memory _groupedSplits = new JBGroupedSplits[](1);
-            _groupedSplits[0] = JBGroupedSplits({group: splitGroup, splits: _launchProjectData.splits});
+            _groupedSplits[0] = JBGroupedSplits({group: splitGroup, splits: _splits});
 
-            // This contract must have SET_SPLITS operator permissions.
+            // This contract must have SET_SPLITS (index 18) operator permissions.
             controller.splitsStore().set(ballkidzProjectId, gameId, _groupedSplits);
         }
 
