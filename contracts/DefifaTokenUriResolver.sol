@@ -143,9 +143,15 @@ contract DefifaTokenUriResolver is IDefifaTokenUriResolver, IJB721TokenUriResolv
                 uint256 _totalMinted = _tier.initialQuantity - _tier.remainingQuantity;
 
                 if (_gamePhase == DefifaGamePhase.MINT) {
-                    _rarityText = string(abi.encodePacked(_totalMinted.toString(), " minted so far"));
+                    _rarityText = string(
+                        abi.encodePacked(_totalMinted.toString(), _totalMinted == 1 ? " card so far" : " cards so far")
+                    );
                 } else {
-                    _rarityText = string(abi.encodePacked(_totalMinted.toString(), " in existence"));
+                    _rarityText = string(
+                        abi.encodePacked(
+                            _totalMinted.toString(), _totalMinted == 1 ? " card in existence" : " cards in existence"
+                        )
+                    );
                 }
 
                 if (_gamePhase == DefifaGamePhase.SCORING || _gamePhase == DefifaGamePhase.COMPLETE) {
@@ -175,7 +181,7 @@ contract DefifaTokenUriResolver is IDefifaTokenUriResolver, IJB721TokenUriResolv
                 _gameId.toString(),
                 " | POT: ",
                 _potText,
-                " | MINTS: ",
+                " | CARDS: ",
                 _delegate.store().totalSupplyOf(address(_delegate)).toString(),
                 "</text>",
                 '<text x="10" y="50" style="font-size:16px; font-family: Capsules-500; font-weight:500; fill: #ed017c;">',
