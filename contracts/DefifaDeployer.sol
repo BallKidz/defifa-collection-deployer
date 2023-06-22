@@ -635,7 +635,7 @@ contract DefifaDeployer is
 
         // Claim any $JBX that's unclaimed.
         if (_unclaimedJbx != 0) {
-          controller.tokenStore().claimTokensFor(address(this), 1, _unclaimedJbx);
+          controller.tokenStore().claimFor(address(this), 1, _unclaimedJbx);
         } 
 
         // Get a reference to the $JBX token.
