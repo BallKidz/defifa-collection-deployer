@@ -622,14 +622,25 @@ contract DefifaDeployer is
         // Get the game's current metadata.
         (, JBFundingCycleMetadata memory _metadata) = controller.currentFundingCycleOf(_gameId);
 
-        // Get a reference to the $DEFIFA and $JBX tokens.
+        // Get a reference to the $DEFIFA token.
         IERC20 _defifaToken = IDefifaDelegate(_metadata.dataSource).defifaToken();
-        IERC20 _jbxToken = IDefifaDelegate(_metadata.dataSource).jbxToken();
 
         // Transfer the amount of $DEFIFA tokens aquired to the delegate.
         if (_defifaToken.balanceOf(address(this)) != 0) {
             _defifaToken.transferFrom(msg.sender, _metadata.dataSource, _defifaToken.balanceOf(address(this)));
         }
+
+        // Get a reference to any unclaimed JBX.          
+        uint256 _unclaimedJbx = controller.tokenStore().unclaimedBalanceOf(address(this), 1);
+
+        // Claim any $JBX that's unclaimed.
+        if (_unclaimedJbx != 0) {
+          controller.tokenStore().claimTokensFor(address(this), 1, _unclaimedJbx);
+        } 
+
+        // Get a reference to the $JBX token.
+        IERC20 _jbxToken = IDefifaDelegate(_metadata.dataSource).jbxToken();
+
         // Transfer the amount of $JBX tokens aquired to the delegate.
         if (_jbxToken.balanceOf(address(this)) != 0) {
             _jbxToken.transferFrom(msg.sender, _metadata.dataSource, _jbxToken.balanceOf(address(this)));
