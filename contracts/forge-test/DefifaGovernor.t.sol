@@ -29,7 +29,7 @@ import "@jbx-protocol/juice-721-delegate/contracts/JBTiered721DelegateStore.sol"
 //         JBDelegatesRegistry _registry = new JBDelegatesRegistry();
 //         DefifaTokenUriResolver _tokenURIResolver = new DefifaTokenUriResolver(ITypeface(address(0)));
 //         address _protocolFeeProjectTokenAccount = 0x1000000000000000000000000000000000000000;
-//         uint256 _ballkidzProjectId = 1;
+//         uint256 _defifaProjectId = 1;
 //         address _owner = 0x1000000000000000000000000000000000000000;
 //         deployer = new DefifaDeployer(
 //       address(_delegate),
@@ -38,7 +38,7 @@ import "@jbx-protocol/juice-721-delegate/contracts/JBTiered721DelegateStore.sol"
 //       _jbController,
 //       IJBDelegatesRegistry(address(_registry)),
 //       _protocolFeeProjectTokenAccount,
-//       _ballkidzProjectId,
+//       _defifaProjectId,
 //       _owner
 //     );
 //     }

@@ -2,5 +2,10 @@
 pragma solidity ^0.8.16;
 
 interface IDefifaGamePotReporter {
-    function currentGamePotOf(uint256 gameId) external view returns (uint256, address, uint256);
+    function fulfilledCommitmentsOf(uint256 gameId) external view returns (uint256);
+
+    function currentGamePotOf(uint256 gameId, bool includeCommitments)
+        external
+        view
+        returns (uint256, address, uint256);
 }

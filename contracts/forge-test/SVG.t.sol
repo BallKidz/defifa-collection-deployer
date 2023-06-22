@@ -3,6 +3,7 @@ pragma solidity ^0.8.16;
 
 import "forge-std/Test.sol";
 
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/proxy/Clones.sol";
 import "@jbx-protocol/juice-contracts-v3/contracts/libraries/JBTokens.sol";
 import "@jbx-protocol/juice-contracts-v3/contracts/interfaces/IJBDirectory.sol";
@@ -26,8 +27,18 @@ contract GamePhaseReporter is IDefifaGamePhaseReporter {
 }
 
 contract GamePotReporter is IDefifaGamePotReporter {
-    function currentGamePotOf(uint256 _gameId) external pure returns (uint256, address, uint256) {
+    function fulfilledCommitmentsOf(uint256 _gameId) external pure returns (uint256) {
         _gameId;
+        return 0;
+    }
+
+    function currentGamePotOf(uint256 _gameId, bool _includeCommitments)
+        external
+        pure
+        returns (uint256, address, uint256)
+    {
+        _gameId;
+        _includeCommitments;
         return (106900000000000000, JBTokens.ETH, 18);
     }
 }
@@ -52,7 +63,7 @@ contract SVGTest is Test {
     }
 
     function testWithTierImage() public {
-        IDefifaDelegate _delegate = DefifaDelegate(Clones.clone(address(new DefifaDelegate())));
+        IDefifaDelegate _delegate = DefifaDelegate(Clones.clone(address(new DefifaDelegate(IERC20(address(0))))));
         IJB721TokenUriResolver _resolver = new DefifaTokenUriResolver(_typeface);
         IDefifaGamePhaseReporter _gamePhaseReporter = new GamePhaseReporter();
         IDefifaGamePotReporter _gamePotReporter = new GamePotReporter();
@@ -104,7 +115,7 @@ contract SVGTest is Test {
     event K(bytes4 k);
 
     function testWithOutTierImage() public {
-        IDefifaDelegate _delegate = DefifaDelegate(Clones.clone(address(new DefifaDelegate())));
+        IDefifaDelegate _delegate = DefifaDelegate(Clones.clone(address(new DefifaDelegate(IERC20(address(0))))));
         DefifaTokenUriResolver _resolver = new DefifaTokenUriResolver(_typeface);
         IDefifaGamePhaseReporter _gamePhaseReporter = new GamePhaseReporter();
         IDefifaGamePotReporter _gamePotReporter = new GamePotReporter();

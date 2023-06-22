@@ -25,7 +25,7 @@ interface IDefifaDeployer {
 
     function splitGroup() external view returns (uint256);
 
-    function ballkidzProjectId() external view returns (uint256);
+    function defifaProjectId() external view returns (uint256);
 
     function delegateCodeOrigin() external view returns (address);
 
@@ -40,8 +40,6 @@ interface IDefifaDeployer {
     function delegatesRegistry() external view returns (IJBDelegatesRegistry);
 
     function feeDivisor() external view returns (uint256);
-
-    function hasFulfilledCommitments(uint256 _gameID) external view returns (bool);
 
     function timesFor(uint256 _gameId) external view returns (uint48, uint24, uint24);
 

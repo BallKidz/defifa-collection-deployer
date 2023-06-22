@@ -107,13 +107,13 @@ contract DefifaGovernor is Ownable, IDefifaGovernor {
     /// @param _gameDelegate The address where the game is being played.
     /// @param _tierWeights The weights of each tier in the scorecard.
     function scorecardIdOf(address _gameDelegate, DefifaTierRedemptionWeight[] calldata _tierWeights)
-        external 
+        external
         pure
         virtual
         override
         returns (uint256)
     {
-        return _hashScorecardOf(_gameDelegate, _buildScorecardCalldataFor(_tierWeights)); 
+        return _hashScorecardOf(_gameDelegate, _buildScorecardCalldataFor(_tierWeights));
     }
 
     //*********************************************************************//
@@ -198,20 +198,19 @@ contract DefifaGovernor is Ownable, IDefifaGovernor {
 
         for (uint256 _i; _i < _numbeOfTiers;) {
             // Get a reference to the tier.
-            _tier =
-                IDefifaDelegate(_metadata.dataSource).store().tierOf(_metadata.dataSource, _i + 1, false);
+            _tier = IDefifaDelegate(_metadata.dataSource).store().tierOf(_metadata.dataSource, _i + 1, false);
 
             // If there are tokens minted from the tier, take its voting power into consideration.
             if (_tier.initialQuantity > _tier.remainingQuantity) {
-              _elligibleTierWeights += MAX_ATTESTATION_POWER_TIER;
+                _elligibleTierWeights += MAX_ATTESTATION_POWER_TIER;
             }
 
             unchecked {
-              ++_i;
+                ++_i;
             }
         }
 
-        // 50% of all minted tiers. 
+        // 50% of all minted tiers.
         return _elligibleTierWeights / 2;
     }
 
@@ -449,13 +448,7 @@ contract DefifaGovernor is Ownable, IDefifaGovernor {
     /// @notice A value representing the contents of a scorecard.
     /// @param _gameDelegate The address where the game is being played.
     /// @param _calldata The calldata that will be sent if the scorecard is ratified.
-    function _hashScorecardOf(address _gameDelegate, bytes memory _calldata)
-        internal 
-        pure
-        virtual
-        returns (uint256)
-    {
+    function _hashScorecardOf(address _gameDelegate, bytes memory _calldata) internal pure virtual returns (uint256) {
         return uint256(keccak256(abi.encode(_gameDelegate, _calldata)));
     }
-
 }

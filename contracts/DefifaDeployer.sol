@@ -110,7 +110,7 @@ contract DefifaDeployer is
 
     /// @notice The project ID relative to which splits are stored.
     /// @dev The owner of this project ID must give this contract operator permissions over the SET_SPLITS operation.
-    uint256 public immutable override ballkidzProjectId;
+    uint256 public immutable override defifaProjectId;
 
     /// @notice The original code for the Defifa delegate to base subsequent instances on.
     address public immutable override delegateCodeOrigin;
@@ -138,9 +138,9 @@ contract DefifaDeployer is
     /// @dev This is equal to 100 divided by the fee percent.
     uint256 public override feeDivisor = 20;
 
-    /// @notice A flag indicating if a game's commitments have been fulfilled.
+    /// @notice The amount of commitments a game has fulfilled.
     /// @dev The ID of the game to check.
-    mapping(uint256 => bool) public override hasFulfilledCommitments;
+    mapping(uint256 => uint256) public override fulfilledCommitmentsOf;
 
     //*********************************************************************//
     // ------------------------- external views -------------------------- //
@@ -165,10 +165,15 @@ contract DefifaDeployer is
 
     /// @notice The current pot the game is being played with.
     /// @param _gameId The ID of the game for which the pot apply.
+    /// @param _includeCommitments A flag indicating if the portion of the pot committed to fulfill preprogrammed obligations should be included.
     /// @return The game's pot amount, as a fixed point number.
     /// @return The token address the game's pot is measured in.
     /// @return The number of decimals included in the amount.
-    function currentGamePotOf(uint256 _gameId) external view returns (uint256, address, uint256) {
+    function currentGamePotOf(uint256 _gameId, bool _includeCommitments)
+        external
+        view
+        returns (uint256, address, uint256)
+    {
         // Get a reference to the token being used by the project.
         address _token = _opsOf[_gameId].token;
 
@@ -176,9 +181,12 @@ contract DefifaDeployer is
         IJBPaymentTerminal _terminal = controller.directory().primaryTerminalOf(_gameId, _token);
 
         // Get the current balance.
-        uint256 _pot = IJBPayoutRedemptionPaymentTerminal3_1(address(_terminal)).store().currentOverflowOf(
+        uint256 _pot = IJBPayoutRedemptionPaymentTerminal3_1(address(_terminal)).store().balanceOf(
             IJBSingleTokenPaymentTerminal(address(_terminal)), _gameId
         );
+
+        // Add any fulfilled commitments.
+        if (_includeCommitments) _pot += fulfilledCommitmentsOf[_gameId];
 
         return (_pot, _token, IJBSingleTokenPaymentTerminal(address(_terminal)).decimals());
     }
@@ -187,9 +195,9 @@ contract DefifaDeployer is
     /// @param _gameId The ID of the game to get the queue status of.
     /// @return Whether or not the next phase still needs queuing.
     function nextPhaseNeedsQueueing(uint256 _gameId) external view override returns (bool) {
-        // Get the project's current funding cycle along with its metadata.
+        // Get the game's current funding cycle along with its metadata.
         JBFundingCycle memory _currentFundingCycle = controller.fundingCycleStore().currentOf(_gameId);
-        // Get the project's queued funding cycle along with its metadata.
+        // Get the game's queued funding cycle along with its metadata.
         JBFundingCycle memory _queuedFundingCycle = controller.fundingCycleStore().queuedOf(_gameId);
 
         // If the configurations are the same and the game hasn't ended, queueing is still needed.
@@ -206,7 +214,7 @@ contract DefifaDeployer is
     /// @param _gameId The ID of the game to get the phase number of.
     /// @return The game phase.
     function currentGamePhaseOf(uint256 _gameId) public view override returns (DefifaGamePhase) {
-        // Get the project's current funding cycle along with its metadata.
+        // Get the game's current funding cycle along with its metadata.
         (JBFundingCycle memory _currentFundingCycle, JBFundingCycleMetadata memory _metadata) =
             controller.currentFundingCycleOf(_gameId);
 
@@ -231,7 +239,7 @@ contract DefifaDeployer is
     /// @param _controller The controller to use to launch the game from.
     /// @param _delegatesRegistry The contract storing references to the deployer of each delegate.
     /// @param _protocolFeeProjectTokenAccount The address that should be forwarded JBX accumulated in this contract from game fund distributions.
-    /// @param _ballkidzProjectId The ID of the project that should take the fee from the games.
+    /// @param _defifaProjectId The ID of the project that should take the fee from the games.
     /// @param _owner The address that can change the fees.
     constructor(
         address _delegateCodeOrigin,
@@ -240,7 +248,7 @@ contract DefifaDeployer is
         IJBController3_1 _controller,
         IJBDelegatesRegistry _delegatesRegistry,
         address _protocolFeeProjectTokenAccount,
-        uint256 _ballkidzProjectId,
+        uint256 _defifaProjectId,
         address _owner
     ) {
         delegateCodeOrigin = _delegateCodeOrigin;
@@ -249,7 +257,7 @@ contract DefifaDeployer is
         controller = _controller;
         protocolFeeProjectTokenAccount = _protocolFeeProjectTokenAccount;
         delegatesRegistry = _delegatesRegistry;
-        ballkidzProjectId = _ballkidzProjectId;
+        defifaProjectId = _defifaProjectId;
         splitGroup = uint256(uint160(address(this)));
         _transferOwnership(_owner);
     }
@@ -258,8 +266,8 @@ contract DefifaDeployer is
     // ---------------------- external transactions ---------------------- //
     //*********************************************************************//
 
-    /// This contract must be payable to receive overflow allowance to settle commitments. 
-    receive() external payable { }
+    /// This contract must be payable to receive overflow allowance to settle commitments.
+    receive() external payable {}
 
     /// @notice Launches a new game owned by this contract with a DefifaDelegate attached.
     /// @param _launchProjectData Data necessary to fulfill the transaction to launch a game.
@@ -303,41 +311,41 @@ contract DefifaDeployer is
                 start: _launchProjectData.start
             });
 
-            // Keep a reference to the split percent.
-            uint256 _feePercent = JBConstants.SPLITS_TOTAL_PERCENT / feeDivisor;
-
             // Keep a reference to the number of splits.
             uint256 _numberOfSplits = _launchProjectData.splits.length;
 
-            // Make a new splits where fees will be added to.
-            JBSplit[] memory _splits = new JBSplit[](_launchProjectData.splits.length + 1);
+            // If there are splits being added, store the fee alongside. The fee will otherwise be added later.
+            if (_numberOfSplits != 0) {
+                // Make a new splits where fees will be added to.
+                JBSplit[] memory _splits = new JBSplit[](_launchProjectData.splits.length + 1);
 
-            // Copy the splits over.
-            for (uint256 _i; _i < _numberOfSplits;) {
-              // Copy the split over.
-              _splits[_i] = _launchProjectData.splits[_i];  
-              unchecked {
-                ++_i;
-              }
+                // Copy the splits over.
+                for (uint256 _i; _i < _numberOfSplits;) {
+                    // Copy the split over.
+                    _splits[_i] = _launchProjectData.splits[_i];
+                    unchecked {
+                        ++_i;
+                    }
+                }
+
+                // Add a split for the fee.
+                _splits[_numberOfSplits] = JBSplit({
+                    preferClaimed: true,
+                    preferAddToBalance: false,
+                    percent: JBConstants.SPLITS_TOTAL_PERCENT / feeDivisor,
+                    projectId: defifaProjectId,
+                    beneficiary: payable(address(this)),
+                    lockedUntil: 0,
+                    allocator: IJBSplitAllocator(address(0))
+                });
+
+                // Store the splits.
+                JBGroupedSplits[] memory _groupedSplits = new JBGroupedSplits[](1);
+                _groupedSplits[0] = JBGroupedSplits({group: splitGroup, splits: _splits});
+
+                // This contract must have SET_SPLITS (index 18) operator permissions.
+                controller.splitsStore().set(defifaProjectId, gameId, _groupedSplits);
             }
-
-            // Add a split for the Ballkidz fee.
-            _splits[_numberOfSplits] = JBSplit({
-                preferClaimed: true,
-                preferAddToBalance: false,
-                percent: _feePercent,
-                projectId: ballkidzProjectId,
-                beneficiary: _launchProjectData.ballkidzFeeProjectTokenAccount,
-                lockedUntil: 0,
-                allocator: _launchProjectData.ballkidzFeeProjectTokenAllocator
-            });
-
-            // Store the splits.
-            JBGroupedSplits[] memory _groupedSplits = new JBGroupedSplits[](1);
-            _groupedSplits[0] = JBGroupedSplits({group: splitGroup, splits: _splits});
-
-            // This contract must have SET_SPLITS (index 18) operator permissions.
-            controller.splitsStore().set(ballkidzProjectId, gameId, _groupedSplits);
         }
 
         // Keep track of the number of tiers.
@@ -434,7 +442,7 @@ contract DefifaDeployer is
     /// @param _gameId The ID of the project having funding cycles reconfigured.
     /// @return configuration The configuration of the funding cycle that was successfully reconfigured.
     function queueNextPhaseOf(uint256 _gameId) external override returns (uint256 configuration) {
-        // Get the project's current funding cycle along with its metadata.
+        // Get the game's current funding cycle along with its metadata.
         (JBFundingCycle memory _currentFundingCycle, JBFundingCycleMetadata memory _metadata) =
             controller.currentFundingCycleOf(_gameId);
 
@@ -446,7 +454,7 @@ contract DefifaDeployer is
             return _queueNoContest(_gameId, _metadata.dataSource);
         }
 
-        // Get the project's queued funding cycle.
+        // Get the game's queued funding cycle.
         (JBFundingCycle memory _queuedFundingCycle,) = controller.queuedFundingCycleOf(_gameId);
 
         // Make sure the next game phase isn't already queued.
@@ -479,7 +487,7 @@ contract DefifaDeployer is
     /// @param _gameId The ID of the game to fulfill splits for.
     function fulfillCommitmentsOf(uint256 _gameId) external virtual override {
         // Make sure commitments haven't already been fulfilled.
-        if (hasFulfilledCommitments[_gameId]) return;
+        if (fulfilledCommitmentsOf[_gameId] != 0) return;
 
         // Make sure the game's commitments can be fulfilled.
         {
@@ -489,11 +497,25 @@ contract DefifaDeployer is
             }
         }
 
-        // Set the flag to prevent duplicate fulfillments.
-        hasFulfilledCommitments[_gameId] = true;
+        // Temporarily set the commitments value to prevent duplicate fulfillments in re-entrance.
+        fulfilledCommitmentsOf[_gameId] = 1;
 
         // Get the splits for the game.
-        JBSplit[] memory _splits = controller.splitsStore().splitsOf(ballkidzProjectId, _gameId, splitGroup);
+        JBSplit[] memory _splits = controller.splitsStore().splitsOf(defifaProjectId, _gameId, splitGroup);
+
+        if (_splits.length == 0) {
+            // Add a split for the fee if it isn't included already.
+            _splits = new JBSplit[](1);
+            _splits[0] = JBSplit({
+                preferClaimed: true,
+                preferAddToBalance: false,
+                percent: JBConstants.SPLITS_TOTAL_PERCENT / feeDivisor,
+                projectId: defifaProjectId,
+                beneficiary: payable(address(this)),
+                lockedUntil: 0,
+                allocator: IJBSplitAllocator(address(0))
+            });
+        }
 
         // Get a reference to the token being used by the game.
         address _token = _opsOf[_gameId].token;
@@ -505,7 +527,7 @@ contract DefifaDeployer is
         IJBPaymentTerminal _terminal = _directory.primaryTerminalOf(_gameId, _token);
 
         // Get the current pot.
-        uint256 _pot = IJBPayoutRedemptionPaymentTerminal3_1(address(_terminal)).store().currentOverflowOf(
+        uint256 _pot = IJBPayoutRedemptionPaymentTerminal3_1(address(_terminal)).store().balanceOf(
             IJBSingleTokenPaymentTerminal(address(_terminal)), _gameId
         );
 
@@ -610,8 +632,24 @@ contract DefifaDeployer is
             }
         }
 
-        // Add leftover amount back into the game's pot.
-        _addToBalanceOf(_directory, _gameId, _token, _leftoverAmount, _decimals, "Pot", bytes(""));
+        if (_leftoverAmount != 0) {
+            // Add leftover amount back into the game's pot.
+            _addToBalanceOf(_directory, _gameId, _token, _leftoverAmount, _decimals, "Pot", bytes(""));
+        }
+
+        // Get the game's current metadata.
+        (, JBFundingCycleMetadata memory _metadata) = controller.currentFundingCycleOf(_gameId);
+
+        // Get a reference to the $DEFIFA token.
+        IERC20 _defifaToken = IDefifaDelegate(_metadata.dataSource).defifaToken();
+
+        // Transfer the amount of $DEFIFA tokens aquired to the delegate.
+        if (_defifaToken.balanceOf(address(this)) != 0) {
+            _defifaToken.transferFrom(msg.sender, _metadata.dataSource, _defifaToken.balanceOf(address(this)));
+        }
+
+        // Set the amount of fulfillments for this game.
+        fulfilledCommitmentsOf[_gameId] = _pot - _leftoverAmount;
     }
 
     /// @notice Allow this contract's owner to change the publishing fee.
@@ -888,7 +926,7 @@ contract DefifaDeployer is
         view
         returns (bool)
     {
-        // Get the project's previously configured funding cycle.
+        // Get the game's previously configured funding cycle.
         (JBFundingCycle memory _previouslyConfiguredFundingCycle,) =
             controller.getFundingCycleOf(_gameId, _currentFundingCycle.basedOn);
 
@@ -899,7 +937,7 @@ contract DefifaDeployer is
     }
 
     /// @notice Make a payment to the specified project.
-    /// @param _directory The directory to look for a project's terminal in.
+    /// @param _directory The directory to look for a game's terminal in.
     /// @param _projectId The ID of the project that is being paid.
     /// @param _token The token being paid in.
     /// @param _amount The amount of tokens being paid, as a fixed point number.
@@ -951,7 +989,7 @@ contract DefifaDeployer is
     }
 
     /// @notice Add to the balance of the specified project.
-    /// @param _directory The directory to look for a project's terminal in.
+    /// @param _directory The directory to look for a game's terminal in.
     /// @param _projectId The ID of the project that is being paid.
     /// @param _token The token being paid in.
     /// @param _amount The amount of tokens being paid, as a fixed point number. If the token is ETH, this is ignored and msg.value is used in its place.

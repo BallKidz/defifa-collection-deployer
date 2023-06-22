@@ -27,7 +27,9 @@ interface IDefifaGovernor {
 
     function ratifiedScorecardIdOf(uint256 gameId) external view returns (uint256);
 
-    function scorecardIdOf(address _gameDelegate, DefifaTierRedemptionWeight[] calldata _tierWeights) external returns (uint256); 
+    function scorecardIdOf(address _gameDelegate, DefifaTierRedemptionWeight[] calldata _tierWeights)
+        external
+        returns (uint256);
 
     function stateOf(uint256 gameId, uint256 scorecardId) external view returns (DefifaScorecardState);
 

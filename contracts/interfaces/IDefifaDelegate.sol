@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.16;
 
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IJBFundingCycleStore} from "@jbx-protocol/juice-contracts-v3/contracts/interfaces/IJBFundingCycleStore.sol";
 import {IJBDirectory} from "@jbx-protocol/juice-contracts-v3/contracts/interfaces/IJBDirectory.sol";
 import {IJB721Delegate} from "@jbx-protocol/juice-721-delegate/contracts/interfaces/IJB721Delegate.sol";
@@ -40,6 +41,8 @@ interface IDefifaDelegate is IJB721Delegate {
 
     function TOTAL_REDEMPTION_WEIGHT() external view returns (uint256);
 
+    function defifaToken() external view returns (IERC20);
+
     function name() external view returns (string memory);
 
     function redemptionWeightOf(uint256 tokenId) external view returns (uint256);
@@ -59,6 +62,8 @@ interface IDefifaDelegate is IJB721Delegate {
     function gamePotReporter() external view returns (IDefifaGamePotReporter);
 
     function amountRedeemed() external view returns (uint256);
+
+    function defifaTokenAllocation() external view returns (uint256);
 
     function tierNameOf(uint256 tierId) external view returns (string memory);
 
@@ -86,6 +91,8 @@ interface IDefifaDelegate is IJB721Delegate {
     function getTierTotalAttestationUnitsOf(uint256 tier) external view returns (uint256);
 
     function getPastTierTotalAttestationUnitsOf(uint256 tier, uint256 blockNumber) external view returns (uint256);
+
+    function defifaTokensClaimableFor(uint256[] memory _tokenIds) external view returns (uint256 amount);
 
     function setTierDelegateTo(address delegatee, uint256 tierId) external;
 

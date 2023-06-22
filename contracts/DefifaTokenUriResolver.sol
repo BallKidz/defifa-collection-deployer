@@ -115,7 +115,7 @@ contract DefifaTokenUriResolver is IDefifaTokenUriResolver, IJB721TokenUriResolv
 
                 // Keep a reference to the game pot.
                 (uint256 _gamePot, address _gamePotToken, uint256 _gamePotDecimals) =
-                    _delegate.gamePotReporter().currentGamePotOf(_gameId);
+                    _delegate.gamePotReporter().currentGamePotOf(_gameId, false);
 
                 // Include the amount redeemed.
                 _gamePot = _gamePot + _delegate.amountRedeemed();

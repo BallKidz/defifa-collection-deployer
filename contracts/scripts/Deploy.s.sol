@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.16;
 
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@jbx-protocol/juice-delegates-registry/src/interfaces/IJBDelegatesRegistry.sol";
 import "@jbx-protocol/juice-contracts-v3/contracts/libraries/JBTokens.sol";
 import "@jbx-protocol/juice-721-delegate/contracts/interfaces/IJBTiered721DelegateStore.sol";
@@ -17,7 +18,9 @@ contract DeployMainnet is Script {
     IJBDelegatesRegistry _delegateRegistry = IJBDelegatesRegistry(0x7A53cAA1dC4d752CAD283d039501c0Ee45719FaC);
     ITypeface _typeface = ITypeface(0xA77b7D93E79f1E6B4f77FaB29d9ef85733A3D44A);
 
-    uint256 _ballkidzProjectId = 369;
+    uint256 _defifaProjectId = 369;
+
+    IERC20 _token = IERC20(address(_controller.tokenStore().tokenOf(_defifaProjectId)));
 
     uint256 _blockTime = 12;
 
@@ -25,7 +28,7 @@ contract DeployMainnet is Script {
         vm.startBroadcast();
 
         // Deploy the codeOrigin for the delegate.
-        DefifaDelegate _defifaDelegateCodeOrigin = new DefifaDelegate();
+        DefifaDelegate _defifaDelegateCodeOrigin = new DefifaDelegate(_token);
 
         // Deploy the token uri resolver.
         DefifaTokenUriResolver _defifaTokenUriResolver = new DefifaTokenUriResolver(_typeface);
@@ -41,7 +44,7 @@ contract DeployMainnet is Script {
           _controller,
           _delegateRegistry,
           _defifaBallkidz,
-          _ballkidzProjectId,
+          _defifaProjectId,
           _defifaBallkidz
         );
 
@@ -58,7 +61,9 @@ contract DeployGoerli is Script {
     IJBDelegatesRegistry _delegateRegistry = IJBDelegatesRegistry(0xCe3Ebe8A7339D1f7703bAF363d26cD2b15D23C23);
     ITypeface _typeface = ITypeface(0x8Df17136B20DA6D1E23dB2DCdA8D20Aa4ebDcda7);
 
-    uint256 _ballkidzProjectId = 1;
+    uint256 _defifaProjectId = 1;
+
+    IERC20 _token = IERC20(address(_controller.tokenStore().tokenOf(_defifaProjectId)));
 
     uint256 _blockTime = 12;
 
@@ -66,7 +71,7 @@ contract DeployGoerli is Script {
         vm.startBroadcast();
 
         // Deploy the codeOrigin for the delegate
-        DefifaDelegate _defifaDelegateCodeOrigin = new DefifaDelegate();
+        DefifaDelegate _defifaDelegateCodeOrigin = new DefifaDelegate(_token);
 
         // Deploy the token uri resolver.
         DefifaTokenUriResolver _defifaTokenUriResolver = new DefifaTokenUriResolver(_typeface);
@@ -82,7 +87,7 @@ contract DeployGoerli is Script {
           _controller,
           _delegateRegistry,
           _defifaBallkidz,
-          _ballkidzProjectId,
+          _defifaProjectId,
           _defifaBallkidz
         );
 

@@ -4,6 +4,7 @@ pragma solidity ^0.8.16;
 import {PRBMath} from "@paulrberg/contracts/math/PRBMath.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {Checkpoints} from "@openzeppelin/contracts/utils/Checkpoints.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {JBFundingCycleMetadataResolver} from
     "@jbx-protocol/juice-contracts-v3/contracts/libraries/JBFundingCycleMetadataResolver.sol";
 import {JBRedeemParamsData} from "@jbx-protocol/juice-contracts-v3/contracts/structs/JBRedeemParamsData.sol";
@@ -13,6 +14,7 @@ import {JBRedemptionDelegateAllocation} from
     "@jbx-protocol/juice-contracts-v3/contracts/structs/JBRedemptionDelegateAllocation.sol";
 import {JBFundingCycle} from "@jbx-protocol/juice-contracts-v3/contracts/structs/JBFundingCycle.sol";
 import {IJBFundingCycleStore} from "@jbx-protocol/juice-contracts-v3/contracts/interfaces/IJBFundingCycleStore.sol";
+import {IJBSplitAllocator} from "@jbx-protocol/juice-contracts-v3/contracts/interfaces/IJBSplitAllocator.sol";
 import {IJBDirectory} from "@jbx-protocol/juice-contracts-v3/contracts/interfaces/IJBDirectory.sol";
 import {IJBPaymentTerminal} from "@jbx-protocol/juice-contracts-v3/contracts/interfaces/IJBPaymentTerminal.sol";
 import {ERC721} from "@jbx-protocol/juice-721-delegate/contracts/abstract/ERC721.sol";
@@ -102,6 +104,13 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate {
     mapping(uint256 => Checkpoints.History) internal _totalTierCheckpoints;
 
     //*********************************************************************//
+    // ---------------- public immutable stored properties --------------- //
+    //*********************************************************************//
+
+    /// @notice The $DEFIFA token that is expected to be issued from paying fees.
+    IERC20 public immutable override defifaToken;
+
+    //*********************************************************************//
     // --------------------- public stored properties -------------------- //
     //*********************************************************************//
 
@@ -138,7 +147,11 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate {
     /// @notice The amount that has been redeemed from ths game, refunds are not counted.
     uint256 public override amountRedeemed;
 
-    /// @notice The amount of tokens that have been redeemed from a tier, refunds are not counted
+    /// @notice The amount of $DEFIFA tokens this game was allocated from paying the network fee.
+    uint256 public override defifaTokenAllocation;
+
+    /// @notice The amount of tokens that have been redeemed from a tier, refunds are not counted.
+    /// @custom:param The tier from which tokens have been redeemed.
     mapping(uint256 => uint256) public override tokensRedeemedFrom;
 
     //*********************************************************************//
@@ -338,7 +351,6 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate {
             for (uint256 _i; _i < _numberOfTokenIds;) {
                 unchecked {
                     reclaimAmount += store.tierOfTokenId(address(this), _decodedTokenIds[_i], false).price;
-
                     _i++;
                 }
             }
@@ -356,6 +368,53 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate {
         );
     }
 
+    /// @notice The amount of $DEFIFA tokens claimable for a set of token IDs.
+    /// @param _tokenIds The IDs of the tokens that justify a $DEFIFA claim.
+    /// @return amount The amount of $DEFIFA that can be claimed.
+    function defifaTokensClaimableFor(uint256[] memory _tokenIds) public view returns (uint256 amount) {
+        // Get a reference to the $DEFIFA token.
+        IERC20 _defifaToken = defifaToken;
+
+        // Get a reference to the current $DEFIFA balance in this contract.
+        uint256 _currentDefifaTokenBalance = _defifaToken.balanceOf(address(this));
+
+        // If there's no $DEFIFA in this contract, return 0.
+        if (_currentDefifaTokenBalance == 0) return 0;
+
+        // Set the amount of total $DEFIFA token allocation if it hasn't been set yet.
+        uint256 _defifaTokenAllocation =
+            (defifaTokenAllocation != 0) ? defifaTokenAllocation : _currentDefifaTokenBalance;
+
+        // Get a reference to the game's current pot, including any fulfilled commitments.
+        (uint256 _pot,,) = gamePotReporter.currentGamePotOf(projectId, true);
+
+        // If there's no usable pot left, the rest of the $DEFIFA is available.
+        if (_pot - gamePotReporter.fulfilledCommitmentsOf(projectId) == 0) {
+            amount = _currentDefifaTokenBalance;
+        } else {
+            // Keep a reference to the number of tokens being used for claims.
+            uint256 _numberOfTokens = _tokenIds.length;
+
+            // Keep a reference to the tier being iterated on.
+            JB721Tier memory _tier;
+
+            // Keep a reference to the cumulative price of the tokens.
+            uint256 _cumulativePrice;
+
+            // Add up the prices of the tokens.
+            for (uint256 _i; _i < _numberOfTokens;) {
+                _tier = store.tierOfTokenId(address(this), _tokenIds[_i], false);
+                _cumulativePrice += _tier.price;
+                unchecked {
+                    ++_i;
+                }
+            }
+
+            // The amount of $DEFIFA to send is the same proportion as the amount being redeemed to the total pot before any amount redeemed.
+            amount = PRBMath.mulDiv(_defifaTokenAllocation, _cumulativePrice, _pot + amountRedeemed);
+        }
+    }
+
     /// @notice Indicates if this contract adheres to the specified interface.
     /// @dev See {IERC165-supportsInterface}.
     /// @param _interfaceId The ID of the interface to check for adherence to.
@@ -367,8 +426,10 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate {
     // -------------------------- constructor ---------------------------- //
     //*********************************************************************//
 
-    constructor() {
+    /// @notice The $DEFIFA token that is expected to be issued from paying fees.
+    constructor(IERC20 _defifaToken) {
         codeOrigin = address(this);
+        defifaToken = _defifaToken;
     }
 
     //*********************************************************************//
@@ -627,7 +688,12 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate {
         _didBurn(_decodedTokenIds);
 
         // Increment the amount redeemed if this is the complete phase.
-        if (_isComplete) amountRedeemed += _data.reclaimedAmount.value;
+        if (_isComplete) {
+            amountRedeemed += _data.reclaimedAmount.value;
+
+            // Claim any $DEFIFA tokens available.
+            _claimDefifaTokensFor(_data.holder, _decodedTokenIds);
+        }
     }
 
     /// @notice Mint reserved tokens within the tier for the provided value.
@@ -901,6 +967,24 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate {
                 ++_i;
             }
         }
+    }
+
+    /// @notice Claim $DEFIFA tokens to an account for a certain redeemed amount.
+    /// @param _beneficiary The beneficiary of the $DEFIFA tokens.
+    /// @param _tokenIds The IDs of the tokens being redeemed that are justifying a $DEFIFA claim.
+    /// @return amount The amount of $DEFIFA being claimed.
+    function _claimDefifaTokensFor(address _beneficiary, uint256[] memory _tokenIds)
+        internal
+        returns (uint256 amount)
+    {
+        // Set the amount of total $DEFIFA token allocation if it hasn't been set yet.
+        if (defifaTokenAllocation == 0) defifaTokenAllocation = defifaToken.balanceOf(address(this));
+
+        // Get a reference to the amount to send.
+        amount = defifaTokensClaimableFor(_tokenIds);
+
+        // Send the tokens.
+        defifaToken.transfer(_beneficiary, amount);
     }
 
     /// @notice User the hook to register the first owner if it's not yet registered.
