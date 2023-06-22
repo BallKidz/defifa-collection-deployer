@@ -51,7 +51,5 @@ interface IDefifaDeployer {
 
     function queueNextPhaseOf(uint256 _projectId) external returns (uint256 configuration);
 
-    function claimProtocolProjectToken() external;
-
     function fulfillCommitmentsOf(uint256 _gameId) external;
 }

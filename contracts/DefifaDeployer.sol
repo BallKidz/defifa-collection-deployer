@@ -24,6 +24,7 @@ import {JBSplit} from "@jbx-protocol/juice-contracts-v3/contracts/structs/JBSpli
 import {IJBAllowanceTerminal3_1} from
     "@jbx-protocol/juice-contracts-v3/contracts/interfaces/IJBAllowanceTerminal3_1.sol";
 import {IJBDirectory} from "@jbx-protocol/juice-contracts-v3/contracts/interfaces/IJBDirectory.sol";
+import {IJBFeeHoldingTerminal} from "@jbx-protocol/juice-contracts-v3/contracts/interfaces/IJBFeeHoldingTerminal.sol";
 import {IJBPayoutRedemptionPaymentTerminal3_1} from
     "@jbx-protocol/juice-contracts-v3/contracts/interfaces/IJBPayoutRedemptionPaymentTerminal3_1.sol";
 import {IJBSplitAllocator} from "@jbx-protocol/juice-contracts-v3/contracts/interfaces/IJBSplitAllocator.sol";
@@ -76,16 +77,6 @@ contract DefifaDeployer is
     error PHASE_ALREADY_QUEUED();
     error SPLITS_DONT_ADD_UP();
     error UNEXPECTED_TERMINAL_CURRENCY();
-
-    //*********************************************************************//
-    // ----------------------- internal constants ------------------------ //
-    //*********************************************************************//
-
-    /// @notice The ID of the project that takes fees upon distribution.
-    uint256 internal constant _PROTOCOL_FEE_PROJECT = 1;
-
-    /// @notice Useful for the deploy flow to get memory management right.
-    uint256 internal constant _DEPLOY_BYTECODE_LENGTH = 13;
 
     //*********************************************************************//
     // ----------------------- internal properties ----------------------- //
@@ -470,19 +461,6 @@ contract DefifaDeployer is
         }
     }
 
-    /// @notice Move accumulated protocol project tokens from paying fees into the recipient.
-    /// @dev This contract accumulated JBX as games distribute payouts.
-    function claimProtocolProjectToken() external override {
-        // Get the number of protocol project tokens this contract has allocated.
-        // Send the token from the protocol project to the specified account.
-        controller.tokenStore().transferFrom(
-            address(this),
-            _PROTOCOL_FEE_PROJECT,
-            protocolFeeProjectTokenAccount,
-            controller.tokenStore().unclaimedBalanceOf(address(this), _PROTOCOL_FEE_PROJECT)
-        );
-    }
-
     /// @notice Fulfill split amounts between all splits for a game.
     /// @param _gameId The ID of the game to fulfill splits for.
     function fulfillCommitmentsOf(uint256 _gameId) external virtual override {
@@ -583,6 +561,7 @@ contract DefifaDeployer is
                             _token,
                             _splitAmount,
                             _terminal.decimalsForToken(_token),
+                            true,
                             string.concat("Payout from Defifa game #", _gameId.toString()),
                             bytes("")
                         );
@@ -634,33 +613,30 @@ contract DefifaDeployer is
 
         if (_leftoverAmount != 0) {
             // Add leftover amount back into the game's pot.
-            _addToBalanceOf(_directory, _gameId, _token, _leftoverAmount, _decimals, "Pot", bytes(""));
+            _addToBalanceOf(_directory, _gameId, _token, _leftoverAmount, _decimals, true, "Game pot", bytes(""));
+
+            // Process any held fees.
+            IJBPayoutRedemptionPaymentTerminal3_1(address(_terminal)).processFees(_gameId);
         }
 
         // Get the game's current metadata.
         (, JBFundingCycleMetadata memory _metadata) = controller.currentFundingCycleOf(_gameId);
 
-        // Get a reference to the $DEFIFA token.
+        // Get a reference to the $DEFIFA and $JBX tokens.
         IERC20 _defifaToken = IDefifaDelegate(_metadata.dataSource).defifaToken();
+        IERC20 _jbxToken = IDefifaDelegate(_metadata.dataSource).jbxToken();
 
         // Transfer the amount of $DEFIFA tokens aquired to the delegate.
         if (_defifaToken.balanceOf(address(this)) != 0) {
             _defifaToken.transferFrom(msg.sender, _metadata.dataSource, _defifaToken.balanceOf(address(this)));
         }
+        // Transfer the amount of $JBX tokens aquired to the delegate.
+        if (_jbxToken.balanceOf(address(this)) != 0) {
+            _jbxToken.transferFrom(msg.sender, _metadata.dataSource, _jbxToken.balanceOf(address(this)));
+        }
 
         // Set the amount of fulfillments for this game.
         fulfilledCommitmentsOf[_gameId] = _pot - _leftoverAmount;
-    }
-
-    /// @notice Allow this contract's owner to change the publishing fee.
-    /// @dev The max fee is %5.
-    /// @param _percent The percent fee to charge.
-    function changeFee(uint256 _percent) external onlyOwner {
-        // Make sure the fee is not greater than 5%.
-        if (_percent > 10) revert INVALID_FEE_PERCENT();
-
-        // Set the fee divisor.
-        feeDivisor = 100 / _percent;
     }
 
     /// @notice Allows this contract to receive 721s.
@@ -841,7 +817,8 @@ contract DefifaDeployer is
                 allowMinting: false,
                 allowTerminalMigration: false,
                 allowControllerMigration: false,
-                holdFees: false,
+                // Hold fees. They will be processed once commitments have been fulfilled.
+                holdFees: true,
                 preferClaimedTokenOverride: false,
                 useTotalOverflowForRedemptions: false,
                 useDataSourceForPay: true,
@@ -994,6 +971,7 @@ contract DefifaDeployer is
     /// @param _token The token being paid in.
     /// @param _amount The amount of tokens being paid, as a fixed point number. If the token is ETH, this is ignored and msg.value is used in its place.
     /// @param _decimals The number of decimals in the `_amount` fixed point number. If the token is ETH, this is ignored and 18 is used in its place, which corresponds to the amount of decimals expected in msg.value.
+    /// @param _preferRefundHeldFees A flag indicating if held fees should be refunded based on the amount being added.
     /// @param _memo A memo to pass along to the emitted event.
     /// @param _metadata Extra data to pass along to the terminal.
     function _addToBalanceOf(
@@ -1002,6 +980,7 @@ contract DefifaDeployer is
         address _token,
         uint256 _amount,
         uint256 _decimals,
+        bool _preferRefundHeldFees,
         string memory _memo,
         bytes memory _metadata
     ) internal virtual {
@@ -1020,7 +999,11 @@ contract DefifaDeployer is
         // If the token is ETH, send it in msg.value.
         uint256 _payableValue = _token == JBTokens.ETH ? _amount : 0;
 
-        // Add to balance so tokens don't get issued.
-        _terminal.addToBalanceOf{value: _payableValue}(_projectId, _amount, _token, _memo, _metadata);
+          // Add to balance so tokens don't get issued.
+        if (_preferRefundHeldFees && _terminal.supportsInterface(type(IJBFeeHoldingTerminal).interfaceId)) {
+          IJBFeeHoldingTerminal(address(_terminal)).addToBalanceOf{value: _payableValue}(_projectId, _amount, _token, true, _memo, _metadata);
+        } else {
+          _terminal.addToBalanceOf{value: _payableValue}(_projectId, _amount, _token, _memo, _metadata);
+        }
     }
 }

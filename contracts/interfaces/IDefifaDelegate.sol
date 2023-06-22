@@ -43,6 +43,8 @@ interface IDefifaDelegate is IJB721Delegate {
 
     function defifaToken() external view returns (IERC20);
 
+    function jbxToken() external view returns (IERC20);
+
     function name() external view returns (string memory);
 
     function redemptionWeightOf(uint256 tokenId) external view returns (uint256);
@@ -63,7 +65,7 @@ interface IDefifaDelegate is IJB721Delegate {
 
     function amountRedeemed() external view returns (uint256);
 
-    function defifaTokenAllocation() external view returns (uint256);
+    function tokenAllocations() external view returns (uint256, uint256);
 
     function tierNameOf(uint256 tierId) external view returns (string memory);
 
@@ -92,7 +94,7 @@ interface IDefifaDelegate is IJB721Delegate {
 
     function getPastTierTotalAttestationUnitsOf(uint256 tier, uint256 blockNumber) external view returns (uint256);
 
-    function defifaTokensClaimableFor(uint256[] memory _tokenIds) external view returns (uint256 amount);
+    function tokensClaimableFor(uint256[] memory _tokenIds) external view returns (uint256, uint256);
 
     function setTierDelegateTo(address delegatee, uint256 tierId) external;
 

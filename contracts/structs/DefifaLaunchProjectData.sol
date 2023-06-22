@@ -21,9 +21,6 @@ import {DefifaOpsData} from "./DefifaOpsData.sol";
 /// @custom:member refundPeriodDuration The time between the mint phase and the start time when mint's are no longer open but refunds are still allowed, measured in seconds.
 /// @custom:member start The time at which the game should start, measured in seconds.
 /// @custom:member splits Splits to distribute funds between during the game's scoring phase.
-/// @custom:member distributionLimit The amount of funds to distribute from the pot during the game's scoring phase.
-/// @custom:member ballkidzFeeProjectTokenAccount The address that should be sent $DEFIFA tokens that are minted from paying the fee.
-/// @custom:member ballkidzFeeProjectTokenAllocator The allocator that should be sent $DEFIFA tokens that are minted from paying the fee. If provided, the `ballkidzFeeProjectTokenAccount` will be sent in the split data to the allocator.
 /// @custom:member attestationStartTime The time the attestations will start for all submitted scorecards, measured in seconds. If in the past, scorecards will start accepting attestations right away.
 /// @custom:member attestationGracePeriod The time period the attestations must be active for once it has started even if it has already reached quorum, measured in seconds.
 /// @custom:member defaultAttestationDelegate The address that'll be set as the attestation delegate by default.
@@ -41,8 +38,6 @@ struct DefifaLaunchProjectData {
     uint24 refundPeriodDuration;
     uint48 start;
     JBSplit[] splits;
-    address payable ballkidzFeeProjectTokenAccount;
-    IJBSplitAllocator ballkidzFeeProjectTokenAllocator;
     uint256 attestationStartTime;
     uint256 attestationGracePeriod;
     address defaultAttestationDelegate;

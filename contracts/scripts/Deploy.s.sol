@@ -20,7 +20,8 @@ contract DeployMainnet is Script {
 
     uint256 _defifaProjectId = 369;
 
-    IERC20 _token = IERC20(address(_controller.tokenStore().tokenOf(_defifaProjectId)));
+    IERC20 _defifaToken = IERC20(address(_controller.tokenStore().tokenOf(_defifaProjectId)));
+    IERC20 _jbxToken = IERC20(address(_controller.tokenStore().tokenOf(_defifaProjectId)));
 
     uint256 _blockTime = 12;
 
@@ -28,7 +29,7 @@ contract DeployMainnet is Script {
         vm.startBroadcast();
 
         // Deploy the codeOrigin for the delegate.
-        DefifaDelegate _defifaDelegateCodeOrigin = new DefifaDelegate(_token);
+        DefifaDelegate _defifaDelegateCodeOrigin = new DefifaDelegate(_defifaToken, _jbxToken);
 
         // Deploy the token uri resolver.
         DefifaTokenUriResolver _defifaTokenUriResolver = new DefifaTokenUriResolver(_typeface);
@@ -63,7 +64,8 @@ contract DeployGoerli is Script {
 
     uint256 _defifaProjectId = 1;
 
-    IERC20 _token = IERC20(address(_controller.tokenStore().tokenOf(_defifaProjectId)));
+    IERC20 _defifaToken = IERC20(address(_controller.tokenStore().tokenOf(_defifaProjectId)));
+    IERC20 _jbxToken = IERC20(address(_controller.tokenStore().tokenOf(_defifaProjectId)));
 
     uint256 _blockTime = 12;
 
@@ -71,7 +73,7 @@ contract DeployGoerli is Script {
         vm.startBroadcast();
 
         // Deploy the codeOrigin for the delegate
-        DefifaDelegate _defifaDelegateCodeOrigin = new DefifaDelegate(_token);
+        DefifaDelegate _defifaDelegateCodeOrigin = new DefifaDelegate(_defifaToken, _jbxToken);
 
         // Deploy the token uri resolver.
         DefifaTokenUriResolver _defifaTokenUriResolver = new DefifaTokenUriResolver(_typeface);
