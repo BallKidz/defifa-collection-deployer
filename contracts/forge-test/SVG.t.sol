@@ -63,7 +63,8 @@ contract SVGTest is Test {
     }
 
     function testWithTierImage() public {
-        IDefifaDelegate _delegate = DefifaDelegate(Clones.clone(address(new DefifaDelegate(IERC20(address(0)), IERC20(address(0))))));
+        IDefifaDelegate _delegate =
+            DefifaDelegate(Clones.clone(address(new DefifaDelegate(IERC20(address(0)), IERC20(address(0))))));
         IJB721TokenUriResolver _resolver = new DefifaTokenUriResolver(_typeface);
         IDefifaGamePhaseReporter _gamePhaseReporter = new GamePhaseReporter();
         IDefifaGamePotReporter _gamePotReporter = new GamePotReporter();
@@ -115,7 +116,8 @@ contract SVGTest is Test {
     event K(bytes4 k);
 
     function testWithOutTierImage() public {
-        IDefifaDelegate _delegate = DefifaDelegate(Clones.clone(address(new DefifaDelegate(IERC20(address(0)), IERC20(address(0))))));
+        IDefifaDelegate _delegate =
+            DefifaDelegate(Clones.clone(address(new DefifaDelegate(IERC20(address(0)), IERC20(address(0))))));
         DefifaTokenUriResolver _resolver = new DefifaTokenUriResolver(_typeface);
         IDefifaGamePhaseReporter _gamePhaseReporter = new GamePhaseReporter();
         IDefifaGamePotReporter _gamePotReporter = new GamePotReporter();

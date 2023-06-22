@@ -999,11 +999,13 @@ contract DefifaDeployer is
         // If the token is ETH, send it in msg.value.
         uint256 _payableValue = _token == JBTokens.ETH ? _amount : 0;
 
-          // Add to balance so tokens don't get issued.
+        // Add to balance so tokens don't get issued.
         if (_preferRefundHeldFees && _terminal.supportsInterface(type(IJBFeeHoldingTerminal).interfaceId)) {
-          IJBFeeHoldingTerminal(address(_terminal)).addToBalanceOf{value: _payableValue}(_projectId, _amount, _token, true, _memo, _metadata);
+            IJBFeeHoldingTerminal(address(_terminal)).addToBalanceOf{value: _payableValue}(
+                _projectId, _amount, _token, true, _memo, _metadata
+            );
         } else {
-          _terminal.addToBalanceOf{value: _payableValue}(_projectId, _amount, _token, _memo, _metadata);
+            _terminal.addToBalanceOf{value: _payableValue}(_projectId, _amount, _token, _memo, _metadata);
         }
     }
 }

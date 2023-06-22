@@ -93,7 +93,7 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate {
 
     /// @notice The amount of $DEFIFA and $JBX tokens this game was allocated from paying the network fee, packed into a uint256.
     uint256 internal _packedTokenAllocation;
-   
+
     /// @notice The first owner of each token ID, stored on first transfer out.
     /// _tokenId The ID of the token to get the stored first owner of.
     mapping(uint256 => address) internal _firstOwnerOf;
@@ -309,18 +309,19 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate {
     /// @return defifaTokenAllocation The $DEFIFA token allocation.
     /// @return jbxTokenAllocation The $JBX token allocation.
     function tokenAllocations() public view returns (uint256 defifaTokenAllocation, uint256 jbxTokenAllocation) {
-      // Get a reference to the pakced token allocation.
-      uint256 _packed = _packedTokenAllocation;
+        // Get a reference to the pakced token allocation.
+        uint256 _packed = _packedTokenAllocation;
 
-      // defifa token allocation in bits 0-127 (128 bits).
-      uint256 _defifaTokenAllocation = uint256(uint128(_packed));
+        // defifa token allocation in bits 0-127 (128 bits).
+        uint256 _defifaTokenAllocation = uint256(uint128(_packed));
 
-      // jbx token allocation in bits 128-255 (128 bits).
-      uint256 _jbxTokenAllocation = uint256(uint128(_packed >> 128));
+        // jbx token allocation in bits 128-255 (128 bits).
+        uint256 _jbxTokenAllocation = uint256(uint128(_packed >> 128));
 
-      // Return the values.
-      defifaTokenAllocation = (_defifaTokenAllocation != 0) ? _defifaTokenAllocation : defifaToken.balanceOf(address(this));
-      jbxTokenAllocation = (_jbxTokenAllocation != 0) ? _jbxTokenAllocation : jbxToken.balanceOf(address(this));
+        // Return the values.
+        defifaTokenAllocation =
+            (_defifaTokenAllocation != 0) ? _defifaTokenAllocation : defifaToken.balanceOf(address(this));
+        jbxTokenAllocation = (_jbxTokenAllocation != 0) ? _jbxTokenAllocation : jbxToken.balanceOf(address(this));
     }
 
     /// @notice Part of IJBFundingCycleDataSource, this function gets called when a project's token holders redeem.
@@ -385,12 +386,16 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate {
     /// @param _tokenIds The IDs of the tokens that justify a $DEFIFA claim.
     /// @return defifaTokenAmount The amount of $DEFIFA that can be claimed.
     /// @return jbxTokenAmount The amount of $JBX that can be claimed.
-    function tokensClaimableFor(uint256[] memory _tokenIds) public view returns (uint256 defifaTokenAmount, uint256 jbxTokenAmount) {
+    function tokensClaimableFor(uint256[] memory _tokenIds)
+        public
+        view
+        returns (uint256 defifaTokenAmount, uint256 jbxTokenAmount)
+    {
         // Set the amount of total $DEFIFA and $JBX token allocation if it hasn't been set yet.
-        (uint256 _defifaTokenAllocation, uint256 _jbxTokenAllocation) = tokenAllocations(); 
+        (uint256 _defifaTokenAllocation, uint256 _jbxTokenAllocation) = tokenAllocations();
 
         // If there's no $DEFIFA in this contract, return 0.
-        if (_defifaTokenAllocation == 0 && _jbxTokenAllocation == 0) return (0,0);
+        if (_defifaTokenAllocation == 0 && _jbxTokenAllocation == 0) return (0, 0);
 
         // Get a reference to the game's current pot, including any fulfilled commitments.
         (uint256 _pot,,) = gamePotReporter.currentGamePotOf(projectId, true);
@@ -983,19 +988,17 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate {
     /// @notice Claim $DEFIFA and $JBX tokens to an account for a certain redeemed amount.
     /// @param _beneficiary The beneficiary of the $DEFIFA tokens.
     /// @param _tokenIds The IDs of the tokens being redeemed that are justifying a $DEFIFA claim.
-    function _claimDefifaTokensFor(address _beneficiary, uint256[] memory _tokenIds)
-        internal
-    {
+    function _claimDefifaTokensFor(address _beneficiary, uint256[] memory _tokenIds) internal {
         // Set the amount of total $DEFIFA token allocation if it hasn't been set yet.
         if (_packedTokenAllocation == 0) {
-          uint256 _packed;
-          // defifa token allocation in bits 0-127 (128 bits).
-          _packed |= defifaToken.balanceOf(address(this));
-          // jbx token allocation in bits 128-255 (48 bits).
-          _packed |= uint256(uint128(jbxToken.balanceOf(address(this)))) << 128;
-          // Store the packed values.
-          _packedTokenAllocation = _packed;
-        } 
+            uint256 _packed;
+            // defifa token allocation in bits 0-127 (128 bits).
+            _packed |= defifaToken.balanceOf(address(this));
+            // jbx token allocation in bits 128-255 (48 bits).
+            _packed |= uint256(uint128(jbxToken.balanceOf(address(this)))) << 128;
+            // Store the packed values.
+            _packedTokenAllocation = _packed;
+        }
 
         // Get a reference to the amounts to send.
         (uint256 _defifaTokenAmount, uint256 _jbxTokenAmount) = tokensClaimableFor(_tokenIds);
