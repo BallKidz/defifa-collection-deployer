@@ -43,7 +43,7 @@ interface IDefifaDelegate is IJB721Delegate {
 
     function defifaToken() external view returns (IERC20);
 
-    function jbxToken() external view returns (IERC20);
+    function baseProtocolToken() external view returns (IERC20);
 
     function name() external view returns (string memory);
 

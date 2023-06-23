@@ -91,9 +91,12 @@ contract DefifaDeployer is IDefifaDeployer, IDefifaGamePhaseReporter, IDefifaGam
     /// @dev This could be any fixed number.
     uint256 public immutable override splitGroup;
 
-    /// @notice The project ID relative to which splits are stored.
+    /// @notice The project ID that'll receive game fees, and relative to which splits are stored.
     /// @dev The owner of this project ID must give this contract operator permissions over the SET_SPLITS operation.
     uint256 public immutable override defifaProjectId;
+
+    /// @notice The project ID that'll receive protocol fees as commitments are fulfilled.
+    uint256 public immutable override baseProtocolProjectId;
 
     /// @notice The original code for the Defifa delegate to base subsequent instances on.
     address public immutable override delegateCodeOrigin;
@@ -219,13 +222,15 @@ contract DefifaDeployer is IDefifaDeployer, IDefifaGamePhaseReporter, IDefifaGam
     /// @param _controller The controller to use to launch the game from.
     /// @param _delegatesRegistry The contract storing references to the deployer of each delegate.
     /// @param _defifaProjectId The ID of the project that should take the fee from the games.
+    /// @param _baseProtocolProjectId The ID of the protocol project that'll receive fees from fulfilling commitments.
     constructor(
         address _delegateCodeOrigin,
         IJB721TokenUriResolver _tokenUriResolver,
         IDefifaGovernor _governor,
         IJBController3_1 _controller,
         IJBDelegatesRegistry _delegatesRegistry,
-        uint256 _defifaProjectId
+        uint256 _defifaProjectId,
+        uint256 _baseProtocolProjectId
     ) {
         delegateCodeOrigin = _delegateCodeOrigin;
         tokenUriResolver = _tokenUriResolver;
@@ -233,6 +238,7 @@ contract DefifaDeployer is IDefifaDeployer, IDefifaGamePhaseReporter, IDefifaGam
         controller = _controller;
         delegatesRegistry = _delegatesRegistry;
         defifaProjectId = _defifaProjectId;
+        baseProtocolProjectId = _baseProtocolProjectId;
         splitGroup = uint256(uint160(address(this)));
     }
 
@@ -535,11 +541,10 @@ contract DefifaDeployer is IDefifaDeployer, IDefifaGamePhaseReporter, IDefifaGam
                     // Trigger the allocator's `allocate` function.
                     try _split.allocator.allocate{value: _payableValue}(_data) {}
                     catch (bytes memory) {
-                        _splitAmount = 0;
-
                         if (_token != JBTokens.ETH) {
                             IERC20(_token).safeDecreaseAllowance(address(_split.allocator), _splitAmount);
                         }
+                        _splitAmount = 0;
                     }
 
                     // Otherwise, if a project is specified, make a payment to it.
@@ -659,23 +664,23 @@ contract DefifaDeployer is IDefifaDeployer, IDefifaGamePhaseReporter, IDefifaGam
             _defifaToken.transferFrom(msg.sender, _metadata.dataSource, _defifaToken.balanceOf(address(this)));
         }
 
-        // Get a reference to any unclaimed JBX.
-        uint256 _unclaimedJbx = controller.tokenStore().unclaimedBalanceOf(address(this), 1);
+        // Get a reference to any unclaimed base protocol tokens.
+        uint256 _unclaimedBaseProtocolTokens = controller.tokenStore().unclaimedBalanceOf(address(this), baseProtocolProjectId);
 
         // Claim any $JBX that's unclaimed.
-        if (_unclaimedJbx != 0) {
-            controller.tokenStore().claimFor(address(this), 1, _unclaimedJbx);
+        if (_unclaimedBaseProtocolTokens != 0) {
+            controller.tokenStore().claimFor(address(this), baseProtocolProjectId, _unclaimedBaseProtocolTokens);
         }
 
-        // Get a reference to the $JBX token.
-        IERC20 _jbxToken = IDefifaDelegate(_metadata.dataSource).jbxToken();
+        // Get a reference to the $BASE_PROTOCOL token.
+        IERC20 _baseProtocolToken = IDefifaDelegate(_metadata.dataSource).baseProtocolToken();
 
-        // Get the jbx balance.
-        uint256 _jbxBalance = _jbxToken.balanceOf(address(this));
+        // Get the $BASE_PROTOCOL token balance.
+        uint256 _baseProtocolBalance = _baseProtocolToken.balanceOf(address(this));
 
         // Transfer the amount of $JBX tokens aquired to the delegate.
-        if (_jbxBalance != 0) {
-            _jbxToken.transferFrom(msg.sender, _metadata.dataSource, _jbxBalance);
+        if (_baseProtocolBalance != 0) {
+            _baseProtocolToken.transferFrom(msg.sender, _metadata.dataSource, _baseProtocolBalance);
         }
 
         // Set the amount of fulfillments for this game.

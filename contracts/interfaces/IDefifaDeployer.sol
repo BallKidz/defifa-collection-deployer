@@ -26,6 +26,8 @@ interface IDefifaDeployer {
     function splitGroup() external view returns (uint256);
 
     function defifaProjectId() external view returns (uint256);
+    
+    function baseProtocolProjectId() external view returns (uint256);
 
     function delegateCodeOrigin() external view returns (address);
 

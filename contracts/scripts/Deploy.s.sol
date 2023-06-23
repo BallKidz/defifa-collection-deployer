@@ -24,10 +24,10 @@ contract DeployMainnet is Script {
     ITypeface _typeface = ITypeface(0xA77b7D93E79f1E6B4f77FaB29d9ef85733A3D44A);
 
     uint256 _defifaProjectId = 369;
-    uint256 _jbxProjectId = 1;
+    uint256 _baseProtocolProjectId = 1;
 
     IERC20 _defifaToken = IERC20(address(_controller.tokenStore().tokenOf(_defifaProjectId)));
-    IERC20 _jbxToken = IERC20(address(_controller.tokenStore().tokenOf(_jbxProjectId)));
+    IERC20 _baseProtocolToken = IERC20(address(_controller.tokenStore().tokenOf(_baseProtocolProjectId)));
 
     uint256 _blockTime = 12;
 
@@ -35,7 +35,7 @@ contract DeployMainnet is Script {
         vm.startBroadcast();
 
         // Deploy the codeOrigin for the delegate.
-        DefifaDelegate _defifaDelegateCodeOrigin = new DefifaDelegate(_defifaToken, _jbxToken);
+        DefifaDelegate _defifaDelegateCodeOrigin = new DefifaDelegate(_defifaToken, _baseProtocolToken);
 
         // Deploy the token uri resolver.
         DefifaTokenUriResolver _defifaTokenUriResolver = new DefifaTokenUriResolver(_typeface);
@@ -50,7 +50,8 @@ contract DeployMainnet is Script {
           _defifaGovernor,
           _controller,
           _delegateRegistry,
-          _defifaProjectId
+          _defifaProjectId,
+          _baseProtocolProjectId
         );
 
         new DefifaProjectOwner(IJBOperatable(address(_controller)).operatorStore(), _controller.projects(), _defifaDeployer);
@@ -66,11 +67,11 @@ contract DeployGoerli is Script {
     IJBDelegatesRegistry _delegateRegistry = IJBDelegatesRegistry(0xCe3Ebe8A7339D1f7703bAF363d26cD2b15D23C23);
     ITypeface _typeface = ITypeface(0x8Df17136B20DA6D1E23dB2DCdA8D20Aa4ebDcda7);
 
-    uint256 _defifaProjectId = 1;
-    uint256 _jbxProjectId = 1;
+    uint256 _defifaProjectId = 1068;
+    uint256 _baseProtocolProjectId = 1;
 
     IERC20 _defifaToken = IERC20(address(_controller.tokenStore().tokenOf(_defifaProjectId)));
-    IERC20 _jbxToken = IERC20(address(_controller.tokenStore().tokenOf(_defifaProjectId)));
+    IERC20 _baseProtocolToken = IERC20(address(_controller.tokenStore().tokenOf(_baseProtocolProjectId)));
 
     uint256 _blockTime = 12;
 
@@ -78,7 +79,7 @@ contract DeployGoerli is Script {
         vm.startBroadcast();
 
         // Deploy the codeOrigin for the delegate
-        DefifaDelegate _defifaDelegateCodeOrigin = new DefifaDelegate(_defifaToken, _jbxToken);
+        DefifaDelegate _defifaDelegateCodeOrigin = new DefifaDelegate(_defifaToken, _baseProtocolToken);
 
         // Deploy the token uri resolver.
         DefifaTokenUriResolver _defifaTokenUriResolver = new DefifaTokenUriResolver(_typeface);
@@ -93,7 +94,8 @@ contract DeployGoerli is Script {
           _defifaGovernor,
           _controller,
           _delegateRegistry,
-          _defifaProjectId
+          _defifaProjectId,
+          _baseProtocolProjectId
         );
 
         _defifaGovernor.transferOwnership(address(_defifaDeployer));
