@@ -2,7 +2,6 @@
 pragma solidity ^0.8.16;
 
 import {PRBMath} from "@paulrberg/contracts/math/PRBMath.sol";
-import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {Address} from "@openzeppelin/contracts/utils/Address.sol";
 import {Clones} from "@openzeppelin/contracts/proxy/Clones.sol";
 import {IERC721Receiver} from "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
@@ -53,13 +52,7 @@ import {DefifaTokenUriResolver} from "./DefifaTokenUriResolver.sol";
 
 /// @title DefifaDeployer
 /// @notice Deploys and manages Defifa games.
-contract DefifaDeployer is
-    Ownable,
-    IDefifaDeployer,
-    IDefifaGamePhaseReporter,
-    IDefifaGamePotReporter,
-    IERC721Receiver
-{
+contract DefifaDeployer is IDefifaDeployer, IDefifaGamePhaseReporter, IDefifaGamePotReporter, IERC721Receiver {
     using Strings for uint256;
     using SafeERC20 for IERC20;
 
@@ -113,9 +106,6 @@ contract DefifaDeployer is
 
     /// @notice The controller with which new projects should be deployed.
     IJBController3_1 public immutable override controller;
-
-    /// @notice The address that should be forwarded JBX accumulated in this contract from game fund distributions.
-    address public immutable override protocolFeeProjectTokenAccount;
 
     /// @notice The delegates registry.
     IJBDelegatesRegistry public immutable delegatesRegistry;
@@ -228,28 +218,22 @@ contract DefifaDeployer is
     /// @param _governor The Defifa governor.
     /// @param _controller The controller to use to launch the game from.
     /// @param _delegatesRegistry The contract storing references to the deployer of each delegate.
-    /// @param _protocolFeeProjectTokenAccount The address that should be forwarded JBX accumulated in this contract from game fund distributions.
     /// @param _defifaProjectId The ID of the project that should take the fee from the games.
-    /// @param _owner The address that can change the fees.
     constructor(
         address _delegateCodeOrigin,
         IJB721TokenUriResolver _tokenUriResolver,
         IDefifaGovernor _governor,
         IJBController3_1 _controller,
         IJBDelegatesRegistry _delegatesRegistry,
-        address _protocolFeeProjectTokenAccount,
-        uint256 _defifaProjectId,
-        address _owner
+        uint256 _defifaProjectId
     ) {
         delegateCodeOrigin = _delegateCodeOrigin;
         tokenUriResolver = _tokenUriResolver;
         governor = _governor;
         controller = _controller;
-        protocolFeeProjectTokenAccount = _protocolFeeProjectTokenAccount;
         delegatesRegistry = _delegatesRegistry;
         defifaProjectId = _defifaProjectId;
         splitGroup = uint256(uint160(address(this)));
-        _transferOwnership(_owner);
     }
 
     //*********************************************************************//
@@ -390,7 +374,7 @@ contract DefifaDeployer is
             _gameId: gameId,
             _directory: controller.directory(),
             _name: _launchProjectData.name,
-            _symbol: string.concat("DEFIFA ", gameId.toString()),
+            _symbol: string.concat("DEFIFA #", gameId.toString()),
             _fundingCycleStore: controller.fundingCycleStore(),
             _baseUri: _launchProjectData.baseUri,
             _tokenUriResolver: _uriResolver,
@@ -519,7 +503,7 @@ contract DefifaDeployer is
             _token: _token,
             _minReturnedTokens: _pot,
             _beneficiary: payable(address(this)),
-            _memo: string.concat("Settling Defifa game #", _gameId.toString()),
+            _memo: string.concat("Settling Defifa game #", _gameId.toString(), "."),
             _metadata: bytes("")
         });
 
@@ -549,60 +533,98 @@ contract DefifaDeployer is
                     uint256 _payableValue = _token == JBTokens.ETH ? _splitAmount : 0;
 
                     // Trigger the allocator's `allocate` function.
-                    _split.allocator.allocate{value: _payableValue}(_data);
+                    try _split.allocator.allocate{value: _payableValue}(_data) {}
+                    catch (bytes memory) {
+                        _splitAmount = 0;
+
+                        if (_token != JBTokens.ETH) {
+                            IERC20(_token).safeDecreaseAllowance(address(_split.allocator), _splitAmount);
+                        }
+                    }
 
                     // Otherwise, if a project is specified, make a payment to it.
                 } else if (_split.projectId != 0) {
-                    if (_split.preferAddToBalance) {
-                        _addToBalanceOf(
-                            _directory,
-                            _split.projectId,
-                            _token,
-                            _splitAmount,
-                            _terminal.decimalsForToken(_token),
-                            string.concat("Payout from Defifa game #", _gameId.toString()),
-                            bytes("")
-                        );
+                    // Find the terminal for the specified project.
+                    IJBPaymentTerminal _splitTerminal = _directory.primaryTerminalOf(_split.projectId, _token);
+
+                    // There must be a terminal.
+                    if (
+                        _splitTerminal == IJBPaymentTerminal(address(0))
+                            || _splitTerminal.decimalsForToken(_token) != _decimals
+                    ) {
+                        _splitAmount = 0;
                     } else {
-                        _pay(
-                            _directory,
-                            _split.projectId,
-                            _token,
-                            _splitAmount,
-                            _terminal.decimalsForToken(_token),
-                            _split.beneficiary != address(0) ? _split.beneficiary : protocolFeeProjectTokenAccount,
-                            0,
-                            _split.preferClaimed,
-                            string.concat("Payout from Defifa game #", _gameId.toString()),
-                            bytes("")
-                        );
+                        // Send the projectId in the metadata.
+                        bytes memory _referralMetadata = new bytes(32);
+                        _referralMetadata = bytes(abi.encodePacked(_gameId));
+
+                        // Approve the `_amount` of tokens from the destination terminal to transfer tokens from this contract.
+                        if (_token != JBTokens.ETH) IERC20(_token).safeApprove(address(_splitTerminal), _splitAmount);
+
+                        // If the token is ETH, send it in msg.value.
+                        uint256 _payableValue = _token == JBTokens.ETH ? _splitAmount : 0;
+
+                        if (_split.preferAddToBalance) {
+                            // Add to balance so tokens don't get issued.
+                            try _splitTerminal.addToBalanceOf{value: _payableValue}(
+                                _split.projectId,
+                                _splitAmount,
+                                _token,
+                                string.concat("Deposit from Defifa game #", _gameId.toString(), "."),
+                                _referralMetadata
+                            ) {} catch (bytes memory) {
+                                if (_token != JBTokens.ETH) {
+                                    IERC20(_token).safeDecreaseAllowance(address(_splitTerminal), _splitAmount);
+                                }
+                                _splitAmount = 0;
+                            }
+                        } else {
+                            // Send funds to the terminal.
+                            // If the token is ETH, send it in msg.value.
+                            try _splitTerminal.pay{value: _payableValue}(
+                                _split.projectId,
+                                _splitAmount,
+                                _token,
+                                _split.beneficiary,
+                                0,
+                                _split.preferClaimed,
+                                string.concat("Payout from Defifa game #", _gameId.toString(), "."),
+                                _referralMetadata
+                            ) {} catch (bytes memory) {
+                                if (_token != JBTokens.ETH) {
+                                    IERC20(_token).safeDecreaseAllowance(address(_splitTerminal), _splitAmount);
+                                }
+                                _splitAmount = 0;
+                            }
+                        }
                     }
-                } else {
+                } else if (_split.beneficiary != address(0)) {
                     // Transfer the ETH.
                     if (_token == JBTokens.ETH) {
                         Address.sendValue(
-                            // Get a reference to the address receiving the tokens. If there's a beneficiary, send the funds directly to the beneficiary. Otherwise send to protocolFeeProjectTokenAccount.
-                            _split.beneficiary != address(0)
-                                ? _split.beneficiary
-                                : payable(protocolFeeProjectTokenAccount),
+                            // Get a reference to the address receiving the tokens. If there's a beneficiary, send the funds directly to the beneficiary.
+                            _split.beneficiary,
                             _splitAmount
                         );
                     }
                     // Or, transfer the ERC20.
                     else {
                         IERC20(_token).safeTransfer(
-                            // Get a reference to the address receiving the tokens. If there's a beneficiary, send the funds directly to the beneficiary. Otherwise send to protocolFeeProjectTokenAccount.
-                            _split.beneficiary != address(0) ? _split.beneficiary : protocolFeeProjectTokenAccount,
+                            // Get a reference to the address receiving the tokens. If there's a beneficiary, send the funds directly to the beneficiary.
+                            _split.beneficiary,
                             _splitAmount
                         );
                     }
+                } else {
+                    // Don't split.
+                    _splitAmount = 0;
                 }
 
                 // Subtract from the amount to be sent to the beneficiary.
                 _leftoverAmount = _leftoverAmount - _splitAmount;
             }
 
-            emit DistributeToSplit(_split, _splitAmount, protocolFeeProjectTokenAccount, msg.sender);
+            emit DistributeToSplit(_split, _splitAmount, msg.sender);
 
             unchecked {
                 ++i;
@@ -610,8 +632,20 @@ contract DefifaDeployer is
         }
 
         if (_leftoverAmount != 0) {
+            // Approve the `_amount` of tokens from the destination terminal to transfer tokens from this contract.
+            if (_token != JBTokens.ETH) IERC20(_token).safeApprove(address(_terminal), _leftoverAmount);
+
+            // If the token is ETH, send it in msg.value.
+            uint256 _payableValue = _token == JBTokens.ETH ? _leftoverAmount : 0;
+
             // Add leftover amount back into the game's pot.
-            _addToBalanceOf(_directory, _gameId, _token, _leftoverAmount, _decimals, "Game pot", bytes(""));
+            _terminal.addToBalanceOf{value: _payableValue}(
+                _gameId,
+                _leftoverAmount,
+                _token,
+                string.concat("Defifa game #", _gameId.toString(), " has been settled."),
+                bytes("")
+            );
         }
 
         // Get the game's current metadata.
@@ -625,20 +659,23 @@ contract DefifaDeployer is
             _defifaToken.transferFrom(msg.sender, _metadata.dataSource, _defifaToken.balanceOf(address(this)));
         }
 
-        // Get a reference to any unclaimed JBX.          
+        // Get a reference to any unclaimed JBX.
         uint256 _unclaimedJbx = controller.tokenStore().unclaimedBalanceOf(address(this), 1);
 
         // Claim any $JBX that's unclaimed.
         if (_unclaimedJbx != 0) {
-          controller.tokenStore().claimFor(address(this), 1, _unclaimedJbx);
-        } 
+            controller.tokenStore().claimFor(address(this), 1, _unclaimedJbx);
+        }
 
         // Get a reference to the $JBX token.
         IERC20 _jbxToken = IDefifaDelegate(_metadata.dataSource).jbxToken();
 
+        // Get the jbx balance.
+        uint256 _jbxBalance = _jbxToken.balanceOf(address(this));
+
         // Transfer the amount of $JBX tokens aquired to the delegate.
-        if (_jbxToken.balanceOf(address(this)) != 0) {
-            _jbxToken.transferFrom(msg.sender, _metadata.dataSource, _jbxToken.balanceOf(address(this)));
+        if (_jbxBalance != 0) {
+            _jbxToken.transferFrom(msg.sender, _metadata.dataSource, _jbxBalance);
         }
 
         // Set the amount of fulfillments for this game.
@@ -916,93 +953,5 @@ contract DefifaDeployer is
         if (_currentFundingCycle.number != _previouslyConfiguredFundingCycle.number + 1) return true;
 
         return false;
-    }
-
-    /// @notice Make a payment to the specified project.
-    /// @param _directory The directory to look for a game's terminal in.
-    /// @param _projectId The ID of the project that is being paid.
-    /// @param _token The token being paid in.
-    /// @param _amount The amount of tokens being paid, as a fixed point number.
-    /// @param _decimals The number of decimals in the `_amount` fixed point number.
-    /// @param _beneficiary The address who will receive tokens from the payment.
-    /// @param _minReturnedTokens The minimum number of project tokens expected in return, as a fixed point number with 18 decimals.
-    /// @param _preferClaimedTokens A flag indicating whether the request prefers to mint project tokens into the beneficiaries wallet rather than leaving them unclaimed. This is only possible if the project has an attached token contract. Leaving them unclaimed saves gas.
-    /// @param _memo A memo to pass along to the emitted event, and passed along the the funding cycle's data source and delegate.  A data source can alter the memo before emitting in the event and forwarding to the delegate.
-    /// @param _metadata Bytes to send along to the data source and delegate, if provided.
-    function _pay(
-        IJBDirectory _directory,
-        uint256 _projectId,
-        address _token,
-        uint256 _amount,
-        uint256 _decimals,
-        address _beneficiary,
-        uint256 _minReturnedTokens,
-        bool _preferClaimedTokens,
-        string memory _memo,
-        bytes memory _metadata
-    ) internal virtual {
-        // Find the terminal for the specified project.
-        IJBPaymentTerminal _terminal = _directory.primaryTerminalOf(_projectId, _token);
-
-        // There must be a terminal.
-        if (_terminal == IJBPaymentTerminal(address(0))) revert TERMINAL_NOT_FOUND();
-
-        // The amount's decimals must match the terminal's expected decimals.
-        if (_terminal.decimalsForToken(_token) != _decimals) revert INCORRECT_DECIMAL_AMOUNT();
-
-        // Approve the `_amount` of tokens from the destination terminal to transfer tokens from this contract.
-        if (_token != JBTokens.ETH) IERC20(_token).safeApprove(address(_terminal), _amount);
-
-        // If the token is ETH, send it in msg.value.
-        uint256 _payableValue = _token == JBTokens.ETH ? _amount : 0;
-
-        // Send funds to the terminal.
-        // If the token is ETH, send it in msg.value.
-        _terminal.pay{value: _payableValue}(
-            _projectId,
-            _amount, // ignored if the token is JBTokens.ETH.
-            _token,
-            _beneficiary,
-            _minReturnedTokens,
-            _preferClaimedTokens,
-            _memo,
-            _metadata
-        );
-    }
-
-    /// @notice Add to the balance of the specified project.
-    /// @param _directory The directory to look for a game's terminal in.
-    /// @param _projectId The ID of the project that is being paid.
-    /// @param _token The token being paid in.
-    /// @param _amount The amount of tokens being paid, as a fixed point number. If the token is ETH, this is ignored and msg.value is used in its place.
-    /// @param _decimals The number of decimals in the `_amount` fixed point number. If the token is ETH, this is ignored and 18 is used in its place, which corresponds to the amount of decimals expected in msg.value.
-    /// @param _memo A memo to pass along to the emitted event.
-    /// @param _metadata Extra data to pass along to the terminal.
-    function _addToBalanceOf(
-        IJBDirectory _directory,
-        uint256 _projectId,
-        address _token,
-        uint256 _amount,
-        uint256 _decimals,
-        string memory _memo,
-        bytes memory _metadata
-    ) internal virtual {
-        // Find the terminal for the specified project.
-        IJBPaymentTerminal _terminal = _directory.primaryTerminalOf(_projectId, _token);
-
-        // There must be a terminal.
-        if (_terminal == IJBPaymentTerminal(address(0))) revert TERMINAL_NOT_FOUND();
-
-        // The amount's decimals must match the terminal's expected decimals.
-        if (_terminal.decimalsForToken(_token) != _decimals) revert INCORRECT_DECIMAL_AMOUNT();
-
-        // Approve the `_amount` of tokens from the destination terminal to transfer tokens from this contract.
-        if (_token != JBTokens.ETH) IERC20(_token).safeApprove(address(_terminal), _amount);
-
-        // If the token is ETH, send it in msg.value.
-        uint256 _payableValue = _token == JBTokens.ETH ? _amount : 0;
-
-        // Add to balance so tokens don't get issued.
-        _terminal.addToBalanceOf{value: _payableValue}(_projectId, _amount, _token, _memo, _metadata);
     }
 }

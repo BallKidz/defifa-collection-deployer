@@ -21,7 +21,7 @@ interface IDefifaDeployer {
         address caller
     );
 
-    event DistributeToSplit(JBSplit split, uint256 amount, address defaultBeneficiary, address caller);
+    event DistributeToSplit(JBSplit split, uint256 amount, address caller);
 
     function splitGroup() external view returns (uint256);
 
@@ -34,8 +34,6 @@ interface IDefifaDeployer {
     function governor() external view returns (IDefifaGovernor);
 
     function controller() external view returns (IJBController3_1);
-
-    function protocolFeeProjectTokenAccount() external view returns (address);
 
     function delegatesRegistry() external view returns (IJBDelegatesRegistry);
 

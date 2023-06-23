@@ -50,7 +50,6 @@ contract SVGTest is Test {
     IJBTiered721DelegateStore _store;
     ITypeface _typeface;
 
-    address defifaBallkidz = address(0);
     address delegateRegistry = address(0);
 
     function setUp() public {
