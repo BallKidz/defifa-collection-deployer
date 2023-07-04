@@ -62,6 +62,7 @@ contract SVGTest is Test {
     }
 
     event K(bytes4 k);
+
     function testWithTierImage() public {
         emit K(type(IDefifaDelegate).interfaceId);
         IDefifaDelegate _delegate =
@@ -164,6 +165,5 @@ contract SVGTest is Test {
         bytes memory res = vm.ffi(inputs);
         res;
         vm.ffi(inputs);
-
     }
 }

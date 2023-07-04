@@ -7,6 +7,10 @@ import {DefifaTierRedemptionWeight} from "../structs/DefifaTierRedemptionWeight.
 import {IDefifaDelegate} from "./IDefifaDelegate.sol";
 
 interface IDefifaGovernor {
+    event GameInitialized(
+        uint256 indexed gameId, uint256 attestationStartTime, uint256 attestationGracePeriod, address caller
+    );
+
     event ScorecardSubmitted(
         uint256 indexed gameId,
         uint256 indexed scorecardId,

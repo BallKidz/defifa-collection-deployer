@@ -431,6 +431,7 @@ contract DefifaDeployer is IDefifaDeployer, IDefifaGamePhaseReporter, IDefifaGam
 
         // Check for no contest.
         if (_noContestInevitable(_gameId, _currentFundingCycle)) {
+            emit QueuedNoContest(_gameId, msg.sender);
             return _queueNoContest(_gameId, _metadata.dataSource);
         }
 
@@ -444,8 +445,10 @@ contract DefifaDeployer is IDefifaDeployer, IDefifaGamePhaseReporter, IDefifaGam
 
         // Queue the next phase of the game.
         if (_currentFundingCycle.number == 1 && _opsOf[_gameId].refundPeriodDuration != 0) {
+            emit QueuedRefundPhase(_gameId, msg.sender);
             return _queueRefundPhase(_gameId, _metadata.dataSource);
         } else {
+            emit QueuedScoringPhase(_gameId, msg.sender);
             return _queueGamePhase(_gameId, _metadata.dataSource);
         }
     }
@@ -668,7 +671,8 @@ contract DefifaDeployer is IDefifaDeployer, IDefifaGamePhaseReporter, IDefifaGam
         }
 
         // Get a reference to any unclaimed base protocol tokens.
-        uint256 _unclaimedBaseProtocolTokens = controller.tokenStore().unclaimedBalanceOf(address(this), baseProtocolProjectId);
+        uint256 _unclaimedBaseProtocolTokens =
+            controller.tokenStore().unclaimedBalanceOf(address(this), baseProtocolProjectId);
 
         // Claim any $JBX that's unclaimed.
         if (_unclaimedBaseProtocolTokens != 0) {
@@ -690,13 +694,7 @@ contract DefifaDeployer is IDefifaDeployer, IDefifaGamePhaseReporter, IDefifaGam
         fulfilledCommitmentsOf[_gameId] = _pot - _leftoverAmount;
 
         emit FulfilledCommitments(
-          _gameId,
-          _pot,
-          _splits,
-          _leftoverAmount,
-          _defifaTokenBalance,
-         _baseProtocolBalance,
-          msg.sender
+            _gameId, _pot, _splits, _leftoverAmount, _defifaTokenBalance, _baseProtocolBalance, msg.sender
         );
     }
 

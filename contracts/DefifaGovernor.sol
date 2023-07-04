@@ -290,6 +290,8 @@ contract DefifaGovernor is Ownable, IDefifaGovernor {
 
         // Store the packed value.
         _packedScorecardInfoOf[_gameId] = _packed;
+
+        emit GameInitialized(_gameId, _attestationStartTime, _attestationGracePeriod, msg.sender);
     }
 
     //*********************************************************************//

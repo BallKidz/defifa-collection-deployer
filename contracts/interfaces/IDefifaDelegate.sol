@@ -39,6 +39,12 @@ interface IDefifaDelegate is IJB721Delegate {
 
     event DelegateChanged(address indexed delegator, address indexed fromDelegate, address indexed toDelegate);
 
+    event ClaimedTokens(
+        address indexed beneficiary, uint256 defifaTokenAmount, uint256 baseProtocolTokenAmount, address caller
+    );
+
+    event TierRedemptionWeightsSet(DefifaTierRedemptionWeight[] _tierWeights, address caller);
+
     function TOTAL_REDEMPTION_WEIGHT() external view returns (uint256);
 
     function defifaToken() external view returns (IERC20);

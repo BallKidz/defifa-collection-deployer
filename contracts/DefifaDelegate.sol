@@ -308,7 +308,11 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate {
     /// @notice The amount of $DEFIFA and $BASE_PROTOCOL tokens this game was allocated from paying the network fee.
     /// @return defifaTokenAllocation The $DEFIFA token allocation.
     /// @return baseProtocolTokenAllocation The $BASE_PROTOCOL token allocation.
-    function tokenAllocations() public view returns (uint256 defifaTokenAllocation, uint256 baseProtocolTokenAllocation) {
+    function tokenAllocations()
+        public
+        view
+        returns (uint256 defifaTokenAllocation, uint256 baseProtocolTokenAllocation)
+    {
         // Get a reference to the pakced token allocation.
         uint256 _packed = _packedTokenAllocation;
 
@@ -321,7 +325,9 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate {
         // Return the values.
         defifaTokenAllocation =
             (_defifaTokenAllocation != 0) ? _defifaTokenAllocation : defifaToken.balanceOf(address(this));
-        baseProtocolTokenAllocation = (_baseProtocolTokenAllocation != 0) ? _baseProtocolTokenAllocation : baseProtocolToken.balanceOf(address(this));
+        baseProtocolTokenAllocation = (_baseProtocolTokenAllocation != 0)
+            ? _baseProtocolTokenAllocation
+            : baseProtocolToken.balanceOf(address(this));
     }
 
     /// @notice Part of IJBFundingCycleDataSource, this function gets called when a project's token holders redeem.
@@ -425,7 +431,8 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate {
 
             // The amount of $DEFIFA and $BASE_PROTOCOL to send is the same proportion as the amount being redeemed to the total pot before any amount redeemed.
             defifaTokenAmount = PRBMath.mulDiv(_defifaTokenAllocation, _cumulativePrice, _pot + amountRedeemed);
-            baseProtocolTokenAmount = PRBMath.mulDiv(_baseProtocolTokenAllocation, _cumulativePrice, _pot + amountRedeemed);
+            baseProtocolTokenAmount =
+                PRBMath.mulDiv(_baseProtocolTokenAllocation, _cumulativePrice, _pot + amountRedeemed);
         }
     }
 
@@ -650,6 +657,8 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate {
 
         // Mark the redemption weight as set.
         redemptionWeightIsSet = true;
+
+        emit TierRedemptionWeightsSet(_tierWeights, msg.sender);
     }
 
     /// @notice Part of IJBRedeemDelegate, this function gets called when the token holder redeems. It will burn the specified NFTs to reclaim from the treasury to the _data.beneficiary.
@@ -707,8 +716,8 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate {
         if (_isComplete) {
             amountRedeemed += _data.reclaimedAmount.value;
 
-            // Claim any $DEFIFA tokens available.
-            _claimDefifaTokensFor(_data.holder, _decodedTokenIds);
+            // Claim any $DEFIFA and $BASE_PROTOCOL tokens available.
+            _claimTokensFor(_data.holder, _decodedTokenIds);
         }
     }
 
@@ -988,7 +997,7 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate {
     /// @notice Claim $DEFIFA and $BASE_PROTOCOL tokens to an account for a certain redeemed amount.
     /// @param _beneficiary The beneficiary of the $DEFIFA tokens.
     /// @param _tokenIds The IDs of the tokens being redeemed that are justifying a $DEFIFA claim.
-    function _claimDefifaTokensFor(address _beneficiary, uint256[] memory _tokenIds) internal {
+    function _claimTokensFor(address _beneficiary, uint256[] memory _tokenIds) internal {
         // Set the amount of total $DEFIFA token allocation if it hasn't been set yet.
         if (_packedTokenAllocation == 0) {
             uint256 _packed;
@@ -1006,6 +1015,8 @@ contract DefifaDelegate is JB721Delegate, Ownable, IDefifaDelegate {
         // Send the tokens.
         defifaToken.transfer(_beneficiary, _defifaTokenAmount);
         baseProtocolToken.transfer(_beneficiary, _baseProtocolTokenAmount);
+
+        emit ClaimedTokens(_beneficiary, _defifaTokenAmount, _baseProtocolTokenAmount, msg.sender);
     }
 
     /// @notice User the hook to register the first owner if it's not yet registered.
