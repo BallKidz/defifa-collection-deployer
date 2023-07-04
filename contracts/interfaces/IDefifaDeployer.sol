@@ -21,6 +21,16 @@ interface IDefifaDeployer {
         address caller
     );
 
+    event FulfilledCommitments(
+      uint256 indexed gameId,
+      uint256 pot,
+      JBSplit[] splits,
+      uint256 leftoverAmount,
+      uint256 defifaTokenBalance,
+      uint256 baseProtocolBalance,
+      address caller
+    );
+
     event DistributeToSplit(JBSplit split, uint256 amount, address caller);
 
     function splitGroup() external view returns (uint256);
