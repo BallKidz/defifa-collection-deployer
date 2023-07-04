@@ -61,7 +61,9 @@ contract SVGTest is Test {
         _typeface = ITypeface(0xA77b7D93E79f1E6B4f77FaB29d9ef85733A3D44A);
     }
 
+    event K(bytes4 k);
     function testWithTierImage() public {
+        emit K(type(IDefifaDelegate).interfaceId);
         IDefifaDelegate _delegate =
             DefifaDelegate(Clones.clone(address(new DefifaDelegate(IERC20(address(0)), IERC20(address(0))))));
         IJB721TokenUriResolver _resolver = new DefifaTokenUriResolver(_typeface);
@@ -111,8 +113,6 @@ contract SVGTest is Test {
         res;
         vm.ffi(inputs);
     }
-
-    event K(bytes4 k);
 
     function testWithOutTierImage() public {
         IDefifaDelegate _delegate =
@@ -165,6 +165,5 @@ contract SVGTest is Test {
         res;
         vm.ffi(inputs);
 
-        emit K(type(IDefifaDelegate).interfaceId);
     }
 }
