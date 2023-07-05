@@ -667,7 +667,7 @@ contract DefifaDeployer is IDefifaDeployer, IDefifaGamePhaseReporter, IDefifaGam
 
         // Transfer the amount of $DEFIFA tokens aquired to the delegate.
         if (_defifaTokenBalance != 0) {
-            _defifaToken.transferFrom(address(this), _metadata.dataSource, _defifaToken.balanceOf(address(this)));
+            _defifaToken.transfer(_metadata.dataSource, _defifaToken.balanceOf(address(this)));
         }
 
         // Get a reference to any unclaimed base protocol tokens.
@@ -687,7 +687,7 @@ contract DefifaDeployer is IDefifaDeployer, IDefifaGamePhaseReporter, IDefifaGam
 
         // Transfer the amount of $JBX tokens aquired to the delegate.
         if (_baseProtocolBalance != 0) {
-            _baseProtocolToken.transferFrom(address(this), _metadata.dataSource, _baseProtocolBalance);
+            _baseProtocolToken.transfer(_metadata.dataSource, _baseProtocolBalance);
         }
 
         // Set the amount of fulfillments for this game.
